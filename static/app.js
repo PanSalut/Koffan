@@ -1186,8 +1186,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (itemEl) {
                 // Check if item is currently completed (has pink checkbox bg)
-                const checkbox = itemEl.querySelector('button');
-                const isCompleted = checkbox && checkbox.classList.contains('bg-pink-400');
+                const checkboxSpan = itemEl.querySelector('button > span');
+                const isCompleted = checkboxSpan && checkboxSpan.classList.contains('bg-pink-400');
 
                 // Add pending sync styling
                 itemEl.classList.add('pending-sync');
@@ -1196,10 +1196,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Toggle visual state
                 if (isCompleted) {
                     // Uncomplete: change from pink checkbox to empty border
-                    if (checkbox) {
-                        checkbox.classList.remove('bg-pink-400', 'flex', 'items-center', 'justify-center');
-                        checkbox.classList.add('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
-                        checkbox.innerHTML = '';
+                    if (checkboxSpan) {
+                        checkboxSpan.classList.remove('bg-pink-400', 'flex', 'items-center', 'justify-center');
+                        checkboxSpan.classList.add('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
+                        checkboxSpan.innerHTML = '';
                     }
                     // Change text style
                     const textEl = itemEl.querySelector('.line-through');
@@ -1215,10 +1215,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     // Complete: change from empty border to pink checkbox
-                    if (checkbox) {
-                        checkbox.classList.remove('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
-                        checkbox.classList.add('bg-pink-400', 'flex', 'items-center', 'justify-center');
-                        checkbox.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                    if (checkboxSpan) {
+                        checkboxSpan.classList.remove('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
+                        checkboxSpan.classList.add('bg-pink-400', 'flex', 'items-center', 'justify-center');
+                        checkboxSpan.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
                     }
                     // Change text style
                     const textEl = itemEl.querySelector('.text-stone-700');
@@ -1255,9 +1255,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // Animate checkbox
-                if (checkbox) {
-                    checkbox.classList.add('checkbox-pulse');
-                    setTimeout(() => checkbox.classList.remove('checkbox-pulse'), 300);
+                if (checkboxSpan) {
+                    checkboxSpan.classList.add('checkbox-pulse');
+                    setTimeout(() => checkboxSpan.classList.remove('checkbox-pulse'), 300);
                 }
             }
 

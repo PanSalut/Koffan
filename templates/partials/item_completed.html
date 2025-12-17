@@ -9,11 +9,13 @@
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
         hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
-        class="flex-shrink-0 w-5 h-5 rounded-full bg-pink-400 flex items-center justify-center"
+        class="flex-shrink-0 w-11 h-11 flex items-center justify-center -m-3"
     >
-        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-        </svg>
+        <span class="w-5 h-5 rounded-full bg-pink-400 flex items-center justify-center">
+            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </span>
     </button>
 
     <!-- Content (clickable to toggle) -->
