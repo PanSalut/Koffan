@@ -1,0 +1,5 @@
+{{define "partials/manage_sections_list"}}
+{{range $index, $section := .Sections}}
+{{template "partials/manage_section_item" dict "Section" $section "Index" $index "Total" (len $.Sections)}}
+{{end}}
+{{end}}

@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Database
+*.db
+
+# Binary
+shopping-list
+
+# IDE
+.idea/
+.vscode/
+
+# Claude
+.claude/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Docs
+README.md

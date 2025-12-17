@@ -1,0 +1,21 @@
+services:
+  shopping-list:
+    build: .
+    expose:
+      - "80"
+    environment:
+      - APP_ENV=production
+      - APP_PASSWORD=${APP_PASSWORD:-shopping123}
+      - PORT=80
+      - DB_PATH=/data/shopping.db
+    volumes:
+      - shopping-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/login"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  shopping-data:

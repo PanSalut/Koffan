@@ -1,0 +1,54 @@
+{{define "login"}}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logowanie - Lista Zakupów</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-stone-50 min-h-screen flex items-center justify-center px-4">
+    <div class="bg-white p-8 rounded-2xl border border-stone-200 shadow-sm w-full max-w-sm">
+        <div class="text-center mb-8">
+            <div class="w-14 h-14 mx-auto mb-4 bg-pink-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                </svg>
+            </div>
+            <h1 class="text-xl font-semibold text-stone-800">Lista Zakupów</h1>
+            <p class="text-sm text-stone-400 mt-1">Zaloguj się aby kontynuować</p>
+        </div>
+
+        {{if .Error}}
+        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm">
+            Nieprawidłowe hasło
+        </div>
+        {{end}}
+
+        <form action="/login" method="POST">
+            <div class="mb-6">
+                <label for="password" class="block text-stone-600 text-sm font-medium mb-2">
+                    Hasło
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                    placeholder="Wpisz hasło..."
+                    autofocus
+                    required
+                >
+            </div>
+
+            <button
+                type="submit"
+                class="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 transition-colors"
+            >
+                Zaloguj
+            </button>
+        </form>
+    </div>
+</body>
+</html>
+{{end}}

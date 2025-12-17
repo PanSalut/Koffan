@@ -1,0 +1,368 @@
+{{define "list"}}
+<div x-data="shoppingList()" x-init="init()" class="min-h-screen pb-24 md:pb-8 bg-stone-50">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-stone-50">
+        <div class="container mx-auto max-w-4xl px-4">
+            <div class="flex items-center justify-between h-14">
+                <!-- Title -->
+                <h1 class="text-xl font-semibold text-stone-800">Zakupy</h1>
+
+                <!-- Stats pill -->
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 bg-white border border-stone-200 rounded-full px-3 py-1.5 shadow-sm"
+                         x-show="stats.total > 0">
+                        <div class="w-2 h-2 rounded-full transition-colors"
+                             :class="stats.percentage === 100 ? 'bg-green-500' : 'bg-pink-400'"></div>
+                        <span class="text-sm font-medium text-stone-600" x-text="stats.completed + '/' + stats.total"></span>
+                        <span class="text-xs text-stone-400" x-text="stats.percentage + '%'"></span>
+                    </div>
+                    <span class="text-sm text-stone-400" x-show="stats.total === 0">pusta lista</span>
+
+                    <!-- Logout (desktop) -->
+                    <form action="/logout" method="POST" class="hidden md:block">
+                        <button type="submit" class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors" title="Wyloguj">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="h-1 bg-stone-200 rounded-full mb-4 overflow-hidden" x-show="stats.total > 0">
+                <div class="h-full rounded-full transition-all duration-500"
+                     :class="stats.percentage === 100 ? 'bg-green-500' : 'bg-pink-400'"
+                     :style="'width: ' + stats.percentage + '%'"
+                     style="width: {{.Stats.Percentage}}%"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 max-w-4xl">
+        <!-- Desktop controls -->
+        <div class="hidden md:block mb-6">
+            <div class="bg-white rounded-2xl border border-stone-200 p-5">
+                <form
+                    id="add-item-form"
+                    hx-post="/items"
+                    hx-swap="none"
+                    hx-on::after-request="clearFormKeepSection(this); htmx.trigger('body', 'refreshList'); $data.refreshStats()"
+                    class="flex items-center gap-3"
+                >
+                    <select name="section_id" required
+                        class="w-40 border border-stone-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-stone-50 text-stone-700">
+                        <option value="">Sekcja...</option>
+                        {{range .Sections}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                    <input type="text" name="name" id="item-name-input" placeholder="Co kupić?" required
+                        class="flex-1 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400">
+                    <input type="text" name="description" placeholder="Notatka..."
+                        class="w-48 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400">
+                    <button type="submit"
+                        class="bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                        Dodaj
+                    </button>
+                    <button
+                        type="button"
+                        @click="showManageSections = true"
+                        class="p-2.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                        title="Zarządzaj sekcjami"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Stats container for HTMX refresh -->
+        <div id="stats-container" class="hidden" hx-get="/stats" hx-trigger="refresh" hx-swap="none"></div>
+
+        <!-- Sections List -->
+        <div id="sections-list" hx-get="/" hx-trigger="refreshList from:body" hx-select="#sections-list > *" hx-swap="innerHTML">
+            {{range .Sections}}
+            {{template "partials/section" dict "Section" . "Sections" $.Sections}}
+            {{end}}
+        </div>
+
+        <!-- Empty State -->
+        {{if not .Sections}}
+        <div class="text-center py-20">
+            <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
+                <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+            </div>
+            <p class="text-stone-600 font-medium">Brak sekcji</p>
+            <p class="text-sm text-stone-400 mt-1">Dodaj pierwszą sekcję aby rozpocząć</p>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Mobile FAB -->
+    <template x-if="mobileHelper === 'button'">
+        <div class="md:hidden fixed bottom-6 right-6 z-40">
+            <button
+                @click="showAddItem = true"
+                class="w-14 h-14 bg-pink-400 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </div>
+    </template>
+
+    <!-- Mobile Bottom Bar -->
+    <template x-if="mobileHelper === 'progress'">
+        <div class="md:hidden fixed bottom-0 left-0 right-0 z-40">
+            <div class="bg-white border-t border-stone-200 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative w-10 h-10">
+                        <svg class="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="15" fill="none" stroke="#e7e5e4" stroke-width="3"/>
+                            <circle cx="18" cy="18" r="15" fill="none"
+                                :stroke="stats.percentage === 100 ? '#22c55e' : '#f472b6'"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                :stroke-dasharray="(stats.percentage * 94.2) / 100 + ' 94.2'"
+                                class="transition-all duration-500"/>
+                        </svg>
+                        <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-stone-600" x-text="stats.percentage + '%'"></span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-stone-800">Lista zakupow</p>
+                        <p class="text-xs text-stone-400" x-text="stats.completed + ' / ' + stats.total"></p>
+                    </div>
+                </div>
+                <button
+                    @click="showAddItem = true"
+                    class="w-10 h-10 bg-pink-400 text-white rounded-xl flex items-center justify-center"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Mobile Add Item Modal -->
+    <div x-show="showAddItem" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAddItem = false"></div>
+        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
+             x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
+            <h3 class="text-lg font-semibold text-stone-800 mb-4">Nowy produkt</h3>
+            <form
+                hx-post="/items"
+                hx-swap="none"
+                hx-on::after-request="this.reset(); window.dispatchEvent(new CustomEvent('item-added')); htmx.trigger('body', 'refreshList')"
+                @item-added.window="showAddItem = false; refreshStats()"
+                class="space-y-4"
+            >
+                <select name="section_id" required
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-stone-50">
+                    <option value="">Wybierz sekcję...</option>
+                    {{range .Sections}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+                <input type="text" name="name" placeholder="Co kupić?" required
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                <textarea name="description" placeholder="Notatka (opcjonalnie)..." rows="2"
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"></textarea>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showAddItem = false"
+                        class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-lg text-sm font-medium">
+                        Anuluj
+                    </button>
+                    <button type="submit"
+                        class="flex-1 bg-pink-400 text-white py-3 rounded-lg text-sm font-medium">
+                        Dodaj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Sections Modal -->
+    <div x-show="showManageSections" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showManageSections = false"></div>
+        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-stone-800">Sekcje</h3>
+                <button @click="showManageSections = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Add new section -->
+            <form
+                hx-post="/sections"
+                hx-target="#manage-sections-list"
+                hx-swap="beforeend"
+                hx-on::after-request="this.reset()"
+                class="flex gap-2 mb-6"
+            >
+                <input type="text" name="name" placeholder="Nowa sekcja..." required
+                    class="flex-1 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                <button type="submit" class="bg-pink-400 hover:bg-pink-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium">
+                    Dodaj
+                </button>
+            </form>
+
+            <!-- Sections list -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-stone-500 uppercase tracking-wide font-medium">Lista sekcji</p>
+                    <button
+                        @click="selectMode = !selectMode; selectedSections = []"
+                        class="text-xs text-stone-500 hover:text-stone-700"
+                        x-text="selectMode ? 'Anuluj' : 'Wybierz'"
+                    ></button>
+                </div>
+
+                <div id="manage-sections-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    {{range $index, $section := .Sections}}
+                    {{template "partials/manage_section_item" dict "Section" $section "Index" $index "Total" (len $.Sections)}}
+                    {{end}}
+                </div>
+            </div>
+
+            <!-- Batch delete button -->
+            <template x-if="selectMode && selectedSections.length > 0">
+                <button
+                    @click="deleteSelectedSections()"
+                    class="w-full bg-red-500 text-white py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                >
+                    <span x-text="'Usun (' + selectedSections.length + ')'"></span>
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <!-- Mobile Action Modal -->
+    <div x-show="mobileActionItem" x-cloak class="fixed inset-0 z-50 flex items-end justify-center md:hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="mobileActionItem = null"></div>
+        <div class="relative bg-white rounded-t-2xl w-full p-6">
+            <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-4"></div>
+            <h3 class="font-medium text-stone-800 mb-4 truncate" x-text="mobileActionItem?.name"></h3>
+            <div class="space-y-2">
+                <button @click="editItem(mobileActionItem); mobileActionItem = null"
+                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 text-stone-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edytuj
+                </button>
+
+                <button @click="toggleUncertain()"
+                    :class="mobileActionItem?.uncertain ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'"
+                    class="w-full flex items-center gap-3 p-3 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span x-text="mobileActionItem?.uncertain ? 'Pewne' : 'Niepewne'"></span>
+                </button>
+
+                <div x-data="{ showSections: false }">
+                    <button @click="showSections = !showSections"
+                        class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 text-stone-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        Przenieś
+                        <svg class="w-4 h-4 ml-auto transition-transform" :class="showSections && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="showSections" class="mt-2 space-y-1 ml-8">
+                        {{range .Sections}}
+                        <button @click="moveToSection({{.ID}})"
+                            class="w-full text-left p-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100"
+                            x-show="mobileActionItem?.section_id != {{.ID}}">
+                            {{.Name}}
+                        </button>
+                        {{end}}
+                    </div>
+                </div>
+
+                <button @click="deleteItem()"
+                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-red-50 text-red-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Usuń
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div x-show="editingItem" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="editingItem = null"></div>
+        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6">
+            <h3 class="text-lg font-semibold text-stone-800 mb-4">Edytuj</h3>
+            <form @submit.prevent="submitEditItem()" class="space-y-4">
+                <input type="text" x-model="editItemName" placeholder="Nazwa..." required
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                <textarea x-model="editItemDescription" placeholder="Notatka..." rows="2"
+                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"></textarea>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="editingItem = null"
+                        class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-lg text-sm font-medium">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="flex-1 bg-pink-400 text-white py-3 rounded-lg text-sm font-medium">
+                        Zapisz
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings toggle (mobile) -->
+    <div class="md:hidden fixed bottom-6 left-6 z-30" :class="mobileHelper === 'progress' && 'bottom-20'">
+        <button @click="toggleMobileHelper()"
+            class="w-10 h-10 bg-white border border-stone-200 text-stone-400 rounded-xl shadow-sm flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script>
+// Initialize from server data
+window.initialPreferences = {
+    mobileHelper: '{{.Preferences.MobileHelper}}'
+};
+window.initialStats = {
+    total: {{.Stats.TotalItems}},
+    completed: {{.Stats.CompletedItems}},
+    percentage: {{.Stats.Percentage}}
+};
+
+// Clear form but keep section selected
+function clearFormKeepSection(form) {
+    const sectionSelect = form.querySelector('select[name="section_id"]');
+    const sectionValue = sectionSelect.value;
+    const nameInput = form.querySelector('input[name="name"]');
+    const descInput = form.querySelector('input[name="description"]');
+
+    nameInput.value = '';
+    descInput.value = '';
+    sectionSelect.value = sectionValue;
+
+    setTimeout(() => nameInput.focus(), 50);
+}
+</script>
+{{end}}

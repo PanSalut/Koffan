@@ -1,0 +1,46 @@
+{{define "partials/item_completed"}}
+<div
+    id="item-{{.Item.ID}}"
+    class="px-4 py-2.5 flex items-center gap-3 hover:bg-stone-100/50 transition-all group"
+>
+    <!-- Checkbox (checked) -->
+    <button
+        hx-post="/items/{{.Item.ID}}/toggle"
+        hx-target="#item-{{.Item.ID}}"
+        hx-swap="outerHTML"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+        class="flex-shrink-0 w-5 h-5 rounded-full bg-pink-400 flex items-center justify-center"
+    >
+        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+        </svg>
+    </button>
+
+    <!-- Content (clickable to toggle) -->
+    <div
+        class="flex-1 min-w-0 cursor-pointer"
+        hx-post="/items/{{.Item.ID}}/toggle"
+        hx-target="#item-{{.Item.ID}}"
+        hx-swap="outerHTML"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+    >
+        <p class="text-sm text-stone-400 line-through truncate">{{.Item.Name}}</p>
+        {{if .Item.Description}}
+        <p class="text-xs text-stone-300 line-through truncate">{{.Item.Description}}</p>
+        {{end}}
+    </div>
+
+    <!-- Delete button -->
+    <button
+        hx-delete="/items/{{.Item.ID}}"
+        hx-target="#item-{{.Item.ID}}"
+        hx-swap="outerHTML"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh')"
+        class="p-1.5 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+    >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+</div>
+{{end}}

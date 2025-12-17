@@ -1,0 +1,21 @@
+{{define "partials/stats"}}
+<div
+    class="bg-white rounded-lg shadow p-4"
+    hx-get="/stats"
+    hx-trigger="refresh"
+    hx-swap="outerHTML"
+>
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-gray-600">Postep</span>
+        <span class="text-sm font-medium text-gray-800">
+            {{.Stats.CompletedItems}} / {{.Stats.TotalItems}} ({{.Stats.Percentage}}%)
+        </span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-3">
+        <div
+            class="bg-green-500 h-3 rounded-full transition-all duration-300"
+            style="width: {{.Stats.Percentage}}%"
+        ></div>
+    </div>
+</div>
+{{end}}
