@@ -52,20 +52,41 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - **Frontend:** HTMX + Alpine.js + Tailwind CSS
 - **Database:** SQLite
 
-## Local Setup
+## Local Setup (without Docker)
 
+You can run Koffan directly on your machine using Go. This works on any system (macOS, Linux, Windows).
+
+### 1. Install Go
+
+**macOS (Homebrew):**
 ```bash
-# Clone
-git clone https://github.com/PanSalut/Koffan.git
-cd Koffan
-
-# Run
-go run main.go
-
-# App available at http://localhost:3000
+brew install go
 ```
 
+**Linux (Debian/Ubuntu):**
+```bash
+sudo apt install golang-go
+```
+
+**Windows:**
+Download from [go.dev/dl](https://go.dev/dl/)
+
+### 2. Clone and Run
+
+```bash
+git clone https://github.com/PanSalut/Koffan.git
+cd Koffan
+go run main.go
+```
+
+App available at http://localhost:3000
+
 Default password: `shopping123`
+
+To set a custom password:
+```bash
+APP_PASSWORD=yourpassword go run main.go
+```
 
 ## Docker
 
@@ -100,7 +121,7 @@ docker run -d -p 80:80 -e APP_PASSWORD=your-password -v koffan-data:/data koffan
 
 ### Coolify
 
-1. Add new resource → **Docker Compose** → Select your Git repository
+1. Add new resource → **Docker Compose** → Select your Git repository or use `https://github.com/PanSalut/Koffan`
 2. Set domain in **Domains** section
 3. Enable **Connect to Predefined Network** in Advanced settings
 4. Add environment variable `APP_PASSWORD` with your password
