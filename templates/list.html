@@ -128,11 +128,46 @@
         {{end}}
     </div>
 
-    <!-- Mobile FAB -->
-    <div class="md:hidden fixed bottom-6 right-6 z-40">
+    <!-- Mobile FAB Speed Dial -->
+    <div class="md:hidden fixed bottom-6 right-6 z-40" x-data="{ open: false }">
+        <!-- Mini FABs -->
+        <div
+            x-show="open"
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0 scale-75"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-75"
+            @click.outside="open = false"
+            class="absolute bottom-16 right-0 mb-2 flex flex-col gap-3 items-center"
+        >
+            <!-- Zarządzaj sekcjami -->
+            <button
+                @click="showManageSections = true; open = false"
+                class="w-12 h-12 bg-white text-stone-600 rounded-full shadow-lg border border-stone-200 flex items-center justify-center active:scale-95 transition-transform"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+            </button>
+
+            <!-- Dodaj produkt -->
+            <button
+                @click="showAddItem = true; open = false"
+                class="w-12 h-12 bg-pink-100 text-pink-500 rounded-full shadow-lg border border-pink-200 flex items-center justify-center active:scale-95 transition-transform"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Główny FAB -->
         <button
-            @click="showAddItem = true"
-            class="w-14 h-14 bg-pink-400 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+            @click="open = !open"
+            class="w-14 h-14 bg-pink-400 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all duration-200"
+            :class="open && 'rotate-45 bg-pink-500'"
         >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
