@@ -80,6 +80,13 @@
   "stats": {
     "progress": "Postęp"
   },
+  "status": {
+    "syncing": "sync"
+  },
+  "error": {
+    "generic": "Błąd",
+    "delete_items": "Błąd usuwania przedmiotów"
+  },
   "offline": {
     "title": "Tryb offline",
     "message": "Jesteś w trybie offline. Wszystkie zmiany zostaną automatycznie zsynchronizowane po przywróceniu połączenia.",

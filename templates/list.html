@@ -165,7 +165,7 @@
             @click.outside="open = false"
             class="absolute bottom-16 right-0 mb-2 flex flex-col gap-3 items-center"
         >
-            <!-- Zarządzaj sekcjami -->
+            <!-- Manage sections -->
             <button
                 @click="isOnline ? (showManageSections = true, open = false) : (window.Toast.show(t('offline.action_blocked'), 'warning'), open = false)"
                 class="w-12 h-12 rounded-full shadow-lg border flex items-center justify-center active:scale-95 transition-all"
@@ -176,7 +176,7 @@
                 </svg>
             </button>
 
-            <!-- Dodaj produkt -->
+            <!-- Add product -->
             <button
                 @click="showAddItem = true; open = false"
                 class="w-12 h-12 bg-pink-100 text-pink-500 rounded-full shadow-lg border border-pink-200 flex items-center justify-center active:scale-95 transition-transform"
@@ -187,7 +187,7 @@
             </button>
         </div>
 
-        <!-- Główny FAB -->
+        <!-- Main FAB -->
         <button
             @click="open = !open"
             class="w-14 h-14 bg-pink-400 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all duration-200"

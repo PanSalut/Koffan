@@ -144,7 +144,7 @@ function shoppingList() {
         },
 
         initCompletedSectionsStore() {
-            // Załaduj stan z localStorage
+            // Load state from localStorage
             try {
                 const saved = localStorage.getItem('completedSections');
                 Alpine.store('completedSections', saved ? JSON.parse(saved) : {});
@@ -478,49 +478,49 @@ function shoppingList() {
                     case 'section_deleted':
                     case 'sections_deleted':
                     case 'sections_reordered':
-                        // Sekcje się zmieniły - odśwież listę sekcji i selecty
+                        // Sections changed - refresh sections list and selects
                         this.refreshSectionsAndSelects();
                         break;
                     case 'item_created':
                     case 'item_moved':
-                        // Wymaga pełnego odświeżenia listy
+                        // Requires full list refresh
                         this.refreshList();
                         this.refreshStats();
                         break;
                     case 'item_deleted':
-                        // Jeśli to lokalna akcja - HTMX już usunął element
-                        // Jeśli zdalna - odśwież listę żeby zsynchronizować
+                        // If local action - HTMX already deleted element
+                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_deleted')) {
                             this.refreshList();
                         }
                         this.refreshStats();
                         break;
                     case 'items_reordered':
-                        // Jeśli to lokalna akcja - HTMX już zaktualizował kolejność
-                        // Jeśli zdalna - odśwież listę żeby zsynchronizować
+                        // If local action - HTMX already updated order
+                        // If remote - refresh list to sync
                         if (!this.isLocalAction('items_reordered')) {
                             this.refreshList();
                         }
                         this.refreshStats();
                         break;
                     case 'item_toggled':
-                        // Jeśli to lokalna akcja - HTMX już zaktualizował element
-                        // Jeśli zdalna - odśwież listę żeby zsynchronizować
+                        // If local action - HTMX already updated element
+                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_toggled')) {
                             this.refreshList();
                         }
                         this.refreshStats();
                         break;
                     case 'item_updated':
-                        // Jeśli to lokalna akcja - HTMX już zaktualizował element
-                        // Jeśli zdalna - odśwież listę żeby zsynchronizować
+                        // If local action - HTMX already updated element
+                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_updated')) {
                             this.refreshList();
                         }
                         this.refreshStats();
                         break;
                     case 'completed_items_deleted':
-                        // Wszystkie kupione przedmioty zostały usunięte
+                        // All purchased items were deleted
                         this.refreshList();
                         this.refreshStats();
                         break;
@@ -613,7 +613,7 @@ function shoppingList() {
         },
 
         async refreshSectionsAndSelects() {
-            // Odśwież listę sekcji w modalu zarządzania
+            // Refresh sections list in management modal
             const manageSectionsList = document.getElementById('manage-sections-list');
             if (manageSectionsList) {
                 htmx.ajax('GET', '/sections/list', {
@@ -622,10 +622,10 @@ function shoppingList() {
                 });
             }
 
-            // Odśwież główną listę sekcji
+            // Refresh main sections list
             this.refreshList();
 
-            // Pobierz nowe sekcje i zaktualizuj selecty
+            // Fetch new sections and update selects
             try {
                 const response = await fetch('/sections/list?format=json');
                 if (response.ok) {
@@ -638,15 +638,15 @@ function shoppingList() {
         },
 
         updateSectionSelects(sections) {
-            // Znajdź wszystkie selecty z sekcjami
+            // Find all section selects
             const selects = document.querySelectorAll('select[name="section_id"]');
             selects.forEach(select => {
                 const currentValue = select.value;
 
-                // Wyczyść wszystkie opcje
+                // Clear all options
                 select.innerHTML = '';
 
-                // Dodaj nowe opcje (pierwsza będzie domyślnie wybrana)
+                // Add new options (first will be selected by default)
                 sections.forEach((section, index) => {
                     const opt = document.createElement('option');
                     opt.value = section.id;
@@ -657,7 +657,7 @@ function shoppingList() {
                     select.appendChild(opt);
                 });
 
-                // Przywróć poprzednią wartość jeśli nadal istnieje
+                // Restore previous value if still exists
                 if (currentValue && sections.some(s => s.id == currentValue)) {
                     select.value = currentValue;
                 }
@@ -675,7 +675,7 @@ function shoppingList() {
                     const response = await fetch('/stats');
                     if (response.ok) {
                         const data = await response.json();
-                        // JSON używa snake_case
+                        // JSON uses snake_case
                         this.stats = {
                             total: data.total_items || 0,
                             completed: data.completed_items || 0,
@@ -718,7 +718,7 @@ function shoppingList() {
                 if (response.ok) {
                     this.selectMode = false;
                     this.selectedSections = [];
-                    // Odśwież listę sekcji i selecty bez przeładowania strony
+                    // Refresh sections list and selects without page reload
                     this.refreshSectionsAndSelects();
                 }
             } catch (error) {
@@ -885,11 +885,11 @@ function shoppingList() {
                         window.Toast.show(t('settings.delete_completed') + ': ' + result.deleted, 'success');
                     }
                 } else {
-                    window.Toast.show('Error deleting items', 'warning');
+                    window.Toast.show(t('error.delete_items'), 'warning');
                 }
             } catch (error) {
                 console.error('[App] Failed to delete completed items:', error);
-                window.Toast.show('Error deleting items', 'warning');
+                window.Toast.show(t('error.delete_items'), 'warning');
             }
         },
 
@@ -943,7 +943,7 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('[App] Failed to delete history item:', error);
-                window.Toast.show('Error', 'warning');
+                window.Toast.show(t('error.generic'), 'warning');
             }
         },
 
@@ -977,7 +977,7 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('[App] Failed to delete history items:', error);
-                window.Toast.show('Error', 'warning');
+                window.Toast.show(t('error.generic'), 'warning');
             }
         },
 
@@ -1683,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!itemEl.querySelector('.offline-sync-badge')) {
                     const badge = document.createElement('span');
                     badge.className = 'offline-sync-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-600 ml-2';
-                    badge.innerHTML = `<svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>sync`;
+                    badge.innerHTML = `<svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>${t('status.syncing')}`;
                     if (contentDiv) {
                         contentDiv.after(badge);
                     }

@@ -80,6 +80,13 @@
   "stats": {
     "progress": "Progresso"
   },
+  "status": {
+    "syncing": "sync"
+  },
+  "error": {
+    "generic": "Erro",
+    "delete_items": "Erro ao excluir"
+  },
   "offline": {
     "title": "Modo offline",
     "message": "Você está offline. Todas as alterações serão sincronizadas automaticamente quando a conexão for restaurada.",

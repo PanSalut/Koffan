@@ -80,6 +80,13 @@
   "stats": {
     "progress": "Progrès"
   },
+  "status": {
+    "syncing": "sync"
+  },
+  "error": {
+    "generic": "Erreur",
+    "delete_items": "Erreur de suppression"
+  },
   "offline": {
     "title": "Mode hors ligne",
     "message": "Vous êtes hors ligne. Toutes les modifications seront automatiquement synchronisées lorsque la connexion sera rétablie.",

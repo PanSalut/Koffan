@@ -80,6 +80,13 @@
   "stats": {
     "progress": "Progress"
   },
+  "status": {
+    "syncing": "sync"
+  },
+  "error": {
+    "generic": "Error",
+    "delete_items": "Error deleting items"
+  },
   "offline": {
     "title": "Offline mode",
     "message": "You are offline. All changes will be automatically synced when the connection is restored.",

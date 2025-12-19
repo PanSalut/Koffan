@@ -142,7 +142,7 @@ async function cacheFirst(request) {
         console.warn('[SW] Cache first failed:', request.url);
         // Return a simple offline page for HTML requests
         if (request.headers.get('accept')?.includes('text/html')) {
-            return new Response('<html><body><h1>Offline</h1><p>Please check your connection.</p></body></html>', {
+            return new Response('<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafaf9"><div style="text-align:center"><h1 style="color:#78716c">Koffan Offline</h1><p style="color:#a8a29e">Check your connection</p></div></body></html>', {
                 headers: { 'Content-Type': 'text/html' }
             });
         }
@@ -173,7 +173,7 @@ async function networkFirst(request) {
             if (mainPage) {
                 return mainPage;
             }
-            return new Response('<html><body><h1>Offline</h1><p>Please check your connection.</p></body></html>', {
+            return new Response('<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafaf9"><div style="text-align:center"><h1 style="color:#78716c">Koffan Offline</h1><p style="color:#a8a29e">Check your connection</p></div></body></html>', {
                 headers: { 'Content-Type': 'text/html' }
             });
         }
