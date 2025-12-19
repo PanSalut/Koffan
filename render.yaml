@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: koffan
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: APP_PASSWORD
+        generateValue: true
+      - key: DB_PATH
+        value: /app/data/shopping.db
+      - key: APP_ENV
+        value: production

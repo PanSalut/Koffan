@@ -6,8 +6,13 @@
 
 <p align="center">
   <strong>Open source shopping assistant</strong><br>
-  A fast and simple app for managing your shopping list together<br><br>
-  Self-hosted app for your own server. Easiest way to deploy is with <a href="https://github.com/coollabsio/coolify">Coolify</a>.
+  A fast and simple app for managing your shopping list together
+</p>
+
+<p align="center">
+  <a href="https://railway.app/new/template?template=https://github.com/PanSalut/Koffan"><img src="https://railway.app/button.svg" alt="Deploy on Railway" height="32"></a>
+  &nbsp;
+  <a href="https://render.com/deploy?repo=https://github.com/PanSalut/Koffan"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="32"></a>
 </p>
 
 ---
