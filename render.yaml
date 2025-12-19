@@ -2,7 +2,7 @@ services:
   - type: web
     name: koffan
     runtime: docker
-    plan: free
+    plan: starter
     healthCheckPath: /
     disk:
       name: data
@@ -13,5 +13,7 @@ services:
         generateValue: true
       - key: DB_PATH
         value: /app/data/shopping.db
+      - key: DEFAULT_LANG
+        value: en
       - key: APP_ENV
         value: production
