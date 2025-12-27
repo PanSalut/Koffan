@@ -40,7 +40,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/PanSalut/koffan
+            ghcr.io/pansalut/koffan
 
       - name: Build and push Docker image
         id: build-and-push
