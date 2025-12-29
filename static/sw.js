@@ -1,7 +1,10 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v1';
+const CACHE_VERSION = 'koffan-v3';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
+
+// Pattern for list pages
+const LIST_PAGE_PATTERN = /^\/lists\/\d+$/;
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -108,7 +111,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // HTML pages (/, /login) - Network First with cache fallback
+    // List pages (/lists/:id) - Network First with special offline handling
+    if (LIST_PAGE_PATTERN.test(url.pathname)) {
+        event.respondWith(listPageStrategy(event.request));
+        return;
+    }
+
+    // HTML pages (/, /login, /lists) - Network First with cache fallback
     if (event.request.headers.get('accept')?.includes('text/html')) {
         event.respondWith(networkFirst(event.request));
         return;
@@ -179,6 +188,31 @@ async function networkFirst(request) {
         }
 
         throw error;
+    }
+}
+
+// List Page strategy - Network First with list-specific fallback
+async function listPageStrategy(request) {
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        console.log('[SW] List page fallback to cache:', request.url);
+
+        // Try to return cached version of this list
+        const cached = await caches.match(request);
+        if (cached) {
+            return cached;
+        }
+
+        // List not cached - show offline message
+        return new Response('<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafaf9"><div style="text-align:center"><h1 style="color:#78716c">Koffan Offline</h1><p style="color:#a8a29e">Ta lista nie jest zapisana offline.</p><a href="/" style="color:#f472b6;text-decoration:none">Wróć do strony głównej</a></div></body></html>', {
+            headers: { 'Content-Type': 'text/html' }
+        });
     }
 }
 

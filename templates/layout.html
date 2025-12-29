@@ -233,6 +233,11 @@
         .refresh-overlay.fade-out {
             opacity: 0;
         }
+
+        /* Safe area for bottom navigation on notched devices */
+        .safe-area-pb {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -249,13 +254,36 @@
     {{embed}}
 
     <script src="/static/offline-storage.js?v=2"></script>
-    <script src="/static/app.js?v=1702824014"></script>
+    <script src="/static/app.js?v=2"></script>
     <script>
-        // Register Service Worker
+        // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('[App] Service Worker registered:', reg.scope))
+            navigator.serviceWorker.register('/static/sw.js?v=2')
+                .then(reg => {
+                    console.log('[App] Service Worker registered:', reg.scope);
+                    // Force update check
+                    reg.update();
+                    // Listen for new SW and activate immediately
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New SW installed, tell it to skip waiting
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+                })
                 .catch(err => console.error('[App] Service Worker registration failed:', err));
+
+            // Reload page when new SW takes control
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
         }
     </script>
 </body>

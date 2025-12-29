@@ -2,7 +2,7 @@
 class OfflineStorage {
     constructor() {
         this.dbName = 'koffan-offline';
-        this.dbVersion = 2; // Bumped for suggestions store
+        this.dbVersion = 5;  // Must be >= existing version in browser
         this.db = null;
     }
 

@@ -1,16 +1,23 @@
 {{define "list"}}
-<div x-data="shoppingList()" x-init="init()" class="min-h-screen pb-24 md:pb-8 bg-stone-50">
+<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50">
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-stone-50 pt-3">
         <div class="container mx-auto max-w-4xl px-4">
             <div class="flex items-center justify-between h-14 mb-4">
-                <!-- Logo -->
-                <a href="/" class="hover:opacity-80 transition-opacity">
-                    <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-12">
-                </a>
-
-                <!-- Stats pill -->
+                <!-- Logo and List Name -->
                 <div class="flex items-center gap-3">
+                    <a href="/" class="hover:opacity-80 transition-opacity" title="Powrót do list">
+                        <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-10">
+                    </a>
+                    <span class="text-stone-300">/</span>
+                    <div class="flex items-center gap-2">
+                        {{if .List}}<span class="text-xl">{{.List.Icon}}</span>{{end}}
+                        <h1 class="text-lg font-semibold text-stone-800 truncate max-w-32 md:max-w-48">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                    </div>
+                </div>
+
+                <!-- Desktop Stats pill + controls (hidden on mobile) -->
+                <div class="hidden md:flex items-center gap-3">
                     <div class="flex items-center gap-2 bg-white border border-stone-200 rounded-full px-3 py-1.5 shadow-sm"
                          x-show="stats.total > 0">
                         <div class="w-2 h-2 rounded-full transition-colors"
@@ -23,6 +30,7 @@
                     <!-- Offline indicator -->
                     <button
                         x-show="!isOnline"
+                        x-cloak
                         @click="showOfflineModal = true"
                         class="p-1.5 text-rose-500 hover:text-rose-600 rounded-lg transition-colors animate-pulse"
                         :title="t('offline.title')"
@@ -43,20 +51,39 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                     </button>
+                </div>
 
-                    <!-- Logout -->
-                    <form action="/logout" method="POST">
-                        <button type="submit" class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors" :title="t('nav.logout')">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                            </svg>
-                        </button>
-                    </form>
+                <!-- Mobile: Settings only -->
+                <div class="flex md:hidden items-center gap-2">
+                    <!-- Offline indicator -->
+                    <button
+                        x-show="!isOnline"
+                        x-cloak
+                        @click="showOfflineModal = true"
+                        class="p-1.5 text-rose-500 hover:text-rose-600 rounded-lg transition-colors animate-pulse"
+                        :title="t('offline.title')"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Settings -->
+                    <button
+                        @click="showSettings = true"
+                        class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+                        :title="t('nav.settings')"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
-            <!-- Progress bar -->
-            <div class="h-1 bg-stone-200 rounded-full mb-4 overflow-hidden" x-show="stats.total > 0">
+            <!-- Progress bar (desktop only) -->
+            <div class="hidden md:block h-1 bg-stone-200 rounded-full mb-4 overflow-hidden" x-show="stats.total > 0">
                 <div class="h-full rounded-full transition-all duration-500"
                      :class="stats.percentage === 100 ? 'bg-pink-500' : 'bg-pink-400'"
                      :style="'width: ' + stats.percentage + '%'"
@@ -73,7 +100,7 @@
                     id="add-item-form"
                     hx-post="/items"
                     hx-swap="none"
-                    hx-on::after-request="clearFormKeepSection(this); htmx.trigger('body', 'refreshList'); $data.refreshStats()"
+                    hx-on::after-request="clearFormKeepSection(this); $data.refreshList(); $data.refreshStats()"
                     class="flex items-center gap-3"
                 >
                     <select name="section_id" x-ref="desktopSectionSelect" required
@@ -131,13 +158,26 @@
         <div id="stats-container" class="hidden" hx-get="/stats" hx-trigger="refresh" hx-swap="none"></div>
 
         <!-- Sections List -->
-        <div id="sections-list" hx-get="/" hx-trigger="refreshList from:body" hx-select="#sections-list > *" hx-swap="innerHTML">
+        <div id="sections-list">
             {{range .Sections}}
             {{template "partials/section" dict "Section" . "Sections" $.Sections}}
             {{end}}
         </div>
 
-        <!-- Empty State -->
+        <!-- Empty State - sections exist but no products -->
+        {{if and .Sections (eq .Stats.TotalItems 0)}}
+        <div class="text-center py-20">
+            <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
+                <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+            </div>
+            <p class="text-stone-600 font-medium" x-text="t('items.no_items')"></p>
+            <p class="text-sm text-stone-400 mt-1" x-text="t('items.add_first_item')"></p>
+        </div>
+        {{end}}
+
+        <!-- Empty State - no sections -->
         {{if not .Sections}}
         <div class="text-center py-20">
             <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
@@ -151,52 +191,41 @@
         {{end}}
     </div>
 
-    <!-- Mobile FAB Speed Dial -->
-    <div class="md:hidden fixed bottom-6 right-6 z-40" x-data="{ open: false }">
-        <!-- Mini FABs -->
-        <div
-            x-show="open"
-            x-transition:enter="transition ease-out duration-150"
-            x-transition:enter-start="opacity-0 scale-75"
-            x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-100"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-75"
-            @click.outside="open = false"
-            class="absolute bottom-16 right-0 mb-2 flex flex-col gap-3 items-center"
-        >
-            <!-- Manage sections -->
-            <button
-                @click="isOnline ? (showManageSections = true, open = false) : (window.Toast.show(t('offline.action_blocked'), 'warning'), open = false)"
-                class="w-12 h-12 rounded-full shadow-lg border flex items-center justify-center active:scale-95 transition-all"
-                :class="isOnline ? 'bg-white text-stone-600 border-stone-200' : 'bg-stone-100 text-stone-400 border-stone-200 opacity-60'"
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                </svg>
-            </button>
+    <!-- Mobile Bottom Navigation Bar -->
+    <div class="md:hidden fixed bottom-6 left-5 right-5 z-40 bg-white border border-stone-200 shadow-xl rounded-2xl safe-area-pb">
+        <div class="flex items-center justify-between px-4 py-3">
+            <!-- Stats -->
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full transition-colors"
+                     :class="stats.percentage === 100 ? 'bg-pink-500' : 'bg-pink-400'"></div>
+                <span class="text-sm font-medium text-stone-700" x-text="stats.completed + '/' + stats.total"></span>
+                <span class="text-sm text-stone-400" x-text="stats.percentage + '%'"></span>
+            </div>
 
-            <!-- Add product -->
-            <button
-                @click="showAddItem = true; open = false"
-                class="w-12 h-12 bg-pink-100 text-pink-500 rounded-full shadow-lg border border-pink-200 flex items-center justify-center active:scale-95 transition-transform"
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-            </button>
+            <!-- Actions -->
+            <div class="flex items-center gap-2">
+                <!-- Manage sections -->
+                <button
+                    @click="isOnline ? showManageSections = true : window.Toast.show(t('offline.action_blocked'), 'warning')"
+                    class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                    :class="isOnline ? 'bg-stone-100 text-stone-600 hover:bg-stone-200' : 'bg-stone-50 text-stone-300'"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                </button>
+
+                <!-- Add product FAB -->
+                <button
+                    @click="showAddItem = true"
+                    class="w-12 h-12 bg-pink-400 hover:bg-pink-500 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
-
-        <!-- Main FAB -->
-        <button
-            @click="open = !open"
-            class="w-14 h-14 bg-pink-400 text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all duration-200"
-            :class="open && 'rotate-45 bg-pink-500'"
-        >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-        </button>
     </div>
 
 
@@ -212,7 +241,7 @@
                 hx-post="/items"
                 hx-swap="none"
                 hx-on::after-request="window.dispatchEvent(new CustomEvent('item-added'))"
-                @item-added.window="refreshStats(); if (!addMore) { $el.reset(); htmx.trigger('body', 'refreshList'); showAddItem = false; } else { $el.querySelector('[name=name]').value = ''; $el.querySelector('[name=description]').value = ''; setTimeout(() => $refs.itemNameInput.focus(), 150); }"
+                @item-added.window="refreshStats(); if (!addMore) { $el.reset(); refreshList(); showAddItem = false; } else { $el.querySelector('[name=name]').value = ''; $el.querySelector('[name=description]').value = ''; setTimeout(() => $refs.itemNameInput.focus(), 150); }"
                 class="space-y-4"
             >
                 <select name="section_id" x-ref="mobileSectionSelect" required
@@ -511,7 +540,7 @@
             </div>
 
             <!-- Tab: Account -->
-            <div x-show="settingsTab === 'account'" x-transition>
+            <div x-show="settingsTab === 'account'" x-cloak x-transition>
                 <!-- Language Selection -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-stone-600 mb-2" x-text="t('settings.language')"></label>
@@ -524,6 +553,17 @@
                         </template>
                     </select>
                 </div>
+
+                <!-- Logout -->
+                <form action="/logout" method="POST" class="mb-6">
+                    <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span x-text="t('nav.logout')"></span>
+                    </button>
+                </form>
 
                 <!-- Sponsor & Bug report -->
                 <div class="pt-4 border-t border-stone-100 space-y-2">
@@ -541,7 +581,41 @@
             </div>
 
             <!-- Tab: Shopping List -->
-            <div x-show="settingsTab === 'shopping_list'" x-transition>
+            <div x-show="settingsTab === 'shopping_list'" x-cloak x-transition>
+                <!-- History section mapping mode -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-stone-600 mb-3" x-text="t('settings.history_section_mode')"></label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors"
+                               :class="historySectionMode === 'use_first_section' && 'ring-2 ring-pink-400 bg-pink-50'">
+                            <input type="radio"
+                                   name="history_section_mode"
+                                   value="use_first_section"
+                                   x-model="historySectionMode"
+                                   @change="setHistorySectionMode('use_first_section')"
+                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 accent-pink-500">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-stone-700" x-text="t('settings.use_first_section')"></p>
+                                <p class="text-xs text-stone-400" x-text="t('settings.use_first_section_desc')"></p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors"
+                               :class="historySectionMode === 'auto_create_section' && 'ring-2 ring-pink-400 bg-pink-50'">
+                            <input type="radio"
+                                   name="history_section_mode"
+                                   value="auto_create_section"
+                                   x-model="historySectionMode"
+                                   @change="setHistorySectionMode('auto_create_section')"
+                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 accent-pink-500">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-stone-700" x-text="t('settings.auto_create_section')"></p>
+                                <p class="text-xs text-stone-400" x-text="t('settings.auto_create_section_desc')"></p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- History management button -->
                 <div class="mb-6">
                     <button

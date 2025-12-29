@@ -265,5 +265,6 @@ func GetItemVersion(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"id":         item.ID,
 		"updated_at": item.UpdatedAt,
+		"completed":  item.Completed,
 	})
 }

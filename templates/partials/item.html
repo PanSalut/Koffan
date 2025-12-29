@@ -9,7 +9,7 @@
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
         hx-on::before-request="this.querySelector('span').classList.add('checkbox-pulse')"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
         class="flex-shrink-0 w-11 h-11 flex items-center justify-center -m-3"
     >
         <span class="w-5 h-5 rounded-full border-2 border-stone-300 hover:border-pink-400 transition-all hover:scale-110"></span>
@@ -21,7 +21,7 @@
         hx-post="/items/{{.Item.ID}}/toggle"
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
     >
         <div class="flex items-center gap-2">
             {{if .Item.Uncertain}}
@@ -110,7 +110,7 @@
                     hx-post="/items/{{$.Item.ID}}/move"
                     hx-vals='{"section_id": "{{.ID}}"}'
                     hx-swap="none"
-                    hx-on::after-request="htmx.trigger('body', 'refreshList')"
+                    hx-on::after-request="window.dispatchEvent(new CustomEvent('refresh-list'))"
                     @click="open = false"
                     class="block w-full text-left px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
                 >

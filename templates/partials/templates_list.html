@@ -1,0 +1,19 @@
+{{define "partials/templates_list"}}
+{{if .Templates}}
+<div class="space-y-3">
+    {{range .Templates}}
+    {{template "partials/template_item" dict "Template" .}}
+    {{end}}
+</div>
+{{else}}
+<div class="text-center py-8">
+    <div class="w-12 h-12 mx-auto mb-3 bg-stone-100 rounded-xl flex items-center justify-center">
+        <svg class="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+        </svg>
+    </div>
+    <p class="text-sm text-stone-500">Brak szablonów</p>
+    <p class="text-xs text-stone-400 mt-1">Utwórz szablon, aby szybko dodawać produkty</p>
+</div>
+{{end}}
+{{end}}

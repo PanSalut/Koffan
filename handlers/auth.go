@@ -95,6 +95,7 @@ func Login(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).SendString("Session creation failed")
 	}
+	log.Printf("[AUTH] New session created: %s... (expires: %d)", sessionID[:8], expiresAt)
 
 	// Set cookie
 	c.Cookie(&fiber.Cookie{
@@ -104,6 +105,7 @@ func Login(c *fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   isSecureConnection(c),
 		SameSite: "Lax",
+		Path:     "/",
 	})
 
 	return c.Redirect("/")
@@ -122,6 +124,9 @@ func Logout(c *fiber.Ctx) error {
 		Value:    "",
 		Expires:  time.Now().Add(-time.Hour),
 		HTTPOnly: true,
+		Secure:   isSecureConnection(c),
+		SameSite: "Lax",
+		Path:     "/",
 	})
 
 	return c.Redirect("/login")
@@ -141,6 +146,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 
 	sessionID := c.Cookies(SessionCookieName)
 	if sessionID == "" {
+		log.Printf("[AUTH] No session cookie for %s %s (HX-Request: %s)", c.Method(), path, c.Get("HX-Request"))
 		if c.Get("HX-Request") == "true" {
 			c.Set("HX-Redirect", "/login")
 			return c.SendStatus(401)
@@ -149,16 +155,45 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	session, err := db.GetSession(sessionID)
-	if err != nil || session.ExpiresAt < time.Now().Unix() {
-		// Session expired or not found
-		if sessionID != "" {
+	if err != nil {
+		// Check if it's a "not found" error vs database error
+		if err.Error() == "sql: no rows in result set" {
+			log.Printf("[AUTH] Session not found in DB for %s %s (sessionID: %s...)", c.Method(), path, sessionID[:8])
+			// Only delete if session truly doesn't exist
 			db.DeleteSession(sessionID)
+		} else {
+			// Database error (e.g., locked) - don't delete session, just log and retry
+			log.Printf("[AUTH] Database error for %s %s: %v", c.Method(), path, err)
+			// Return 503 Service Unavailable for temporary DB issues
+			return c.Status(503).SendString("Database temporarily unavailable, please retry")
 		}
 		c.Cookie(&fiber.Cookie{
 			Name:     SessionCookieName,
 			Value:    "",
 			Expires:  time.Now().Add(-time.Hour),
 			HTTPOnly: true,
+			Secure:   isSecureConnection(c),
+			SameSite: "Lax",
+			Path:     "/",
+		})
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(401)
+		}
+		return c.Redirect("/login")
+	}
+
+	if session.ExpiresAt < time.Now().Unix() {
+		log.Printf("[AUTH] Session expired for %s %s (expired: %d, now: %d)", c.Method(), path, session.ExpiresAt, time.Now().Unix())
+		db.DeleteSession(sessionID)
+		c.Cookie(&fiber.Cookie{
+			Name:     SessionCookieName,
+			Value:    "",
+			Expires:  time.Now().Add(-time.Hour),
+			HTTPOnly: true,
+			Secure:   isSecureConnection(c),
+			SameSite: "Lax",
+			Path:     "/",
 		})
 		if c.Get("HX-Request") == "true" {
 			c.Set("HX-Redirect", "/login")

@@ -80,6 +80,7 @@ function shoppingList() {
         historyItems: [],
         historySearch: '',
         selectedHistoryIds: [],
+        historySectionMode: localStorage.getItem('history_section_mode') || 'use_first_section',
 
         // Stats (updated from server)
         stats: {
@@ -213,8 +214,13 @@ function shoppingList() {
                 this.offlineStorageReady = true;
                 console.log('[App] Offline storage initialized');
 
-                // Cache data on load if online
+                // Process any pending offline actions first (retry after reload)
                 if (this.isOnline) {
+                    const pendingCount = await window.offlineStorage.getQueueLength();
+                    if (pendingCount > 0) {
+                        console.log('[App] Found', pendingCount, 'pending offline actions, syncing...');
+                        await this.processOfflineQueue();
+                    }
                     this.cacheData();
                 }
             } catch (error) {
@@ -230,17 +236,21 @@ function shoppingList() {
                 console.log('[App] Back online');
                 this.isOnline = true;
 
-                // Sync offline actions, show toast, then reload page
-                await this.processOfflineQueue();
+                // Sync offline actions and refresh (no page reload)
+                const hadActions = await this.processOfflineQueue();
                 window.Toast.show(t('offline.back_online'), 'success', 2000);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+
+                // Only refresh if no queued actions (processOfflineQueue already refreshes)
+                if (!hadActions) {
+                    this.refreshList();
+                    this.refreshStats();
+                }
             });
 
             window.addEventListener('offline', () => {
                 console.log('[App] Gone offline');
                 this.isOnline = false;
+                this._onlineHandled = false; // Reset for next online event
             });
         },
 
@@ -289,7 +299,7 @@ function shoppingList() {
 
                 for (const action of actions) {
                     try {
-                        // For modifying actions - check server version first (Last Write Wins)
+                        // For all modifying actions - check server version (Last Write Wins)
                         if (action.type === 'toggle_item' || action.type === 'update_item' || action.type === 'edit_item') {
                             const itemId = this.extractItemId(action.url);
                             if (itemId) {
@@ -553,7 +563,12 @@ function shoppingList() {
                         overlay.classList.add('active');
                     }
 
-                    htmx.ajax('GET', '/', {
+                    // Use current URL if on a list page, otherwise use /
+                    const refreshUrl = window.location.pathname.startsWith('/lists/')
+                        ? window.location.pathname
+                        : '/';
+
+                    htmx.ajax('GET', refreshUrl, {
                         target: '#sections-list',
                         swap: 'innerHTML',
                         select: '#sections-list > *'
@@ -593,7 +608,10 @@ function shoppingList() {
         refreshSection(sectionId) {
             const section = document.getElementById(`section-${sectionId}`);
             if (section) {
-                htmx.ajax('GET', '/', {
+                const refreshUrl = window.location.pathname.startsWith('/lists/')
+                    ? window.location.pathname
+                    : '/';
+                htmx.ajax('GET', refreshUrl, {
                     target: `#section-${sectionId}`,
                     swap: 'outerHTML',
                     select: `#section-${sectionId}`
@@ -604,7 +622,10 @@ function shoppingList() {
         refreshItem(itemId) {
             const item = document.getElementById(`item-${itemId}`);
             if (item) {
-                htmx.ajax('GET', '/', {
+                const refreshUrl = window.location.pathname.startsWith('/lists/')
+                    ? window.location.pathname
+                    : '/';
+                htmx.ajax('GET', refreshUrl, {
                     target: `#item-${itemId}`,
                     swap: 'outerHTML',
                     select: `#item-${itemId}`
@@ -1032,7 +1053,7 @@ function shoppingList() {
             }, 150);
         },
 
-        selectSuggestion(suggestion, inputRef = null, selectRef = null) {
+        async selectSuggestion(suggestion, inputRef = null, selectRef = null) {
             // Fill the input with suggestion name
             this.itemNameInput = suggestion.name;
 
@@ -1050,20 +1071,102 @@ function shoppingList() {
                 }
             }
 
-            // Auto-select the last section used for this item
+            // Get the target select element
+            const targetSelect = selectRef ||
+                document.querySelector('#add-item-form select[name="section_id"]') ||
+                this.$refs.mobileSectionSelect;
+
+            if (!targetSelect) {
+                this.showSuggestions = false;
+                this.suggestions = [];
+                this.selectedSuggestionIndex = -1;
+                return;
+            }
+
+            // Auto-select section with smart mapping
             if (suggestion.last_section_id) {
-                if (selectRef) {
-                    selectRef.value = suggestion.last_section_id;
-                } else {
-                    const desktopSelect = document.querySelector('#add-item-form select[name="section_id"]');
-                    if (desktopSelect) {
-                        desktopSelect.value = suggestion.last_section_id;
-                    }
-                    const mobileSelect = this.$refs.mobileSectionSelect;
-                    if (mobileSelect) {
-                        mobileSelect.value = suggestion.last_section_id;
+                const options = Array.from(targetSelect.options);
+
+                // 1. Try exact ID match (same section)
+                const exactMatch = options.find(opt => opt.value == suggestion.last_section_id);
+                if (exactMatch) {
+                    targetSelect.value = suggestion.last_section_id;
+                    this.showSuggestions = false;
+                    this.suggestions = [];
+                    this.selectedSuggestionIndex = -1;
+                    return;
+                }
+
+                // 2. Try matching by section name (for cross-list suggestions)
+                if (suggestion.last_section_name) {
+                    const nameMatch = options.find(opt =>
+                        opt.textContent.toLowerCase().trim() === suggestion.last_section_name.toLowerCase().trim()
+                    );
+                    if (nameMatch) {
+                        targetSelect.value = nameMatch.value;
+                        this.showSuggestions = false;
+                        this.suggestions = [];
+                        this.selectedSuggestionIndex = -1;
+                        return;
                     }
                 }
+
+                // 3. Section not found - apply user preference
+                const mode = this.historySectionMode || 'use_first_section';
+
+                if (mode === 'auto_create_section' && suggestion.last_section_name && this.isOnline) {
+                    // Create new section with the same name (only when online)
+                    try {
+                        const createResponse = await fetch('/sections', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `name=${encodeURIComponent(suggestion.last_section_name)}`
+                        });
+
+                        if (createResponse.ok) {
+                            // Fetch updated sections list to get the new ID
+                            const listResponse = await fetch('/sections/list?format=json');
+                            if (listResponse.ok) {
+                                const sections = await listResponse.json();
+                                // Find the newly created section by name
+                                const newSection = sections.find(s =>
+                                    s.name.toLowerCase().trim() === suggestion.last_section_name.toLowerCase().trim()
+                                );
+
+                                if (newSection) {
+                                    // Update all section dropdowns on the page
+                                    document.querySelectorAll('select[name="section_id"]').forEach(select => {
+                                        // Check if option already exists
+                                        const exists = Array.from(select.options).some(opt => opt.value == newSection.id);
+                                        if (!exists) {
+                                            const option = document.createElement('option');
+                                            option.value = newSection.id;
+                                            option.textContent = newSection.name;
+                                            select.appendChild(option);
+                                        }
+                                    });
+
+                                    // Select the new section in target dropdown
+                                    targetSelect.value = newSection.id;
+
+                                    // Also update the main sections list if visible (trigger HTMX refresh)
+                                    const sectionsList = document.getElementById('sections-list');
+                                    if (sectionsList) {
+                                        htmx.trigger(sectionsList, 'refresh');
+                                    }
+                                }
+                            }
+
+                            this.showSuggestions = false;
+                            this.suggestions = [];
+                            this.selectedSuggestionIndex = -1;
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('[App] Failed to create section:', e);
+                    }
+                }
+                // else: use_first_section - keep default selection (first option)
             }
 
             this.showSuggestions = false;
@@ -1106,6 +1209,11 @@ function shoppingList() {
             setTimeout(() => {
                 this.showSuggestions = false;
             }, 200);
+        },
+
+        setHistorySectionMode(mode) {
+            this.historySectionMode = mode;
+            localStorage.setItem('history_section_mode', mode);
         },
 
         // Edit Item

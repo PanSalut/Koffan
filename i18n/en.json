@@ -10,7 +10,10 @@
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
-    "close": "Close"
+    "close": "Close",
+    "create": "Create",
+    "name": "Name",
+    "description": "Description"
   },
   "nav": {
     "settings": "Settings",
@@ -31,7 +34,9 @@
     "new_product": "New product",
     "select_section": "Select section...",
     "section": "Section...",
-    "add_more": "Add more"
+    "add_more": "Add more",
+    "no_items": "No products",
+    "add_first_item": "Add your first product"
   },
   "sections": {
     "title": "Sections",
@@ -60,7 +65,12 @@
     "tab_account": "Account",
     "tab_shopping_list": "Shopping list",
     "delete_completed": "Delete all bought items",
-    "delete_completed_description": "Removes all items marked as bought from the shopping list."
+    "delete_completed_description": "Removes all items marked as bought from the shopping list.",
+    "history_section_mode": "Section for history suggestions",
+    "use_first_section": "Use first section",
+    "use_first_section_desc": "If section doesn't exist, add to first available",
+    "auto_create_section": "Auto-create section",
+    "auto_create_section_desc": "If section doesn't exist, create a new one with the same name"
   },
   "login": {
     "title": "Login - Koffan",
@@ -97,7 +107,8 @@
     "can_toggle": "Check and uncheck items",
     "can_edit": "Edit products",
     "can_uncertain": "Mark as uncertain",
-    "back_online": "You're back online. Everything synced!"
+    "back_online": "You're back online. Everything synced!",
+    "queued": "Saved for sync"
   },
   "history": {
     "title": "Product history",
@@ -109,5 +120,40 @@
     "confirm_delete": "Delete \"{{name}}\" from history?",
     "confirm_delete_batch": "Delete {{count}} selected products from history?",
     "deleted": "Deleted {{count}} products"
+  },
+  "lists": {
+    "title": "Your lists",
+    "manage": "Manage lists",
+    "new_list": "Add new list...",
+    "no_lists": "No lists",
+    "add_first_list": "Add your first shopping list",
+    "switch": "Switch to",
+    "active": "Active",
+    "icon": "Icon",
+    "delete_confirm": "Delete list \"{{name}}\"? All items will be lost."
+  },
+  "templates": {
+    "title": "Templates",
+    "new_template": "New template",
+    "apply": "Apply",
+    "applied": "Template applied",
+    "confirm_apply": "Add items from template to active list?",
+    "create_from_list": "Create template from list",
+    "from_list_hint": "Template will be created from unpurchased items of the active list.",
+    "edit": "Edit template",
+    "items": "items",
+    "section": "Section",
+    "add_item": "Add item",
+    "empty": "Template is empty"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Koffan!",
+    "description": "Your personal shopping assistant. Create your first shopping list to get started.",
+    "list_name": "List name",
+    "list_placeholder": "e.g. Weekly groceries",
+    "create_list": "Create shopping list",
+    "feature_sections": "Sections",
+    "feature_templates": "Templates",
+    "feature_offline": "Offline"
   }
 }

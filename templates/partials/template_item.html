@@ -1,0 +1,173 @@
+{{define "partials/template_item"}}
+<div
+    id="template-{{.Template.ID}}"
+    class="bg-white rounded-xl border border-stone-200 p-4"
+    x-data="{ expanded: false, editing: false, editName: '{{.Template.Name}}', editDesc: '{{.Template.Description}}' }"
+>
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+        <!-- Expand/collapse -->
+        <button
+            @click="expanded = !expanded"
+            class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+        >
+            <svg class="w-4 h-4 transition-transform" :class="expanded && 'rotate-90'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+
+        <!-- Template info -->
+        <div class="flex-1 min-w-0">
+            <!-- View mode -->
+            <div x-show="!editing">
+                <p class="font-medium text-stone-800 truncate">{{.Template.Name}}</p>
+                {{if .Template.Description}}
+                <p class="text-xs text-stone-400 truncate">{{.Template.Description}}</p>
+                {{else}}
+                <p class="text-xs text-stone-400">{{len .Template.Items}} produktów</p>
+                {{end}}
+            </div>
+
+            <!-- Edit mode -->
+            <form
+                x-show="editing"
+                hx-put="/templates/{{.Template.ID}}"
+                hx-target="#template-{{.Template.ID}}"
+                hx-swap="outerHTML"
+                @submit="editing = false"
+                class="space-y-2"
+            >
+                <input
+                    type="text"
+                    name="name"
+                    x-model="editName"
+                    x-ref="editInput"
+                    @keydown.escape="editing = false"
+                    class="w-full border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                >
+                <input
+                    type="text"
+                    name="description"
+                    x-model="editDesc"
+                    placeholder="Opis (opcjonalnie)"
+                    class="w-full border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                >
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="p-1.5 text-pink-500 hover:text-pink-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </button>
+                    <button type="button" @click="editing = false" class="p-1.5 text-stone-400 hover:text-stone-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-1" x-show="!editing">
+            <!-- Apply template -->
+            <button
+                hx-post="/templates/{{.Template.ID}}/apply"
+                hx-swap="none"
+                class="px-3 py-1.5 bg-pink-400 hover:bg-pink-500 text-white text-sm rounded-lg transition-colors"
+            >
+                Zastosuj
+            </button>
+
+            <!-- Edit -->
+            <button
+                @click="editing = true; $nextTick(() => $refs.editInput.focus())"
+                class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+            </button>
+
+            <!-- Delete -->
+            <button
+                hx-delete="/templates/{{.Template.ID}}"
+                hx-target="#template-{{.Template.ID}}"
+                hx-swap="outerHTML"
+                hx-confirm="Usunąć szablon '{{.Template.Name}}'?"
+                class="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Items (expanded) -->
+    <div
+        x-show="expanded"
+        x-transition:enter="transition ease-out duration-150"
+        x-transition:enter-start="opacity-0 -translate-y-2"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        class="mt-4 pt-4 border-t border-stone-100"
+    >
+        {{if .Template.Items}}
+        <div class="space-y-1">
+            {{range .Template.Items}}
+            <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-stone-50">
+                <span class="text-xs text-stone-400 w-24 truncate">{{.SectionName}}</span>
+                <span class="text-sm text-stone-700 flex-1 truncate">{{.Name}}</span>
+                {{if .Description}}
+                <span class="text-xs text-stone-400 truncate max-w-32">{{.Description}}</span>
+                {{end}}
+                <button
+                    hx-delete="/templates/{{$.Template.ID}}/items/{{.ID}}"
+                    hx-target="closest div"
+                    hx-swap="outerHTML"
+                    class="p-1 text-stone-300 hover:text-rose-500 transition-colors"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="text-sm text-stone-400 text-center py-2">Szablon jest pusty</p>
+        {{end}}
+
+        <!-- Add item form -->
+        <form
+            hx-post="/templates/{{.Template.ID}}/items"
+            hx-target="#template-{{.Template.ID}}"
+            hx-swap="outerHTML"
+            hx-on::after-request="this.reset()"
+            class="flex items-center gap-2 mt-3 pt-3 border-t border-stone-100"
+        >
+            <input
+                type="text"
+                name="section_name"
+                placeholder="Sekcja"
+                required
+                class="w-24 border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            >
+            <input
+                type="text"
+                name="name"
+                placeholder="Nazwa produktu"
+                required
+                class="flex-1 border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            >
+            <button
+                type="submit"
+                class="p-1.5 text-pink-500 hover:text-pink-600 rounded-lg transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+{{end}}

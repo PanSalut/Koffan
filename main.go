@@ -131,8 +131,11 @@ func main() {
 	// WebSocket endpoint
 	app.Get("/ws", websocket.New(handlers.WebSocketHandler))
 
-	// Main page
-	app.Get("/", handlers.GetSections)
+	// Main page - shows all lists
+	app.Get("/", handlers.GetListsPage)
+
+	// Single list view - shows items
+	app.Get("/lists/:id", handlers.GetListView)
 
 	// Sections API
 	app.Get("/sections/list", handlers.GetSectionsListForModal)
@@ -141,6 +144,27 @@ func main() {
 	app.Delete("/sections/:id", handlers.DeleteSection)
 	app.Post("/sections/:id/move-up", handlers.MoveSectionUp)
 	app.Post("/sections/:id/move-down", handlers.MoveSectionDown)
+
+	// Lists API
+	app.Get("/lists", handlers.GetLists)
+	app.Post("/lists", handlers.CreateList)
+	app.Put("/lists/:id", handlers.UpdateList)
+	app.Delete("/lists/:id", handlers.DeleteList)
+	app.Post("/lists/:id/activate", handlers.SetActiveList)
+	app.Post("/lists/:id/move-up", handlers.MoveListUp)
+	app.Post("/lists/:id/move-down", handlers.MoveListDown)
+
+	// Templates API
+	app.Get("/templates", handlers.GetTemplates)
+	app.Get("/templates/:id", handlers.GetTemplate)
+	app.Post("/templates", handlers.CreateTemplate)
+	app.Put("/templates/:id", handlers.UpdateTemplate)
+	app.Delete("/templates/:id", handlers.DeleteTemplate)
+	app.Post("/templates/:id/items", handlers.AddTemplateItem)
+	app.Put("/templates/:id/items/:itemId", handlers.UpdateTemplateItem)
+	app.Delete("/templates/:id/items/:itemId", handlers.DeleteTemplateItem)
+	app.Post("/templates/:id/apply", handlers.ApplyTemplate)
+	app.Post("/templates/from-list", handlers.CreateTemplateFromList)
 
 	// Items API
 	app.Post("/items", handlers.CreateItem)

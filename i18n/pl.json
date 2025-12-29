@@ -10,7 +10,10 @@
     "save": "Zapisz",
     "delete": "Usuń",
     "edit": "Edytuj",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "create": "Utwórz",
+    "name": "Nazwa",
+    "description": "Opis"
   },
   "nav": {
     "settings": "Ustawienia",
@@ -31,7 +34,9 @@
     "new_product": "Nowy produkt",
     "select_section": "Wybierz sekcję...",
     "section": "Sekcja...",
-    "add_more": "Dodaj więcej"
+    "add_more": "Dodaj więcej",
+    "no_items": "Brak produktów",
+    "add_first_item": "Dodaj swój pierwszy produkt"
   },
   "sections": {
     "title": "Sekcje",
@@ -60,7 +65,12 @@
     "tab_account": "Konto",
     "tab_shopping_list": "Lista zakupów",
     "delete_completed": "Usuń wszystkie kupione",
-    "delete_completed_description": "Usuwa wszystkie przedmioty oznaczone jako kupione z listy zakupów."
+    "delete_completed_description": "Usuwa wszystkie przedmioty oznaczone jako kupione z listy zakupów.",
+    "history_section_mode": "Sekcja przy podpowiedzi z historii",
+    "use_first_section": "Użyj pierwszej sekcji",
+    "use_first_section_desc": "Jeśli sekcja nie istnieje, dodaj do pierwszej dostępnej",
+    "auto_create_section": "Automatycznie twórz sekcję",
+    "auto_create_section_desc": "Jeśli sekcja nie istnieje, stwórz nową o tej samej nazwie"
   },
   "login": {
     "title": "Logowanie - Koffan",
@@ -97,7 +107,8 @@
     "can_toggle": "Zaznaczanie i odznaczanie",
     "can_edit": "Edycja produktów",
     "can_uncertain": "Oznaczanie jako niepewne",
-    "back_online": "Wróciłeś online. Wszystko zsynchronizowane!"
+    "back_online": "Wróciłeś online. Wszystko zsynchronizowane!",
+    "queued": "Zapisano do synchronizacji"
   },
   "history": {
     "title": "Historia produktów",
@@ -109,5 +120,40 @@
     "confirm_delete": "Usunąć \"{{name}}\" z historii?",
     "confirm_delete_batch": "Usunąć {{count}} zaznaczonych produktów z historii?",
     "deleted": "Usunięto {{count}} produktów"
+  },
+  "lists": {
+    "title": "Twoje listy",
+    "manage": "Zarządzaj listami",
+    "new_list": "Dodaj nową listę...",
+    "no_lists": "Brak list",
+    "add_first_list": "Dodaj pierwszą listę zakupów",
+    "switch": "Przełącz na",
+    "active": "Aktywna",
+    "icon": "Ikona",
+    "delete_confirm": "Usunąć listę \"{{name}}\"? Wszystkie produkty zostaną utracone."
+  },
+  "templates": {
+    "title": "Szablony",
+    "new_template": "Nowy szablon",
+    "apply": "Zastosuj",
+    "applied": "Szablon zastosowany",
+    "confirm_apply": "Dodać produkty z szablonu do aktywnej listy?",
+    "create_from_list": "Utwórz szablon z listy",
+    "from_list_hint": "Szablon zostanie utworzony z niezakupionych produktów aktywnej listy.",
+    "edit": "Edytuj szablon",
+    "items": "produktów",
+    "section": "Sekcja",
+    "add_item": "Dodaj produkt",
+    "empty": "Szablon jest pusty"
+  },
+  "onboarding": {
+    "welcome": "Witaj w Koffan!",
+    "description": "Twój osobisty asystent zakupów. Stwórz pierwszą listę zakupów, aby rozpocząć.",
+    "list_name": "Nazwa listy",
+    "list_placeholder": "np. Zakupy tygodniowe",
+    "create_list": "Stwórz listę zakupów",
+    "feature_sections": "Sekcje",
+    "feature_templates": "Szablony",
+    "feature_offline": "Offline"
   }
 }

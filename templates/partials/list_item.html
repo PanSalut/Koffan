@@ -1,0 +1,112 @@
+{{define "partials/list_item"}}
+<div
+    id="list-{{.List.ID}}"
+    class="bg-white rounded-xl border border-stone-200 p-4 flex items-center gap-3 transition-colors {{if .List.IsActive}}border-pink-200 bg-pink-50/30{{end}}"
+    x-data="{ editing: false, editName: '{{.List.Name}}' }"
+>
+    <!-- Active indicator / Activate button -->
+    <button
+        hx-post="/lists/{{.List.ID}}/activate"
+        hx-target="#lists-container"
+        hx-swap="innerHTML"
+        class="flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors {{if .List.IsActive}}bg-pink-400 border-pink-400{{else}}border-stone-300 hover:border-pink-300{{end}}"
+        {{if .List.IsActive}}disabled{{end}}
+    >
+        {{if .List.IsActive}}
+        <svg class="w-full h-full text-white p-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+        </svg>
+        {{end}}
+    </button>
+
+    <!-- List info -->
+    <div class="flex-1 min-w-0">
+        <!-- View mode -->
+        <div x-show="!editing">
+            <p class="font-medium text-stone-800 truncate {{if .List.IsActive}}text-pink-700{{end}}">{{.List.Name}}</p>
+            <p class="text-xs text-stone-400">{{.List.Stats.CompletedItems}}/{{.List.Stats.TotalItems}} produktów</p>
+        </div>
+
+        <!-- Edit mode -->
+        <form
+            x-show="editing"
+            hx-put="/lists/{{.List.ID}}"
+            hx-target="#list-{{.List.ID}}"
+            hx-swap="outerHTML"
+            @submit="editing = false"
+            class="flex items-center gap-2"
+        >
+            <input
+                type="text"
+                name="name"
+                x-model="editName"
+                x-ref="editInput"
+                @keydown.escape="editing = false"
+                class="flex-1 border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            >
+            <button type="submit" class="p-1.5 text-pink-500 hover:text-pink-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </button>
+            <button type="button" @click="editing = false" class="p-1.5 text-stone-400 hover:text-stone-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-1" x-show="!editing">
+        <!-- Edit -->
+        <button
+            @click="editing = true; $nextTick(() => $refs.editInput.focus())"
+            class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+        </button>
+
+        <!-- Move up -->
+        <button
+            hx-post="/lists/{{.List.ID}}/move-up"
+            hx-target="#lists-container"
+            hx-swap="innerHTML"
+            class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+            </svg>
+        </button>
+
+        <!-- Move down -->
+        <button
+            hx-post="/lists/{{.List.ID}}/move-down"
+            hx-target="#lists-container"
+            hx-swap="innerHTML"
+            class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+
+        <!-- Delete (only if not active and not the only list) -->
+        {{if not .List.IsActive}}
+        <button
+            hx-delete="/lists/{{.List.ID}}"
+            hx-target="#list-{{.List.ID}}"
+            hx-swap="outerHTML"
+            hx-confirm="Usunąć listę '{{.List.Name}}'? Wszystkie produkty zostaną utracone."
+            class="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+        </button>
+        {{end}}
+    </div>
+</div>
+{{end}}

@@ -10,7 +10,10 @@
     "save": "Speichern",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "close": "Schließen"
+    "close": "Schließen",
+    "create": "Erstellen",
+    "name": "Name",
+    "description": "Beschreibung"
   },
   "nav": {
     "settings": "Einstellungen",
@@ -31,7 +34,9 @@
     "new_product": "Neues Produkt",
     "select_section": "Abteilung wählen...",
     "section": "Abteilung...",
-    "add_more": "Mehr hinzufügen"
+    "add_more": "Mehr hinzufügen",
+    "no_items": "Keine Produkte",
+    "add_first_item": "Füge dein erstes Produkt hinzu"
   },
   "sections": {
     "title": "Abteilungen",
@@ -60,7 +65,12 @@
     "tab_account": "Konto",
     "tab_shopping_list": "Einkaufsliste",
     "delete_completed": "Alle gekauften löschen",
-    "delete_completed_description": "Entfernt alle als gekauft markierten Artikel aus der Einkaufsliste."
+    "delete_completed_description": "Entfernt alle als gekauft markierten Artikel aus der Einkaufsliste.",
+    "history_section_mode": "Abschnitt für Verlaufsvorschläge",
+    "use_first_section": "Ersten Abschnitt verwenden",
+    "use_first_section_desc": "Wenn der Abschnitt nicht existiert, zum ersten verfügbaren hinzufügen",
+    "auto_create_section": "Abschnitt automatisch erstellen",
+    "auto_create_section_desc": "Wenn der Abschnitt nicht existiert, einen neuen mit gleichem Namen erstellen"
   },
   "login": {
     "title": "Anmeldung - Koffan",
@@ -96,7 +106,9 @@
     "can_add": "Produkte hinzufügen",
     "can_toggle": "Abhaken und Häkchen entfernen",
     "can_edit": "Produkte bearbeiten",
-    "can_uncertain": "Als unsicher markieren"
+    "can_uncertain": "Als unsicher markieren",
+    "back_online": "Du bist wieder online. Alles synchronisiert!",
+    "queued": "Zur Synchronisierung gespeichert"
   },
   "history": {
     "title": "Produktverlauf",
@@ -108,5 +120,40 @@
     "confirm_delete": "\"{{name}}\" aus dem Verlauf löschen?",
     "confirm_delete_batch": "{{count}} ausgewählte Produkte aus dem Verlauf löschen?",
     "deleted": "{{count}} Produkte gelöscht"
+  },
+  "lists": {
+    "title": "Deine Listen",
+    "manage": "Listen verwalten",
+    "new_list": "Neue Liste hinzufügen...",
+    "no_lists": "Keine Listen",
+    "add_first_list": "Erstelle deine erste Einkaufsliste",
+    "switch": "Wechseln zu",
+    "active": "Aktiv",
+    "icon": "Symbol",
+    "delete_confirm": "Liste \"{{name}}\" löschen? Alle Artikel gehen verloren."
+  },
+  "templates": {
+    "title": "Vorlagen",
+    "new_template": "Neue Vorlage",
+    "apply": "Anwenden",
+    "applied": "Vorlage angewendet",
+    "confirm_apply": "Artikel aus der Vorlage zur aktiven Liste hinzufügen?",
+    "create_from_list": "Vorlage aus Liste erstellen",
+    "from_list_hint": "Die Vorlage wird aus den nicht gekauften Artikeln der aktiven Liste erstellt.",
+    "edit": "Vorlage bearbeiten",
+    "items": "Artikel",
+    "section": "Abteilung",
+    "add_item": "Artikel hinzufügen",
+    "empty": "Vorlage ist leer"
+  },
+  "onboarding": {
+    "welcome": "Willkommen bei Koffan!",
+    "description": "Dein persönlicher Einkaufsassistent. Erstelle deine erste Einkaufsliste, um loszulegen.",
+    "list_name": "Listenname",
+    "list_placeholder": "z.B. Wocheneinkauf",
+    "create_list": "Einkaufsliste erstellen",
+    "feature_sections": "Abteilungen",
+    "feature_templates": "Vorlagen",
+    "feature_offline": "Offline"
   }
 }

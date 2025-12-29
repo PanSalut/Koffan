@@ -10,7 +10,10 @@
     "save": "Enregistrer",
     "delete": "Supprimer",
     "edit": "Modifier",
-    "close": "Fermer"
+    "close": "Fermer",
+    "create": "Créer",
+    "name": "Nom",
+    "description": "Description"
   },
   "nav": {
     "settings": "Paramètres",
@@ -31,7 +34,9 @@
     "new_product": "Nouveau produit",
     "select_section": "Choisir un rayon...",
     "section": "Rayon...",
-    "add_more": "Ajouter plus"
+    "add_more": "Ajouter plus",
+    "no_items": "Aucun produit",
+    "add_first_item": "Ajoutez votre premier produit"
   },
   "sections": {
     "title": "Rayons",
@@ -60,7 +65,12 @@
     "tab_account": "Compte",
     "tab_shopping_list": "Liste de courses",
     "delete_completed": "Supprimer tous les achetés",
-    "delete_completed_description": "Supprime tous les articles marqués comme achetés de la liste."
+    "delete_completed_description": "Supprime tous les articles marqués comme achetés de la liste.",
+    "history_section_mode": "Section pour les suggestions d'historique",
+    "use_first_section": "Utiliser la première section",
+    "use_first_section_desc": "Si la section n'existe pas, ajouter à la première disponible",
+    "auto_create_section": "Créer la section automatiquement",
+    "auto_create_section_desc": "Si la section n'existe pas, en créer une nouvelle avec le même nom"
   },
   "login": {
     "title": "Connexion - Koffan",
@@ -96,7 +106,9 @@
     "can_add": "Ajouter des produits",
     "can_toggle": "Cocher et décocher",
     "can_edit": "Modifier des produits",
-    "can_uncertain": "Marquer comme incertain"
+    "can_uncertain": "Marquer comme incertain",
+    "back_online": "Tu es de retour en ligne. Tout est synchronisé !",
+    "queued": "Enregistré pour synchronisation"
   },
   "history": {
     "title": "Historique des produits",
@@ -108,5 +120,40 @@
     "confirm_delete": "Supprimer \"{{name}}\" de l'historique ?",
     "confirm_delete_batch": "Supprimer {{count}} produits sélectionnés de l'historique ?",
     "deleted": "{{count}} produits supprimés"
+  },
+  "lists": {
+    "title": "Tes listes",
+    "manage": "Gérer les listes",
+    "new_list": "Ajouter une nouvelle liste...",
+    "no_lists": "Aucune liste",
+    "add_first_list": "Ajoute ta première liste de courses",
+    "switch": "Passer à",
+    "active": "Active",
+    "icon": "Icône",
+    "delete_confirm": "Supprimer la liste \"{{name}}\" ? Tous les articles seront perdus."
+  },
+  "templates": {
+    "title": "Modèles",
+    "new_template": "Nouveau modèle",
+    "apply": "Appliquer",
+    "applied": "Modèle appliqué",
+    "confirm_apply": "Ajouter les articles du modèle à la liste active ?",
+    "create_from_list": "Créer un modèle à partir de la liste",
+    "from_list_hint": "Le modèle sera créé à partir des articles non achetés de la liste active.",
+    "edit": "Modifier le modèle",
+    "items": "articles",
+    "section": "Rayon",
+    "add_item": "Ajouter un article",
+    "empty": "Le modèle est vide"
+  },
+  "onboarding": {
+    "welcome": "Bienvenue sur Koffan !",
+    "description": "Ton assistant personnel de courses. Crée ta première liste de courses pour commencer.",
+    "list_name": "Nom de la liste",
+    "list_placeholder": "ex. Courses hebdomadaires",
+    "create_list": "Créer une liste de courses",
+    "feature_sections": "Rayons",
+    "feature_templates": "Modèles",
+    "feature_offline": "Hors ligne"
   }
 }

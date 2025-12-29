@@ -1,0 +1,5 @@
+{{define "partials/lists_container"}}
+{{range .Lists}}
+{{template "partials/list_item" dict "List" . "ActiveList" $.ActiveList}}
+{{end}}
+{{end}}

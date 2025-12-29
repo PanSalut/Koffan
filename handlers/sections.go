@@ -17,9 +17,15 @@ func GetSections(c *fiber.Ctx) error {
 
 	stats := db.GetStats()
 
+	// Get lists for dropdown
+	lists, _ := db.GetAllLists()
+	activeList, _ := db.GetActiveList()
+
 	return c.Render("list", fiber.Map{
 		"Sections":     sections,
 		"Stats":        stats,
+		"Lists":        lists,
+		"ActiveList":   activeList,
 		"Translations": i18n.GetAllLocales(),
 		"Locales":      i18n.AvailableLocales(),
 		"DefaultLang":  i18n.GetDefaultLang(),
@@ -31,6 +37,9 @@ func CreateSection(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
 		return c.Status(400).SendString("Name is required")
+	}
+	if len(name) > MaxSectionNameLength {
+		return c.Status(400).SendString("Name too long (max 100 characters)")
 	}
 
 	section, err := db.CreateSection(name)
@@ -58,6 +67,9 @@ func UpdateSection(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
 		return c.Status(400).SendString("Name is required")
+	}
+	if len(name) > MaxSectionNameLength {
+		return c.Status(400).SendString("Name too long (max 100 characters)")
 	}
 
 	section, err := db.UpdateSection(id, name)

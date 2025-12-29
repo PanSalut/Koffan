@@ -8,7 +8,7 @@
         hx-post="/items/{{.Item.ID}}/toggle"
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
         class="flex-shrink-0 w-11 h-11 flex items-center justify-center -m-3"
     >
         <span class="w-5 h-5 rounded-full bg-pink-400 flex items-center justify-center">
@@ -24,7 +24,7 @@
         hx-post="/items/{{.Item.ID}}/toggle"
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); htmx.trigger('body', 'refreshList')"
+        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
     >
         <p class="text-sm text-stone-400 line-through truncate">{{.Item.Name}}</p>
         {{if .Item.Description}}
