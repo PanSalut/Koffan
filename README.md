@@ -44,6 +44,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 ## Features
 
 - **Ultra-lightweight** - ~16 MB on disk, ~2.5 MB RAM
+- **Multiple lists** - Create separate lists for different stores or purposes, with custom icons
 - **PWA** - Install on your phone like a native app
 - **Offline mode** - Add, edit, check/uncheck products without internet (auto-sync when back online)
 - **Auto-completion** - Fuzzy search suggestions from your history, remembers sections
