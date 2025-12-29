@@ -53,7 +53,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - Mark products as "uncertain" (can't find it in the store)
 - Real-time synchronization (WebSocket)
 - Responsive interface (mobile-first)
-- Multi-language support (PL, EN, DE, ES, FR, PT)
+- Multi-language support (PL, EN, DE, ES, FR, PT, UK)
 - Simple login system
 - Rate limiting protection against brute-force attacks
 
@@ -125,7 +125,7 @@ docker-compose up -d
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
 | `PORT` | `80` (Docker) / `3000` (local) | Server port |
 | `DB_PATH` | `./shopping.db` | Database file path |
-| `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt) |
+| `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt, uk) |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
