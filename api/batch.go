@@ -96,7 +96,8 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 	defer tx.Rollback()
 
 	// Create list
-	list, err := db.CreateListTx(tx, req.List.Name, req.List.Icon)
+	icon := NormalizeIcon(req.List.Icon)
+	list, err := db.CreateListTx(tx, req.List.Name, icon)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "create_failed",

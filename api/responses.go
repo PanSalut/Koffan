@@ -105,3 +105,57 @@ type UpdateItemRequest struct {
 type MoveItemRequest struct {
 	SectionID int64 `json:"section_id"`
 }
+
+// iconAliases maps string aliases to emoji icons
+var iconAliases = map[string]string{
+	"cart":      "🛒",
+	"shopping":  "🛒",
+	"home":      "🏠",
+	"house":     "🏠",
+	"gift":      "🎁",
+	"present":   "🎁",
+	"christmas": "🎄",
+	"xmas":      "🎄",
+	"birthday":  "🎂",
+	"cake":      "🎂",
+	"food":      "🍕",
+	"pizza":     "🍕",
+	"salad":     "🥗",
+	"healthy":   "🥗",
+	"medicine":  "💊",
+	"health":    "💊",
+	"pills":     "💊",
+	"pet":       "🐕",
+	"pets":      "🐕",
+	"dog":       "🐕",
+	"cleaning":  "🧹",
+	"clean":     "🧹",
+	"package":   "📦",
+	"packages":  "📦",
+	"box":       "📦",
+	"travel":    "✈️",
+	"trip":      "✈️",
+	"flight":    "✈️",
+	"fitness":   "🏋️",
+	"gym":       "🏋️",
+	"workout":   "🏋️",
+	"books":     "📚",
+	"book":      "📚",
+	"reading":   "📚",
+	"tools":     "🛠️",
+	"tool":      "🛠️",
+	"work":      "💼",
+	"office":    "💼",
+	"business":  "💼",
+}
+
+// NormalizeIcon converts string aliases to emoji, or returns the original if already emoji
+func NormalizeIcon(icon string) string {
+	if icon == "" {
+		return ""
+	}
+	if emoji, ok := iconAliases[icon]; ok {
+		return emoji
+	}
+	return icon
+}

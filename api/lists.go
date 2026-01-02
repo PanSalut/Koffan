@@ -83,7 +83,8 @@ func CreateList(c *fiber.Ctx) error {
 		})
 	}
 
-	list, err := db.CreateList(req.Name, req.Icon)
+	icon := NormalizeIcon(req.Icon)
+	list, err := db.CreateList(req.Name, icon)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "create_failed",
@@ -135,6 +136,8 @@ func UpdateList(c *fiber.Ctx) error {
 	icon := req.Icon
 	if icon == "" {
 		icon = existing.Icon
+	} else {
+		icon = NormalizeIcon(icon)
 	}
 
 	if len(name) > MaxListNameLength {
