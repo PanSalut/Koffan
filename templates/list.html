@@ -162,33 +162,33 @@
             {{range .Sections}}
             {{template "partials/section" dict "Section" . "Sections" $.Sections}}
             {{end}}
-        </div>
 
-        <!-- Empty State - sections exist but no products -->
-        {{if and .Sections (eq .Stats.TotalItems 0)}}
-        <div class="text-center py-20">
-            <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
-                <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                </svg>
+            <!-- Empty State - sections exist but no products -->
+            {{if and .Sections (eq .Stats.TotalItems 0)}}
+            <div class="text-center py-20">
+                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                </div>
+                <p class="text-stone-600 font-medium" x-text="t('items.no_items')"></p>
+                <p class="text-sm text-stone-400 mt-1" x-text="t('items.add_first_item')"></p>
             </div>
-            <p class="text-stone-600 font-medium" x-text="t('items.no_items')"></p>
-            <p class="text-sm text-stone-400 mt-1" x-text="t('items.add_first_item')"></p>
-        </div>
-        {{end}}
+            {{end}}
 
-        <!-- Empty State - no sections -->
-        {{if not .Sections}}
-        <div class="text-center py-20">
-            <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
-                <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
+            <!-- Empty State - no sections -->
+            {{if not .Sections}}
+            <div class="text-center py-20">
+                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <p class="text-stone-600 font-medium" x-text="t('sections.no_sections')"></p>
+                <p class="text-sm text-stone-400 mt-1" x-text="t('sections.add_first_section')"></p>
             </div>
-            <p class="text-stone-600 font-medium" x-text="t('sections.no_sections')"></p>
-            <p class="text-sm text-stone-400 mt-1" x-text="t('sections.add_first_section')"></p>
+            {{end}}
         </div>
-        {{end}}
     </div>
 
     <!-- Mobile Bottom Navigation Bar -->
