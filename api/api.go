@@ -10,6 +10,13 @@ import (
 func Register(app *fiber.App) {
 	if !IsAPIEnabled() {
 		log.Println("REST API is disabled (API_TOKEN not set)")
+		// Register catch-all handler that returns 503 for all API requests
+		app.All("/api/v1/*", func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(ErrorResponse{
+				Error:   "api_disabled",
+				Message: "API is not enabled on this server",
+			})
+		})
 		return
 	}
 
