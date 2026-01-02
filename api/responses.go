@@ -1,6 +1,9 @@
 package api
 
-import "shopping-list/db"
+import (
+	"shopping-list/db"
+	"unicode"
+)
 
 // ErrorResponse represents an API error
 type ErrorResponse struct {
@@ -149,13 +152,53 @@ var iconAliases = map[string]string{
 	"business":  "💼",
 }
 
-// NormalizeIcon converts string aliases to emoji, or returns the original if already emoji
+// DefaultIcon is the fallback icon when invalid input is provided
+const DefaultIcon = "🛒"
+
+// isEmoji checks if a string starts with an emoji character
+func isEmoji(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		// Check for common emoji ranges
+		if r >= 0x1F300 && r <= 0x1F9FF { // Miscellaneous Symbols and Pictographs, Emoticons, etc.
+			return true
+		}
+		if r >= 0x2600 && r <= 0x26FF { // Miscellaneous Symbols
+			return true
+		}
+		if r >= 0x2700 && r <= 0x27BF { // Dingbats
+			return true
+		}
+		if r >= 0x1F600 && r <= 0x1F64F { // Emoticons
+			return true
+		}
+		if r >= 0x1F680 && r <= 0x1F6FF { // Transport and Map Symbols
+			return true
+		}
+		// If first rune is a letter or digit, it's not an emoji
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return false
+}
+
+// NormalizeIcon converts string aliases to emoji, validates emoji input,
+// or returns default icon for invalid input
 func NormalizeIcon(icon string) string {
 	if icon == "" {
 		return ""
 	}
+	// Check if it's a known alias
 	if emoji, ok := iconAliases[icon]; ok {
 		return emoji
 	}
-	return icon
+	// Check if it's already a valid emoji
+	if isEmoji(icon) {
+		return icon
+	}
+	// Invalid input - return default icon
+	return DefaultIcon
 }
