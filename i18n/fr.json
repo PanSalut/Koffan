@@ -36,7 +36,8 @@
     "section": "Rayon...",
     "add_more": "Ajouter plus",
     "no_items": "Aucun produit",
-    "add_first_item": "Ajoutez votre premier produit"
+    "add_first_item": "Ajoutez votre premier produit",
+    "quick_add": "Ajout rapide au rayon"
   },
   "sections": {
     "title": "Rayons",

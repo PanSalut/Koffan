@@ -36,7 +36,8 @@
     "section": "Sección...",
     "add_more": "Añadir más",
     "no_items": "Sin productos",
-    "add_first_item": "Añade tu primer producto"
+    "add_first_item": "Añade tu primer producto",
+    "quick_add": "Agregar rápido a la sección"
   },
   "sections": {
     "title": "Secciones",

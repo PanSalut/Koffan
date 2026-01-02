@@ -1518,6 +1518,37 @@ function shoppingList() {
                     method: 'POST'
                 });
             }
+        },
+
+        // Quick add to section - sets section and focuses input
+        quickAddToSection(sectionId) {
+            const isMobile = window.innerWidth < 768;
+
+            if (isMobile) {
+                this.showAddItem = true;
+                this.$nextTick(() => {
+                    const mobileSelect = this.$refs.mobileSectionSelect;
+                    if (mobileSelect) {
+                        mobileSelect.value = sectionId;
+                    }
+                    setTimeout(() => {
+                        const nameInput = this.$refs.itemNameInput;
+                        if (nameInput) {
+                            nameInput.focus();
+                        }
+                    }, 350);
+                });
+            } else {
+                const desktopSelect = this.$refs.desktopSectionSelect;
+                if (desktopSelect) {
+                    desktopSelect.value = sectionId;
+                }
+                const desktopInput = this.$refs.desktopNameInput;
+                if (desktopInput) {
+                    desktopInput.focus();
+                    desktopInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
         }
     };
 }

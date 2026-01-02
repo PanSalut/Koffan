@@ -36,7 +36,8 @@
     "section": "Abteilung...",
     "add_more": "Mehr hinzufügen",
     "no_items": "Keine Produkte",
-    "add_first_item": "Füge dein erstes Produkt hinzu"
+    "add_first_item": "Füge dein erstes Produkt hinzu",
+    "quick_add": "Schnell zur Abteilung hinzufügen"
   },
   "sections": {
     "title": "Abteilungen",

@@ -16,9 +16,26 @@
             <h3 class="font-medium text-stone-800">{{.Section.Name}}</h3>
             <span class="text-xs text-stone-400 section-counter">{{$completedItems}}/{{$totalItems}}</span>
         </div>
-        {{if eq $percentage 100}}
-        <span class="text-xs font-medium text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full" x-text="t('list.completed')"></span>
-        {{end}}
+        <div class="flex items-center gap-2">
+            {{if eq $percentage 100}}
+            <!-- Completed checkmark icon -->
+            <span class="w-5 h-5 bg-pink-100 rounded-full flex items-center justify-center" :title="t('list.completed')">
+                <svg class="w-3 h-3 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </span>
+            {{end}}
+            <!-- Quick add button -->
+            <button
+                @click="quickAddToSection({{.Section.ID}})"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 hover:text-pink-500 hover:bg-pink-50 rounded-full transition-colors"
+                :title="t('items.quick_add')"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <!-- Active Items Container -->
