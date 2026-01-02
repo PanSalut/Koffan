@@ -165,20 +165,6 @@ func UpdateList(id int64, name, icon string) (*List, error) {
 
 // DeleteList deletes a list and all its sections/items
 func DeleteList(id int64) error {
-	// Check if it's the only list
-	var count int
-	DB.QueryRow("SELECT COUNT(*) FROM lists").Scan(&count)
-	if count <= 1 {
-		return fmt.Errorf("cannot delete the only list")
-	}
-
-	// Check if it's the active list
-	var isActive bool
-	DB.QueryRow("SELECT is_active FROM lists WHERE id = ?", id).Scan(&isActive)
-	if isActive {
-		return fmt.Errorf("cannot delete the active list")
-	}
-
 	_, err := DB.Exec(`DELETE FROM lists WHERE id = ?`, id)
 	return err
 }
