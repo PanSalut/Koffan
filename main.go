@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"shopping-list/api"
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
@@ -115,6 +116,9 @@ func main() {
 
 	// i18n API (before auth middleware - needed for login page)
 	app.Get("/locales", handlers.GetLocales)
+
+	// REST API (before auth middleware - uses token auth)
+	api.Register(app)
 
 	// Auth middleware for all other routes
 	app.Use(handlers.AuthMiddleware)

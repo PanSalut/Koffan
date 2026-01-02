@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -291,7 +292,7 @@ func GetAllSections() ([]Section, error) {
 // GetSectionsByList returns all sections for a specific list
 func GetSectionsByList(listID int64) ([]Section, error) {
 	rows, err := DB.Query(`
-		SELECT id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
 		FROM sections
 		WHERE list_id = ?
 		ORDER BY sort_order ASC
@@ -304,7 +305,7 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 	var sections []Section
 	for rows.Next() {
 		var s Section
-		err := rows.Scan(&s.ID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +321,7 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 // getAllSectionsGlobal returns all sections (fallback, used during migration)
 func getAllSectionsGlobal() ([]Section, error) {
 	rows, err := DB.Query(`
-		SELECT id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
 		FROM sections
 		ORDER BY sort_order ASC
 	`)
@@ -332,7 +333,7 @@ func getAllSectionsGlobal() ([]Section, error) {
 	var sections []Section
 	for rows.Next() {
 		var s Section
-		err := rows.Scan(&s.ID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -348,9 +349,9 @@ func getAllSectionsGlobal() ([]Section, error) {
 func GetSectionByID(id int64) (*Section, error) {
 	var s Section
 	err := DB.QueryRow(`
-		SELECT id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
 		FROM sections WHERE id = ?
-	`, id).Scan(&s.ID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -1295,4 +1296,105 @@ func CreateTemplateFromList(listID int64, templateName, templateDescription stri
 	}
 
 	return GetTemplateByID(templateID)
+}
+
+// ==================== TRANSACTION HELPERS (for batch API) ====================
+
+// CreateListTx creates a list within a transaction
+func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
+	var maxOrder int
+	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM lists").Scan(&maxOrder)
+
+	if icon == "" {
+		icon = "🛒"
+	}
+
+	result, err := tx.Exec(`
+		INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, FALSE)
+	`, name, icon, maxOrder+1)
+	if err != nil {
+		return nil, err
+	}
+
+	id, _ := result.LastInsertId()
+
+	var l List
+	err = tx.QueryRow(`
+		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
+		FROM lists WHERE id = ?
+	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &l, nil
+}
+
+// CreateSectionForListTx creates a section within a transaction
+func CreateSectionForListTx(tx *sql.Tx, listID int64, name string, sortOrder int) (*Section, error) {
+	result, err := tx.Exec(`
+		INSERT INTO sections (name, sort_order, list_id) VALUES (?, ?, ?)
+	`, name, sortOrder, listID)
+	if err != nil {
+		return nil, err
+	}
+
+	id, _ := result.LastInsertId()
+
+	var s Section
+	err = tx.QueryRow(`
+		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		FROM sections WHERE id = ?
+	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	s.Items = []Item{}
+	return &s, nil
+}
+
+// CreateItemTx creates an item within a transaction
+func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, sortOrder int) (*Item, error) {
+	result, err := tx.Exec(`
+		INSERT INTO items (section_id, name, description, sort_order) VALUES (?, ?, ?, ?)
+	`, sectionID, name, description, sortOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	id, _ := result.LastInsertId()
+
+	var i Item
+	err = tx.QueryRow(`
+		SELECT id, section_id, name, description, completed, uncertain, sort_order, created_at, COALESCE(updated_at, 0)
+		FROM items WHERE id = ?
+	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &i, nil
+}
+
+// SaveItemHistoryTx saves item name to history within a transaction
+func SaveItemHistoryTx(tx *sql.Tx, name string, sectionID int64) {
+	tx.Exec(`
+		INSERT INTO item_history (name, last_section_id, usage_count)
+		VALUES (?, ?, 1)
+		ON CONFLICT(name) DO UPDATE SET
+			usage_count = usage_count + 1,
+			last_section_id = excluded.last_section_id
+	`, name, sectionID)
+}
+
+// GetMaxSectionOrderTx gets max sort_order for sections in a list within a transaction
+func GetMaxSectionOrderTx(tx *sql.Tx, listID int64) int {
+	var maxOrder int
+	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM sections WHERE list_id = ?", listID).Scan(&maxOrder)
+	return maxOrder
+}
+
+// GetMaxItemOrderTx gets max sort_order for items in a section within a transaction
+func GetMaxItemOrderTx(tx *sql.Tx, sectionID int64) int {
+	var maxOrder int
+	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM items WHERE section_id = ?", sectionID).Scan(&maxOrder)
+	return maxOrder
 }
