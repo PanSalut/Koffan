@@ -56,6 +56,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - Multi-language support (PL, EN, DE, ES, FR, PT, UK)
 - Simple login system
 - Rate limiting protection against brute-force attacks
+- **REST API** - Programmatic access for integrations and migrations ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API))
 
 ## Tech Stack
 
@@ -129,6 +130,7 @@ docker-compose up -d
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
+| `API_TOKEN` | *(disabled)* | Enable REST API with this token ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
 
 ## Deploy to Your Server
 
