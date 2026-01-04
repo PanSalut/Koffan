@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "code": "no",
+    "name": "Norsk",
+    "flag": "NO"
+  },
+  "common": {
+    "add": "Legg til",
+    "cancel": "Avbryt",
+    "save": "Lagre",
+    "delete": "Slett",
+    "edit": "Rediger",
+    "close": "Lukk",
+    "create": "Opprett",
+    "name": "Navn",
+    "description": "Beskrivelse"
+  },
+  "nav": {
+    "settings": "Innstillinger",
+    "logout": "Logg ut"
+  },
+  "list": {
+    "title": "Koffan handleliste",
+    "empty_list": "tom liste",
+    "shopping_list": "Handleliste",
+    "completed": "ferdig",
+    "bought": "Kjøpt"
+  },
+  "items": {
+    "what_to_buy": "Hva skal kjøpes?",
+    "note": "Notat...",
+    "note_optional": "Notat (valgfritt)...",
+    "name": "Navn...",
+    "new_product": "Nytt produkt",
+    "select_section": "Velg seksjon...",
+    "section": "Seksjon...",
+    "add_more": "Legg til flere",
+    "no_items": "Ingen produkter",
+    "add_first_item": "Legg til ditt første produkt",
+    "quick_add": "Legg til i seksjon"
+  },
+  "sections": {
+    "title": "Seksjoner",
+    "new_section": "Ny seksjon...",
+    "section_list": "Seksjonsliste",
+    "manage": "Administrer seksjoner",
+    "select": "Velg",
+    "no_sections": "Ingen seksjoner",
+    "add_first_section": "Legg til din første seksjon for å komme i gang"
+  },
+  "actions": {
+    "move_up": "Flytt opp",
+    "move_down": "Flytt ned",
+    "move": "Flytt",
+    "uncertain": "Usikker",
+    "certain": "Sikker",
+    "remove_mark": "Fjern markering",
+    "mark_uncertain": "Marker som usikker"
+  },
+  "settings": {
+    "title": "Innstillinger",
+    "language": "Språk",
+    "coming_soon": "Kommer snart...",
+    "sponsor": "Vil du støtte appen? Legg i handlekurven!",
+    "report_bug": "Funnet en feil? Gi beskjed!",
+    "tab_account": "Konto",
+    "tab_shopping_list": "Handleliste",
+    "delete_completed": "Slett alle kjøpte varer",
+    "delete_completed_description": "Fjerner alle varer som er merket som kjøpt fra handlelisten.",
+    "history_section_mode": "Seksjon for historikkforslag",
+    "use_first_section": "Bruk første seksjon",
+    "use_first_section_desc": "Hvis seksjonen ikke finnes, legg til i første tilgjengelige",
+    "auto_create_section": "Opprett seksjon automatisk",
+    "auto_create_section_desc": "Hvis seksjonen ikke finnes, opprett en ny med samme navn"
+  },
+  "login": {
+    "title": "Innlogging - Koffan",
+    "subtitle": "Logg inn for å fortsette",
+    "password": "Passord",
+    "password_placeholder": "Skriv inn passord...",
+    "submit": "Logg inn",
+    "error_invalid": "Ugyldig passord",
+    "error_rate_limited": "For mange innloggingsforsøk. Prøv igjen senere."
+  },
+  "confirm": {
+    "delete_item": "Slett \"{{name}}\"?",
+    "delete_sections": "Slett {{count}} valgte seksjoner?",
+    "delete_section": "Slett seksjonen \"{{name}}\"?",
+    "delete_completed_items": "Slett alle kjøpte varer?"
+  },
+  "stats": {
+    "progress": "Fremgang"
+  },
+  "status": {
+    "syncing": "synkroniserer"
+  },
+  "error": {
+    "generic": "Feil",
+    "delete_items": "Feil ved sletting av varer"
+  },
+  "offline": {
+    "title": "Frakoblet modus",
+    "message": "Du er frakoblet. Alle endringer synkroniseres automatisk når tilkoblingen gjenopprettes.",
+    "hint": "Endringer synkroniseres automatisk",
+    "action_blocked": "Denne handlingen krever internettforbindelse",
+    "available_actions": "Tilgjengelig frakoblet:",
+    "can_add": "Legge til produkter",
+    "can_toggle": "Krysse av og fjerne avkryssing",
+    "can_edit": "Redigere produkter",
+    "can_uncertain": "Markere som usikker",
+    "back_online": "Du er tilbake på nett. Alt er synkronisert!",
+    "queued": "Lagret for synkronisering"
+  },
+  "history": {
+    "title": "Produkthistorikk",
+    "description": "Produkter brukt for automatiske forslag. Fjern varer lagt til ved en feil eller som du ikke lenger trenger.",
+    "manage": "Administrer historikk",
+    "search_placeholder": "Søk i historikk...",
+    "empty": "Ingen lagrede produkter",
+    "delete_selected": "Slett valgte",
+    "confirm_delete": "Slett \"{{name}}\" fra historikken?",
+    "confirm_delete_batch": "Slett {{count}} valgte produkter fra historikken?",
+    "deleted": "Slettet {{count}} produkter"
+  },
+  "lists": {
+    "title": "Dine lister",
+    "manage": "Administrer lister",
+    "new_list": "Legg til ny liste...",
+    "no_lists": "Ingen lister",
+    "add_first_list": "Legg til din første handleliste",
+    "switch": "Bytt til",
+    "active": "Aktiv",
+    "icon": "Ikon",
+    "delete_confirm": "Slett listen \"{{name}}\"? Alle varer vil gå tapt."
+  },
+  "templates": {
+    "title": "Maler",
+    "new_template": "Ny mal",
+    "apply": "Bruk",
+    "applied": "Mal brukt",
+    "confirm_apply": "Legg til varer fra malen i aktiv liste?",
+    "create_from_list": "Opprett mal fra liste",
+    "from_list_hint": "Malen opprettes fra ikke-kjøpte varer i den aktive listen.",
+    "edit": "Rediger mal",
+    "items": "varer",
+    "section": "Seksjon",
+    "add_item": "Legg til vare",
+    "empty": "Malen er tom"
+  },
+  "onboarding": {
+    "welcome": "Velkommen til Koffan!",
+    "description": "Din personlige handleassistent. Opprett din første handleliste for å komme i gang.",
+    "list_name": "Listenavn",
+    "list_placeholder": "f.eks. Ukeshandel",
+    "create_list": "Opprett handleliste",
+    "feature_sections": "Seksjoner",
+    "feature_templates": "Sanntid",
+    "feature_offline": "Frakoblet"
+  }
+}
