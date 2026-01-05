@@ -37,7 +37,7 @@
     "add_more": "Lägg till fler",
     "no_items": "Inga varor",
     "add_first_item": "Lägg till första varan",
-    "quick_add": "Snabbinlänggning till avdelning"
+    "quick_add": "Snabbinläggning till avdelning"
   },
   "sections": {
     "title": "Avdelning",
@@ -89,7 +89,7 @@
     "delete_completed_items": "Radera alla köpta?"
   },
   "stats": {
-    "progress": "Pågende"
+    "progress": "Pågående"
   },
   "status": {
     "syncing": "synka"
@@ -154,7 +154,7 @@
     "list_placeholder": "t.ex. veckovisa matvaror",
     "create_list": "Skapa inköpslista",
     "feature_sections": "Avdelningar",
-    "feature_templates": "Realtid",
+    "feature_templates": "Mallar",
     "feature_offline": "Offline"
   }
 }
