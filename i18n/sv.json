@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "code": "sv",
+    "name": "Svenska",
+    "flag": "SE"
+  },
+  "common": {
+    "add": "Lägg till",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "delete": "Radera",
+    "edit": "Redigera",
+    "close": "Stäng",
+    "create": "Skapa",
+    "name": "Namn",
+    "description": "Beskrivning"
+  },
+  "nav": {
+    "settings": "Inställningar",
+    "logout": "Logga ut"
+  },
+  "list": {
+    "title": "Koffan Shopping List",
+    "empty_list": "tom lista",
+    "shopping_list": "Inköpslista",
+    "completed": "klar",
+    "bought": "Köpt"
+  },
+  "items": {
+    "what_to_buy": "Vad skall köpas?",
+    "note": "Notis...",
+    "note_optional": "Notis (valfri)...",
+    "name": "Namn...",
+    "new_product": "Ny vara",
+    "select_section": "Välj avdelning...",
+    "section": "Avdelning...",
+    "add_more": "Lägg till fler",
+    "no_items": "Inga varor",
+    "add_first_item": "Lägg till första varan",
+    "quick_add": "Snabbinlänggning till avdelning"
+  },
+  "sections": {
+    "title": "Avdelning",
+    "new_section": "Ny avdelning...",
+    "section_list": "Avdelningslista",
+    "manage": "Hantera avdelningar",
+    "select": "Välj",
+    "no_sections": "Inga avdelningar",
+    "add_first_section": "Lägg till din första avdelning för att komma igång"
+  },
+  "actions": {
+    "move_up": "Flytta upp",
+    "move_down": "Flytta ner",
+    "move": "Flytta",
+    "uncertain": "Osäker",
+    "certain": "Säker",
+    "remove_mark": "Radera markering",
+    "mark_uncertain": "Markera som osäker"
+  },
+  "settings": {
+    "title": "Inställningar",
+    "language": "Språk",
+    "coming_soon": "Kommer inom kort...",
+    "sponsor": "Vill du stödja appen? Lägg till den i varukorgen!",
+    "report_bug": "Hittat något fel? Berätta!",
+    "tab_account": "Konto",
+    "tab_shopping_list": "Inköpslista",
+    "delete_completed": "Radera alla köpta varor",
+    "delete_completed_description": "Tar bort alla varor markerade som köpta från inköpslistan.",
+    "history_section_mode": "Sektion för historiska avdelningsförslag",
+    "use_first_section": "Använd första avdelningen",
+    "use_first_section_desc": "Om avdelningen inte finns, använd första tillgängliga",
+    "auto_create_section": "Autoskapa avdelning",
+    "auto_create_section_desc": "Om avdelning inte finns, skapa en ny med samma namn"
+  },
+  "login": {
+    "title": "Logga in - Koffan",
+    "subtitle": "Logga in för att fortsätta",
+    "password": "Lösenord",
+    "password_placeholder": "Ange lösenord...",
+    "submit": "Logga in",
+    "error_invalid": "Felaktigt lösenord",
+    "error_rate_limited": "För många inloggningsförsök. Försök igen senare."
+  },
+  "confirm": {
+    "delete_item": "Radera \"{{name}}\"?",
+    "delete_sections": "Radera {{count}} valda avdelningar?",
+    "delete_section": "Radera avdelning '{{name}}'?",
+    "delete_completed_items": "Radera alla köpta?"
+  },
+  "stats": {
+    "progress": "Pågende"
+  },
+  "status": {
+    "syncing": "synka"
+  },
+  "error": {
+    "generic": "Fel",
+    "delete_items": "Fel vid borttagning"
+  },
+  "offline": {
+    "title": "Offline-läge",
+    "message": "Du är offline. Alla ändringar kommer automatiskt att synkroniseras när anslutningen återupptas.",
+    "hint": "Ändringar synkroniseras automatiskt",
+    "action_blocked": "Den här åtgärden kräver en internetanslutning",
+    "available_actions": "Tillgängligt offline:",
+    "can_add": "Lägga till varor",
+    "can_toggle": "Markera och avmarkera varor",
+    "can_edit": "Redigera varor",
+    "can_uncertain": "Markera som osäker",
+    "back_online": "Du är åter online. Allt har synkroniserats!",
+    "queued": "Sparad för synkronisering"
+  },
+  "history": {
+    "title": "Varuhistorik",
+    "description": "Varor som används för automatiska förslag. Ta bort varor som lagts till av misstag eller som du inte längre behöver.",
+    "manage": "Hantera historik",
+    "search_placeholder": "Sök historik...",
+    "empty": "Inga sparade varor",
+    "delete_selected": "Radera valda",
+    "confirm_delete": "Radera \"{{name}}\" från historiken?",
+    "confirm_delete_batch": "Radera {{count}} valda produkter från historiken?",
+    "deleted": "Raderade {{count}} varor"
+  },
+  "lists": {
+    "title": "Dina listor",
+    "manage": "Hantera listor",
+    "new_list": "Lägg till ny lista...",
+    "no_lists": "Inga listor",
+    "add_first_list": "Lägg till din första inköpslista",
+    "switch": "Byt till",
+    "active": "Aktiv",
+    "icon": "Ikon",
+    "delete_confirm": "Radera lista \"{{name}}\"? All varor kommer raderas."
+  },
+  "templates": {
+    "title": "Mallar",
+    "new_template": "Ny mall",
+    "apply": "Tillämpa",
+    "applied": "Mall tillämpad",
+    "confirm_apply": "Lägg till varor från mallen till den aktiva listan?",
+    "create_from_list": "Skapa mall av listan",
+    "from_list_hint": "Mallen skapas från oköpta varor i den aktiva listan.",
+    "edit": "Redigera mall",
+    "items": "varor",
+    "section": "Avdelning",
+    "add_item": "Lägg till vara",
+    "empty": "Mallen är tom"
+  },
+  "onboarding": {
+    "welcome": "Välkommen till Koffan!",
+    "description": "Din personliga shoppingassistent. Skapa din första shoppinglista för att komma igång.",
+    "list_name": "Listnamn",
+    "list_placeholder": "t.ex. veckovisa matvaror",
+    "create_list": "Skapa inköpslista",
+    "feature_sections": "Avdelningar",
+    "feature_templates": "Realtid",
+    "feature_offline": "Offline"
+  }
+}
