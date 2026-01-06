@@ -1,7 +1,7 @@
 {{define "partials/item_completed"}}
 <div
     id="item-{{.Item.ID}}"
-    class="px-4 py-2.5 flex items-center gap-3 hover:bg-stone-100/50 transition-all group"
+    class="px-4 py-2.5 flex items-center gap-3 hover:bg-stone-100/50 dark:hover:bg-stone-700/50 transition-all group"
 >
     <!-- Checkbox (checked) -->
     <button
@@ -26,16 +26,16 @@
         hx-swap="outerHTML"
         hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
     >
-        <p class="text-sm text-stone-400 line-through truncate">{{.Item.Name}}</p>
+        <p class="text-sm text-stone-400 dark:text-stone-500 line-through truncate">{{.Item.Name}}</p>
         {{if .Item.Description}}
-        <p class="text-xs text-stone-300 line-through truncate">{{.Item.Description}}</p>
+        <p class="text-xs text-stone-300 dark:text-stone-500 line-through truncate">{{.Item.Description}}</p>
         {{end}}
     </div>
 
     <!-- Delete button -->
     <button
         @click="if(confirm(t('confirm.delete_item', {name: '{{.Item.Name}}'}))) { const el = document.getElementById('item-{{.Item.ID}}'); window.updateSectionAfterDelete(el); el.classList.add('item-exit'); setTimeout(() => htmx.ajax('DELETE', '/items/{{.Item.ID}}', {target: '#item-{{.Item.ID}}', swap: 'outerHTML'}).then(() => htmx.trigger('#stats-container', 'refresh')), 200); }"
-        class="p-1.5 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+        class="p-1.5 rounded-md text-stone-300 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 opacity-0 group-hover:opacity-100 transition-all"
     >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

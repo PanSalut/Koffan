@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Paramètres",
+    "theme": "Thème",
+    "theme_light": "Clair",
+    "theme_dark": "Sombre",
+    "theme_system": "Système",
     "language": "Langue",
     "coming_soon": "Bientôt disponible...",
     "sponsor": "Tu veux soutenir l'appli ? Ajoute au panier !",

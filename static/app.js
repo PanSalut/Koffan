@@ -13,9 +13,9 @@ window.Toast = {
         const toast = document.createElement('div');
         const baseClasses = 'min-w-[280px] max-w-[90vw] px-5 py-3 rounded-2xl shadow-xl text-sm font-medium flex items-center gap-3 transform transition-all duration-300 ease-out';
         const typeClasses = {
-            warning: 'bg-rose-100 text-rose-700 border border-rose-200',
-            info: 'bg-stone-100 text-stone-700 border border-stone-200',
-            success: 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+            warning: 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800',
+            info: 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-600',
+            success: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
         };
 
         toast.className = `${baseClasses} ${typeClasses[type] || typeClasses.info}`;
@@ -112,6 +112,23 @@ function shoppingList() {
         _refreshListTimer: null,
         _refreshStatsTimer: null,
         _isRefreshing: false,
+
+        // Check if add-item form is currently active (to prevent dropdown updates during form use)
+        _isAddFormActive() {
+            // Check if mobile add-item modal is open
+            if (this.showAddItem) {
+                return true;
+            }
+            // Check if desktop form has focus (name input or section select)
+            const desktopForm = document.getElementById('add-item-form');
+            if (desktopForm) {
+                const activeEl = document.activeElement;
+                if (desktopForm.contains(activeEl)) {
+                    return true;
+                }
+            }
+            return false;
+        },
 
         async init() {
             await this.initOffline();
@@ -659,6 +676,12 @@ function shoppingList() {
         },
 
         updateSectionSelects(sections) {
+            // Skip if user is actively using the add-item form (prevents race condition)
+            if (this._isAddFormActive()) {
+                console.log('[App] Skipping section select update - form is active');
+                return;
+            }
+
             // Find all section selects
             const selects = document.querySelectorAll('select[name="section_id"]');
             selects.forEach(select => {
@@ -667,14 +690,11 @@ function shoppingList() {
                 // Clear all options
                 select.innerHTML = '';
 
-                // Add new options (first will be selected by default)
-                sections.forEach((section, index) => {
+                // Add new options (first will be selected by default by browser)
+                sections.forEach((section) => {
                     const opt = document.createElement('option');
                     opt.value = section.id;
                     opt.textContent = section.name;
-                    if (index === 0) {
-                        opt.selected = true;
-                    }
                     select.appendChild(opt);
                 });
 
@@ -1911,22 +1931,22 @@ document.addEventListener('DOMContentLoaded', function() {
 // Create HTML for offline item (simplified version without all actions)
 function createOfflineItemHtml(id, name, description, sectionId) {
     const descHtml = description
-        ? `<p class="text-xs text-stone-400 truncate mt-0.5">${escapeHtml(description)}</p>`
+        ? `<p class="text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">${escapeHtml(description)}</p>`
         : '';
 
     return `
-<div id="item-${id}" class="px-4 py-3 flex items-center gap-3 hover:bg-stone-50 transition-all group bg-rose-50/40 border-l-2 border-rose-400 pending-sync" data-pending-sync="true">
+<div id="item-${id}" class="px-4 py-3 flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group bg-rose-50/40 dark:bg-rose-900/30 border-l-2 border-rose-400 pending-sync" data-pending-sync="true">
     <!-- Checkbox (disabled offline) -->
-    <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 border-stone-200 bg-stone-50"></div>
+    <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700"></div>
 
     <!-- Content -->
     <div class="flex-1 min-w-0">
-        <p class="text-sm text-stone-700 truncate">${escapeHtml(name)}</p>
+        <p class="text-sm text-stone-700 dark:text-stone-200 truncate">${escapeHtml(name)}</p>
         ${descHtml}
     </div>
 
     <!-- Sync badge -->
-    <span class="sync-badge text-xs text-rose-500 font-medium flex items-center gap-1">
+    <span class="sync-badge text-xs text-rose-500 dark:text-rose-400 font-medium flex items-center gap-1">
         <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>

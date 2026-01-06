@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/koffan-logo.webp" alt="Koffan Logo" width="200">
+  <img src="static/koffan-logo.webp" alt="Koffan Logo" width="400">
 </p>
 
 <h1 align="center">Koffan</h1>
@@ -53,6 +53,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - Mark products as "uncertain" (can't find it in the store)
 - Real-time synchronization (WebSocket)
 - Responsive interface (mobile-first)
+- **Dark mode** - Automatic theme based on system preferences
 - Multi-language support (PL, EN, DE, ES, FR, PT, UK, NO, LT)
 - Simple login system
 - Rate limiting protection against brute-force attacks

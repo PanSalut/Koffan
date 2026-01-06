@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Definições",
+    "theme": "Tema",
+    "theme_light": "Claro",
+    "theme_dark": "Escuro",
+    "theme_system": "Sistema",
     "language": "Idioma",
     "coming_soon": "Em breve...",
     "sponsor": "Quer apoiar o app? Adicione ao carrinho!",

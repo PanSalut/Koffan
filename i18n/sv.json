@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Inställningar",
+    "theme": "Tema",
+    "theme_light": "Ljust",
+    "theme_dark": "Mörkt",
+    "theme_system": "System",
     "language": "Språk",
     "coming_soon": "Kommer inom kort...",
     "sponsor": "Vill du stödja appen? Lägg till den i varukorgen!",

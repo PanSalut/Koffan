@@ -1,7 +1,7 @@
 {{define "list"}}
-<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50">
+<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors">
     <!-- Header -->
-    <header class="sticky top-0 z-30 bg-stone-50 pt-3">
+    <header class="sticky top-0 z-30 bg-stone-50 dark:bg-stone-900 pt-3 transition-colors">
         <div class="container mx-auto max-w-4xl px-4">
             <div class="flex items-center justify-between h-14 mb-4">
                 <!-- Logo and List Name -->
@@ -9,23 +9,23 @@
                     <a href="/" class="hover:opacity-80 transition-opacity" title="Powrót do list">
                         <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-10">
                     </a>
-                    <span class="text-stone-300">/</span>
+                    <span class="text-stone-300 dark:text-stone-600">/</span>
                     <div class="flex items-center gap-2">
                         {{if .List}}<span class="text-xl">{{.List.Icon}}</span>{{end}}
-                        <h1 class="text-lg font-semibold text-stone-800 truncate max-w-32 md:max-w-48">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                        <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 truncate max-w-32 md:max-w-48">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
                     </div>
                 </div>
 
                 <!-- Desktop Stats pill + controls (hidden on mobile) -->
                 <div class="hidden md:flex items-center gap-3">
-                    <div class="flex items-center gap-2 bg-white border border-stone-200 rounded-full px-3 py-1.5 shadow-sm"
+                    <div class="flex items-center gap-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-full px-3 py-1.5 shadow-sm"
                          x-show="stats.total > 0">
                         <div class="w-2 h-2 rounded-full transition-colors"
                              :class="stats.percentage === 100 ? 'bg-pink-500' : 'bg-pink-400'"></div>
-                        <span class="text-sm font-medium text-stone-600" x-text="stats.completed + '/' + stats.total"></span>
-                        <span class="text-xs text-stone-400" x-text="stats.percentage + '%'"></span>
+                        <span class="text-sm font-medium text-stone-600 dark:text-stone-300" x-text="stats.completed + '/' + stats.total"></span>
+                        <span class="text-xs text-stone-400 dark:text-stone-500" x-text="stats.percentage + '%'"></span>
                     </div>
-                    <span class="text-sm text-stone-400" x-show="stats.total === 0" x-text="t('list.empty_list')"></span>
+                    <span class="text-sm text-stone-400 dark:text-stone-500" x-show="stats.total === 0" x-text="t('list.empty_list')"></span>
 
                     <!-- Offline indicator -->
                     <button
@@ -43,7 +43,7 @@
                     <!-- Settings -->
                     <button
                         @click="showSettings = true"
-                        class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+                        class="p-1.5 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg transition-colors"
                         :title="t('nav.settings')"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +71,7 @@
                     <!-- Settings -->
                     <button
                         @click="showSettings = true"
-                        class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+                        class="p-1.5 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg transition-colors"
                         :title="t('nav.settings')"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@
             </div>
 
             <!-- Progress bar (desktop only) -->
-            <div class="hidden md:block h-1 bg-stone-200 rounded-full mb-4 overflow-hidden" x-show="stats.total > 0">
+            <div class="hidden md:block h-1 bg-stone-200 dark:bg-stone-700 rounded-full mb-4 overflow-hidden" x-show="stats.total > 0">
                 <div class="h-full rounded-full transition-all duration-500"
                      :class="stats.percentage === 100 ? 'bg-pink-500' : 'bg-pink-400'"
                      :style="'width: ' + stats.percentage + '%'"
@@ -95,7 +95,7 @@
     <div class="container mx-auto px-4 max-w-4xl">
         <!-- Desktop controls -->
         <div class="hidden md:block mb-6">
-            <div class="bg-white rounded-2xl border border-stone-200 p-5">
+            <div class="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 p-5">
                 <form
                     id="add-item-form"
                     hx-post="/items"
@@ -104,7 +104,7 @@
                     class="flex items-center gap-3"
                 >
                     <select name="section_id" x-ref="desktopSectionSelect" required
-                        class="w-40 border border-stone-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-stone-50 text-stone-700">
+                        class="w-40 border border-stone-200 dark:border-stone-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
                         {{range $index, $section := .Sections}}
                         <option value="{{$section.ID}}" {{if eq $index 0}}selected{{end}}>{{$section.Name}}</option>
                         {{end}}
@@ -116,26 +116,26 @@
                             @blur="hideSuggestionsDelayed()"
                             @focus="$event.target.value.length >= 2 && fetchSuggestions($event.target.value)"
                             autocomplete="off"
-                            class="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400">
+                            class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400 dark:placeholder:text-stone-500 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100">
                         <!-- Suggestions dropdown -->
                         <div x-show="showSuggestions && suggestions.length > 0"
                              x-transition:enter="transition ease-out duration-100"
                              x-transition:enter-start="opacity-0 scale-95"
                              x-transition:enter-end="opacity-100 scale-100"
-                             class="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                             class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                             <template x-for="(suggestion, index) in suggestions" :key="suggestion.name">
                                 <button type="button"
                                     @mousedown.prevent="selectSuggestion(suggestion, $refs.desktopNameInput, $refs.desktopSectionSelect)"
-                                    :class="index === selectedSuggestionIndex ? 'bg-pink-50' : 'hover:bg-stone-50'"
-                                    class="w-full text-left px-4 py-2.5 text-sm flex items-center justify-between border-b border-stone-100 last:border-b-0">
-                                    <span x-text="suggestion.name" class="text-stone-700"></span>
-                                    <span class="text-xs text-stone-400" x-text="suggestion.usage_count + 'x'"></span>
+                                    :class="index === selectedSuggestionIndex ? 'bg-pink-50 dark:bg-pink-900/30' : 'hover:bg-stone-50 dark:hover:bg-stone-700'"
+                                    class="w-full text-left px-4 py-2.5 text-sm flex items-center justify-between border-b border-stone-100 dark:border-stone-700 last:border-b-0">
+                                    <span x-text="suggestion.name" class="text-stone-700 dark:text-stone-200"></span>
+                                    <span class="text-xs text-stone-400 dark:text-stone-500" x-text="suggestion.usage_count + 'x'"></span>
                                 </button>
                             </template>
                         </div>
                     </div>
                     <input type="text" name="description" :placeholder="t('items.note')"
-                        class="w-48 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400">
+                        class="w-48 border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400 dark:placeholder:text-stone-500 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100">
                     <button type="submit"
                         class="bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
                         x-text="t('common.add')">
@@ -143,7 +143,7 @@
                     <button
                         type="button"
                         @click="showManageSections = true"
-                        class="p-2.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                        class="p-2.5 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
                         :title="t('sections.manage')"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,40 +166,40 @@
             <!-- Empty State - sections exist but no products -->
             {{if and .Sections (eq .Stats.TotalItems 0)}}
             <div class="text-center py-20">
-                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
-                    <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                     </svg>
                 </div>
-                <p class="text-stone-600 font-medium" x-text="t('items.no_items')"></p>
-                <p class="text-sm text-stone-400 mt-1" x-text="t('items.add_first_item')"></p>
+                <p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t('items.no_items')"></p>
+                <p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t('items.add_first_item')"></p>
             </div>
             {{end}}
 
             <!-- Empty State - no sections -->
             {{if not .Sections}}
             <div class="text-center py-20">
-                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 rounded-2xl flex items-center justify-center">
-                    <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                 </div>
-                <p class="text-stone-600 font-medium" x-text="t('sections.no_sections')"></p>
-                <p class="text-sm text-stone-400 mt-1" x-text="t('sections.add_first_section')"></p>
+                <p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t('sections.no_sections')"></p>
+                <p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t('sections.add_first_section')"></p>
             </div>
             {{end}}
         </div>
     </div>
 
     <!-- Mobile Bottom Navigation Bar -->
-    <div class="md:hidden fixed bottom-6 left-5 right-5 z-40 bg-white border border-stone-200 shadow-xl rounded-2xl safe-area-pb">
+    <div class="md:hidden fixed bottom-6 left-5 right-5 z-40 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xl rounded-2xl safe-area-pb">
         <div class="flex items-center justify-between px-4 py-3">
             <!-- Stats -->
             <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full transition-colors"
                      :class="stats.percentage === 100 ? 'bg-pink-500' : 'bg-pink-400'"></div>
-                <span class="text-sm font-medium text-stone-700" x-text="stats.completed + '/' + stats.total"></span>
-                <span class="text-sm text-stone-400" x-text="stats.percentage + '%'"></span>
+                <span class="text-sm font-medium text-stone-700 dark:text-stone-200" x-text="stats.completed + '/' + stats.total"></span>
+                <span class="text-sm text-stone-400 dark:text-stone-500" x-text="stats.percentage + '%'"></span>
             </div>
 
             <!-- Actions -->
@@ -208,7 +208,7 @@
                 <button
                     @click="isOnline ? showManageSections = true : window.Toast.show(t('offline.action_blocked'), 'warning')"
                     class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
-                    :class="isOnline ? 'bg-stone-100 text-stone-600 hover:bg-stone-200' : 'bg-stone-50 text-stone-300'"
+                    :class="isOnline ? 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600' : 'bg-stone-50 dark:bg-stone-800 text-stone-300 dark:text-stone-600'"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
@@ -231,12 +231,12 @@
 
     <!-- Mobile Add Item Modal -->
     <div x-show="showAddItem" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAddItem = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showAddItem = false; $nextTick(() => refreshSectionsAndSelects())"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
-            <h3 class="text-lg font-semibold text-stone-800 mb-4" x-text="t('items.new_product')"></h3>
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('items.new_product')"></h3>
             <form
                 hx-post="/items"
                 hx-swap="none"
@@ -245,7 +245,7 @@
                 class="space-y-4"
             >
                 <select name="section_id" x-ref="mobileSectionSelect" required
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-stone-50">
+                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-stone-50 dark:bg-stone-700 text-stone-800 dark:text-stone-100">
                     {{range $index, $section := .Sections}}
                     <option value="{{$section.ID}}" {{if eq $index 0}}selected{{end}}>{{$section.Name}}</option>
                     {{end}}
@@ -257,41 +257,41 @@
                         @blur="hideSuggestionsDelayed()"
                         @focus="$event.target.value.length >= 2 && fetchSuggestions($event.target.value)"
                         autocomplete="off"
-                        class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
                     <!-- Suggestions dropdown -->
                     <div x-show="showSuggestions && suggestions.length > 0"
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 -translate-y-1"
                          x-transition:enter-end="opacity-100 translate-y-0"
-                         class="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                         class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                         <template x-for="(suggestion, index) in suggestions" :key="suggestion.name">
                             <button type="button"
                                 @mousedown.prevent="selectSuggestion(suggestion, $refs.itemNameInput, $refs.mobileSectionSelect)"
-                                :class="index === selectedSuggestionIndex ? 'bg-pink-50' : 'hover:bg-stone-50'"
-                                class="w-full text-left px-4 py-2.5 flex items-center justify-between border-b border-stone-100 last:border-0">
-                                <span class="text-sm text-stone-700" x-text="suggestion.name"></span>
-                                <span class="text-xs text-stone-400" x-text="suggestion.usage_count + 'x'"></span>
+                                :class="index === selectedSuggestionIndex ? 'bg-pink-50 dark:bg-pink-900/30' : 'hover:bg-stone-50 dark:hover:bg-stone-700'"
+                                class="w-full text-left px-4 py-2.5 flex items-center justify-between border-b border-stone-100 dark:border-stone-700 last:border-0">
+                                <span class="text-sm text-stone-700 dark:text-stone-200" x-text="suggestion.name"></span>
+                                <span class="text-xs text-stone-400 dark:text-stone-500" x-text="suggestion.usage_count + 'x'"></span>
                             </button>
                         </template>
                     </div>
                 </div>
                 <textarea name="description" :placeholder="t('items.note_optional')" rows="2"
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"></textarea>
+                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500"></textarea>
                 <label class="flex items-center justify-between py-2 cursor-pointer select-none">
-                    <span class="text-sm text-stone-600" x-text="t('items.add_more')"></span>
+                    <span class="text-sm text-stone-600 dark:text-stone-300" x-text="t('items.add_more')"></span>
                     <div class="relative">
                         <input type="checkbox" x-model="addMore" class="sr-only peer">
-                        <div class="w-10 h-6 bg-stone-200 rounded-full peer peer-checked:bg-pink-400 transition-colors"></div>
+                        <div class="w-10 h-6 bg-stone-200 dark:bg-stone-600 rounded-full peer peer-checked:bg-pink-400 transition-colors"></div>
                         <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
                     </div>
                 </label>
                 <div class="flex gap-3 pt-2">
-                    <button type="button" @click="showAddItem = false"
-                        class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-lg text-sm font-medium"
+                    <button type="button" @click="showAddItem = false; $nextTick(() => refreshSectionsAndSelects())"
+                        class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
                         x-text="t('common.cancel')">
                     </button>
                     <button type="submit"
-                        class="flex-1 bg-pink-400 text-white py-3 rounded-lg text-sm font-medium"
+                        class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-lg text-sm font-medium transition-colors"
                         x-text="t('common.add')">
                     </button>
                 </div>
@@ -301,11 +301,11 @@
 
     <!-- Manage Sections Modal -->
     <div x-show="showManageSections" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showManageSections = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showManageSections = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-stone-800" x-text="t('sections.title')"></h3>
-                <button @click="showManageSections = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100" x-text="t('sections.title')"></h3>
+                <button @click="showManageSections = false" class="p-1 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -320,8 +320,8 @@
                 class="flex gap-2 mb-6"
             >
                 <input type="text" name="name" :placeholder="t('sections.new_section')" required
-                    class="flex-1 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
-                <button type="submit" class="bg-pink-400 hover:bg-pink-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium"
+                    class="flex-1 border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
+                <button type="submit" class="bg-pink-400 hover:bg-pink-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     x-text="t('common.add')">
                 </button>
             </form>
@@ -329,10 +329,10 @@
             <!-- Sections list -->
             <div class="mb-4">
                 <div class="flex items-center justify-between mb-3">
-                    <p class="text-xs text-stone-500 uppercase tracking-wide font-medium" x-text="t('sections.section_list')"></p>
+                    <p class="text-xs text-stone-500 dark:text-stone-400 uppercase tracking-wide font-medium" x-text="t('sections.section_list')"></p>
                     <button
                         @click="selectMode = !selectMode; selectedSections = []"
-                        class="text-xs text-stone-500 hover:text-stone-700"
+                        class="text-xs text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
                         x-text="selectMode ? t('common.cancel') : t('sections.select')"
                     ></button>
                 </div>
@@ -348,7 +348,7 @@
             <template x-if="selectMode && selectedSections.length > 0">
                 <button
                     @click="deleteSelectedSections()"
-                    class="w-full bg-red-500 text-white py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                    class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
                 >
                     <span x-text="t('common.delete') + ' (' + selectedSections.length + ')'"></span>
                 </button>
@@ -358,13 +358,13 @@
 
     <!-- Mobile Action Modal -->
     <div x-show="mobileActionItem" x-cloak class="fixed inset-0 z-50 flex items-end justify-center md:hidden">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="mobileActionItem = null"></div>
-        <div class="relative bg-white rounded-t-2xl w-full p-6">
-            <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-4"></div>
-            <h3 class="font-medium text-stone-800 mb-4 truncate" x-text="mobileActionItem?.name"></h3>
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="mobileActionItem = null"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl w-full p-6">
+            <div class="w-10 h-1 bg-stone-200 dark:bg-stone-600 rounded-full mx-auto mb-4"></div>
+            <h3 class="font-medium text-stone-800 dark:text-stone-100 mb-4 truncate" x-text="mobileActionItem?.name"></h3>
             <div class="space-y-2">
                 <button @click="editItem(mobileActionItem); mobileActionItem = null"
-                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 text-stone-700">
+                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
@@ -372,7 +372,7 @@
                 </button>
 
                 <button @click="toggleUncertain()"
-                    :class="mobileActionItem?.uncertain ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'"
+                    :class="mobileActionItem?.uncertain ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200'"
                     class="w-full flex items-center gap-3 p-3 rounded-xl">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -382,7 +382,7 @@
 
                 <div x-data="{ showSections: false }">
                     <button @click="showSections = !showSections"
-                        class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 text-stone-700">
+                        class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                         </svg>
@@ -394,7 +394,7 @@
                     <div x-show="showSections" class="mt-2 space-y-1 ml-8">
                         {{range .Sections}}
                         <button @click="moveToSection({{.ID}})"
-                            class="w-full text-left p-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100"
+                            class="w-full text-left p-2 rounded-lg text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700"
                             x-show="mobileActionItem?.section_id != {{.ID}}">
                             {{.Name}}
                         </button>
@@ -403,7 +403,7 @@
                 </div>
 
                 <button @click="deleteItem()"
-                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-red-50 text-red-600">
+                    class="w-full flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
@@ -415,20 +415,20 @@
 
     <!-- Edit Item Modal -->
     <div x-show="editingItem" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="editingItem = null"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6">
-            <h3 class="text-lg font-semibold text-stone-800 mb-4" x-text="t('common.edit')"></h3>
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="editingItem = null"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6">
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('common.edit')"></h3>
             <form @submit.prevent="submitEditItem()" class="space-y-4">
                 <input type="text" x-model="editItemName" :placeholder="t('items.name')" required
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
                 <textarea x-model="editItemDescription" :placeholder="t('items.note')" rows="2"
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"></textarea>
+                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500"></textarea>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="editingItem = null"
-                        class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-lg text-sm font-medium"
+                        class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
                         x-text="t('common.cancel')">
                     </button>
-                    <button type="submit" class="flex-1 bg-pink-400 text-white py-3 rounded-lg text-sm font-medium"
+                    <button type="submit" class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-lg text-sm font-medium transition-colors"
                         x-text="t('common.save')">
                     </button>
                 </div>
@@ -438,51 +438,51 @@
 
     <!-- Offline Modal -->
     <div x-show="showOfflineModal" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showOfflineModal = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showOfflineModal = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
-                    <div class="p-2 bg-rose-100 rounded-full">
-                        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-full">
+                        <svg class="w-5 h-5 text-rose-500 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-stone-800" x-text="t('offline.title')"></h3>
+                    <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100" x-text="t('offline.title')"></h3>
                 </div>
-                <button @click="showOfflineModal = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                <button @click="showOfflineModal = false" class="p-1 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-            <p class="text-sm text-stone-600 mb-4" x-text="t('offline.message')"></p>
+            <p class="text-sm text-stone-600 dark:text-stone-300 mb-4" x-text="t('offline.message')"></p>
 
             <!-- Available actions -->
-            <div class="bg-stone-50 rounded-lg p-3 mb-4">
-                <p class="text-xs font-medium text-stone-500 mb-2" x-text="t('offline.available_actions')"></p>
+            <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-3 mb-4">
+                <p class="text-xs font-medium text-stone-500 dark:text-stone-400 mb-2" x-text="t('offline.available_actions')"></p>
                 <ul class="space-y-1.5">
-                    <li class="flex items-center gap-2 text-sm text-stone-600">
+                    <li class="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                         <span x-text="t('offline.can_add')"></span>
                     </li>
-                    <li class="flex items-center gap-2 text-sm text-stone-600">
+                    <li class="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                         <span x-text="t('offline.can_toggle')"></span>
                     </li>
-                    <li class="flex items-center gap-2 text-sm text-stone-600">
+                    <li class="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                         <span x-text="t('offline.can_edit')"></span>
                     </li>
-                    <li class="flex items-center gap-2 text-sm text-stone-600">
+                    <li class="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
@@ -491,7 +491,7 @@
                 </ul>
             </div>
 
-            <div class="flex items-center gap-2 text-xs text-stone-400">
+            <div class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -502,17 +502,17 @@
 
     <!-- Settings Modal -->
     <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-         x-data="{ settingsTab: 'account' }">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showSettings = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system' }">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
 
             <!-- Header -->
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-stone-800" x-text="t('settings.title')"></h3>
-                <button @click="showSettings = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100" x-text="t('settings.title')"></h3>
+                <button @click="showSettings = false" class="p-1 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -525,7 +525,7 @@
                     @click="settingsTab = 'account'"
                     :class="settingsTab === 'account'
                         ? 'bg-pink-400 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'"
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'"
                     class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors">
                     <span x-text="t('settings.tab_account')"></span>
                 </button>
@@ -533,7 +533,7 @@
                     @click="settingsTab = 'shopping_list'"
                     :class="settingsTab === 'shopping_list'
                         ? 'bg-pink-400 text-white'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'"
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'"
                     class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors">
                     <span x-text="t('settings.tab_shopping_list')"></span>
                 </button>
@@ -541,12 +541,49 @@
 
             <!-- Tab: Account -->
             <div x-show="settingsTab === 'account'" x-cloak x-transition>
+                <!-- Theme Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.theme')"></label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            @click="setTheme('light'); currentTheme = 'light'"
+                            :class="currentTheme === 'light' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-700 dark:text-pink-300' : 'bg-stone-100 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_light')"></span>
+                        </button>
+                        <button
+                            @click="setTheme('dark'); currentTheme = 'dark'"
+                            :class="currentTheme === 'dark' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-700 dark:text-pink-300' : 'bg-stone-100 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_dark')"></span>
+                        </button>
+                        <button
+                            @click="setTheme('system'); currentTheme = 'system'"
+                            :class="currentTheme === 'system' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-700 dark:text-pink-300' : 'bg-stone-100 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_system')"></span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Language Selection -->
                 <div class="mb-6">
-                    <label class="block text-sm font-medium text-stone-600 mb-2" x-text="t('settings.language')"></label>
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.language')"></label>
                     <select
                         @change="changeLanguage($event.target.value)"
-                        class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"
+                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100"
                     >
                         <template x-for="locale in window.locales" :key="locale.code">
                             <option :value="locale.code" :selected="window.currentLang === locale.code" x-text="locale.flag + ' ' + locale.name"></option>
@@ -557,7 +594,7 @@
                 <!-- Logout -->
                 <form action="/logout" method="POST" class="mb-6">
                     <button type="submit"
-                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors">
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -566,14 +603,14 @@
                 </form>
 
                 <!-- Sponsor & Bug report -->
-                <div class="pt-4 border-t border-stone-100 space-y-2">
+                <div class="pt-4 border-t border-stone-100 dark:border-stone-700 space-y-2">
                     <a href="https://github.com/sponsors/PanSalut" target="_blank" rel="noopener"
-                       class="flex items-center gap-2 text-xs text-stone-400 hover:text-pink-500 transition-colors group">
+                       class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-pink-500 transition-colors group">
                         <span class="text-base group-hover:animate-pulse">💖</span>
                         <span x-text="t('settings.sponsor')"></span>
                     </a>
                     <a href="https://github.com/PanSalut/Koffan/issues" target="_blank" rel="noopener"
-                       class="flex items-center gap-2 text-xs text-stone-400 hover:text-stone-600 transition-colors group">
+                       class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors group">
                         <span class="text-base">🐛</span>
                         <span x-text="t('settings.report_bug')"></span>
                     </a>
@@ -584,33 +621,33 @@
             <div x-show="settingsTab === 'shopping_list'" x-cloak x-transition>
                 <!-- History section mapping mode -->
                 <div class="mb-6">
-                    <label class="block text-sm font-medium text-stone-600 mb-3" x-text="t('settings.history_section_mode')"></label>
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('settings.history_section_mode')"></label>
                     <div class="space-y-2">
-                        <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors"
-                               :class="historySectionMode === 'use_first_section' && 'ring-2 ring-pink-400 bg-pink-50'">
+                        <label class="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-700 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors"
+                               :class="historySectionMode === 'use_first_section' && 'ring-2 ring-pink-400 bg-pink-50 dark:bg-pink-900/30'">
                             <input type="radio"
                                    name="history_section_mode"
                                    value="use_first_section"
                                    x-model="historySectionMode"
                                    @change="setHistorySectionMode('use_first_section')"
-                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 accent-pink-500">
+                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 dark:border-stone-500 accent-pink-500">
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-stone-700" x-text="t('settings.use_first_section')"></p>
-                                <p class="text-xs text-stone-400" x-text="t('settings.use_first_section_desc')"></p>
+                                <p class="text-sm font-medium text-stone-700 dark:text-stone-200" x-text="t('settings.use_first_section')"></p>
+                                <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('settings.use_first_section_desc')"></p>
                             </div>
                         </label>
 
-                        <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors"
-                               :class="historySectionMode === 'auto_create_section' && 'ring-2 ring-pink-400 bg-pink-50'">
+                        <label class="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-700 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors"
+                               :class="historySectionMode === 'auto_create_section' && 'ring-2 ring-pink-400 bg-pink-50 dark:bg-pink-900/30'">
                             <input type="radio"
                                    name="history_section_mode"
                                    value="auto_create_section"
                                    x-model="historySectionMode"
                                    @change="setHistorySectionMode('auto_create_section')"
-                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 accent-pink-500">
+                                   class="w-4 h-4 text-pink-500 focus:ring-pink-500 border-stone-300 dark:border-stone-500 accent-pink-500">
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-stone-700" x-text="t('settings.auto_create_section')"></p>
-                                <p class="text-xs text-stone-400" x-text="t('settings.auto_create_section_desc')"></p>
+                                <p class="text-sm font-medium text-stone-700 dark:text-stone-200" x-text="t('settings.auto_create_section')"></p>
+                                <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('settings.auto_create_section_desc')"></p>
                             </div>
                         </label>
                     </div>
@@ -622,32 +659,32 @@
                         @click="showHistoryModal = true; showSettings = false; if (isOnline) fetchHistory()"
                         :disabled="!isOnline"
                         :class="isOnline
-                            ? 'bg-stone-50 text-stone-700 hover:bg-stone-100 border-stone-200'
-                            : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed'"
+                            ? 'bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-600 border-stone-200 dark:border-stone-600'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 border-stone-200 dark:border-stone-700 cursor-not-allowed'"
                         class="w-full flex items-center justify-center gap-2 p-3 rounded-xl border transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <span x-text="t('history.manage')"></span>
                     </button>
-                    <p x-show="!isOnline" class="text-xs text-stone-400 text-center mt-2" x-text="t('offline.action_blocked')"></p>
+                    <p x-show="!isOnline" class="text-xs text-stone-400 dark:text-stone-500 text-center mt-2" x-text="t('offline.action_blocked')"></p>
                 </div>
 
                 <!-- Delete completed items -->
-                <div class="border-t border-stone-100 pt-6">
+                <div class="border-t border-stone-100 dark:border-stone-700 pt-6">
                     <button
                         @click="deleteCompletedItems()"
                         :disabled="!isOnline"
                         :class="isOnline
-                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
-                            : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed'"
+                            ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border-red-200 dark:border-red-800'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 border-stone-200 dark:border-stone-700 cursor-not-allowed'"
                         class="w-full flex items-center justify-center gap-2 p-3 rounded-xl border transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
                         <span x-text="t('settings.delete_completed')"></span>
                     </button>
-                    <p x-show="!isOnline" class="text-xs text-stone-400 text-center" x-text="t('offline.action_blocked')"></p>
+                    <p x-show="!isOnline" class="text-xs text-stone-400 dark:text-stone-500 text-center" x-text="t('offline.action_blocked')"></p>
                 </div>
             </div>
         </div>
@@ -655,52 +692,52 @@
 
     <!-- History Management Modal -->
     <div x-show="showHistoryModal" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showHistoryModal = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-lg h-[85vh] md:h-auto md:max-h-[80vh] flex flex-col"
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showHistoryModal = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-lg h-[85vh] md:h-auto md:max-h-[80vh] flex flex-col"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
             <!-- Header -->
-            <div class="p-6 border-b border-stone-100 shrink-0">
+            <div class="p-6 border-b border-stone-100 dark:border-stone-700 shrink-0">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-lg font-semibold text-stone-800" x-text="t('history.title')"></h3>
-                    <button @click="showHistoryModal = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                    <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100" x-text="t('history.title')"></h3>
+                    <button @click="showHistoryModal = false" class="p-1 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
-                <p class="text-sm text-stone-500" x-text="t('history.description')"></p>
+                <p class="text-sm text-stone-500 dark:text-stone-400" x-text="t('history.description')"></p>
             </div>
 
             <!-- Search -->
-            <div class="px-6 py-4 border-b border-stone-100 shrink-0">
+            <div class="px-6 py-4 border-b border-stone-100 dark:border-stone-700 shrink-0">
                 <div class="relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                     <input type="text" x-model="historySearch"
                         :placeholder="t('history.search_placeholder')"
-                        class="w-full pl-10 pr-4 py-2.5 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400">
+                        class="w-full pl-10 pr-4 py-2.5 text-sm border border-stone-200 dark:border-stone-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
                 </div>
             </div>
 
             <!-- History list (scrollable) -->
             <div class="flex-1 overflow-y-auto px-6 overscroll-contain" @touchmove.stop>
                 <template x-if="filteredHistoryItems.length === 0">
-                    <div class="flex flex-col items-center justify-center py-12 text-stone-400">
+                    <div class="flex flex-col items-center justify-center py-12 text-stone-400 dark:text-stone-500">
                         <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <p class="text-sm" x-text="t('history.empty')"></p>
                     </div>
                 </template>
-                <div class="divide-y divide-stone-100">
+                <div class="divide-y divide-stone-100 dark:divide-stone-700">
                     <template x-for="item in filteredHistoryItems" :key="item.id">
                         <div class="flex items-center gap-3 py-3">
                             <button @click="toggleHistoryItem(item.id)" class="flex-shrink-0">
                                 <span x-show="!selectedHistoryIds.includes(item.id)"
-                                    class="w-5 h-5 rounded-full border-2 border-stone-300 hover:border-pink-400 transition-all block"></span>
+                                    class="w-5 h-5 rounded-full border-2 border-stone-300 dark:border-stone-500 hover:border-pink-400 transition-all block"></span>
                                 <span x-show="selectedHistoryIds.includes(item.id)"
                                     class="w-5 h-5 rounded-full bg-pink-400 flex items-center justify-center">
                                     <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -709,12 +746,12 @@
                                 </span>
                             </button>
                             <div class="flex-1 min-w-0">
-                                <span class="text-sm text-stone-700 truncate block" x-text="item.name"></span>
-                                <span x-show="item.last_section_name" class="text-xs text-stone-400 truncate block" x-text="item.last_section_name"></span>
+                                <span class="text-sm text-stone-700 dark:text-stone-200 truncate block" x-text="item.name"></span>
+                                <span x-show="item.last_section_name" class="text-xs text-stone-400 dark:text-stone-500 truncate block" x-text="item.last_section_name"></span>
                             </div>
-                            <span class="text-xs text-stone-400 bg-stone-100 px-2 py-1 rounded-full shrink-0" x-text="item.usage_count + 'x'"></span>
+                            <span class="text-xs text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-stone-700 px-2 py-1 rounded-full shrink-0" x-text="item.usage_count + 'x'"></span>
                             <button @click="deleteHistoryItem(item)"
-                                class="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                                class="p-2 text-stone-400 hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors shrink-0">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                 </svg>
@@ -725,13 +762,13 @@
             </div>
 
             <!-- Footer with batch delete -->
-            <div class="p-6 border-t border-stone-100 shrink-0">
+            <div class="p-6 border-t border-stone-100 dark:border-stone-700 shrink-0">
                 <button
                     @click="deleteSelectedHistory()"
                     :disabled="selectedHistoryIds.length === 0"
                     :class="selectedHistoryIds.length > 0
                         ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-stone-100 text-stone-400 cursor-not-allowed'"
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500 cursor-not-allowed'"
                     class="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-medium transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

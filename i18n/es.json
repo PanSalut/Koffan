@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Ajustes",
+    "theme": "Tema",
+    "theme_light": "Claro",
+    "theme_dark": "Oscuro",
+    "theme_system": "Sistema",
     "language": "Idioma",
     "coming_soon": "Próximamente...",
     "sponsor": "¿Quieres apoyar la app? ¡Añade al carrito!",

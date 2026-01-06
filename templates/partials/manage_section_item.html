@@ -1,8 +1,8 @@
 {{define "partials/manage_section_item"}}
 <div
     id="manage-section-{{.Section.ID}}"
-    class="p-3 bg-stone-50 rounded-lg border border-stone-100 flex items-center gap-3"
-    :class="{'bg-red-50 border-red-200': selectMode && selectedSections.includes({{.Section.ID}})}"
+    class="p-3 bg-stone-50 dark:bg-stone-700 rounded-lg border border-stone-100 dark:border-stone-600 flex items-center gap-3"
+    :class="{'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800': selectMode && selectedSections.includes({{.Section.ID}})}"
     @click="if(selectMode) toggleSection({{.Section.ID}})"
 >
     <!-- Select checkbox -->
@@ -11,12 +11,12 @@
             type="checkbox"
             :checked="selectedSections.includes({{.Section.ID}})"
             @click.stop="toggleSection({{.Section.ID}})"
-            class="w-4 h-4 rounded border-stone-300 text-pink-400 focus:ring-pink-400"
+            class="w-4 h-4 rounded border-stone-300 dark:border-stone-500 text-pink-400 focus:ring-pink-400 dark:bg-stone-600"
         >
     </template>
 
     <!-- Section name -->
-    <span class="flex-1 font-medium text-stone-700 text-sm">{{.Section.Name}}</span>
+    <span class="flex-1 font-medium text-stone-700 dark:text-stone-200 text-sm">{{.Section.Name}}</span>
 
     <!-- Actions -->
     <template x-if="!selectMode">
@@ -26,7 +26,7 @@
                 hx-post="/sections/{{.Section.ID}}/move-up"
                 hx-target="#manage-sections-list"
                 hx-swap="innerHTML"
-                class="p-1.5 rounded-md hover:bg-stone-200 text-stone-400 disabled:opacity-30"
+                class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 disabled:opacity-30"
                 {{if eq .Index 0}}disabled{{end}}
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,7 +39,7 @@
                 hx-post="/sections/{{.Section.ID}}/move-down"
                 hx-target="#manage-sections-list"
                 hx-swap="innerHTML"
-                class="p-1.5 rounded-md hover:bg-stone-200 text-stone-400 disabled:opacity-30"
+                class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 disabled:opacity-30"
                 {{if eq (add .Index 1) .Total}}disabled{{end}}
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +50,7 @@
             <!-- Delete -->
             <button
                 @click="if(confirm(t('confirm.delete_section', {name: '{{.Section.Name}}'}))) { htmx.ajax('DELETE', '/sections/{{.Section.ID}}', {target: '#manage-section-{{.Section.ID}}', swap: 'outerHTML'}).then(() => $data.refreshSectionsAndSelects()) }"
-                class="p-1.5 rounded-md hover:bg-red-100 text-stone-400 hover:text-red-500"
+                class="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

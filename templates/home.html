@@ -1,7 +1,7 @@
 {{define "home"}}
-<div x-data="homePage()" x-init="init()" class="min-h-screen bg-stone-50">
+<div x-data="homePage()" x-init="init()" class="min-h-screen bg-stone-50 dark:bg-stone-900">
     <!-- Header -->
-    <header class="sticky top-0 z-30 bg-stone-50 pt-3">
+    <header class="sticky top-0 z-30 bg-stone-50 dark:bg-stone-900 pt-3">
         <div class="container mx-auto max-w-4xl px-4">
             <div class="flex items-center justify-between h-14 mb-4">
                 <!-- Logo -->
@@ -12,7 +12,7 @@
                 <!-- Settings -->
                 <button
                     @click="showSettings = true"
-                    class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+                    class="p-1.5 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg transition-colors"
                     :title="t('nav.settings')"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,40 +28,40 @@
         {{if .Lists}}
         <!-- Lists exist - show them -->
         <div class="mb-6">
-            <h2 class="text-lg font-semibold text-stone-800 mb-4" x-text="t('lists.title')"></h2>
+            <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('lists.title')"></h2>
 
             <!-- Lists grid -->
             <div class="grid gap-3" id="lists-container">
                 {{range .Lists}}
                 <div
-                    class="relative bg-white rounded-xl border border-stone-200 p-4 flex items-center gap-4 hover:border-pink-200 hover:shadow-md transition-all group"
+                    class="relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group"
                     x-data="{ showActions: false }"
                 >
                     <!-- Icon -->
-                    <a href="/lists/{{.ID}}" class="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-100 transition-colors text-2xl">
+                    <a href="/lists/{{.ID}}" class="w-12 h-12 rounded-xl bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/50 transition-colors text-2xl">
                         <span style="filter: grayscale(100%) sepia(50%) hue-rotate(-30deg) saturate(300%);">{{.Icon}}</span>
                     </a>
 
                     <!-- Info (clickable) -->
                     <a href="/lists/{{.ID}}" class="flex-1 min-w-0">
-                        <p class="font-medium text-stone-800 truncate">{{.Name}}</p>
-                        <p class="text-sm text-stone-400">{{.Stats.CompletedItems}}/{{.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
+                        <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{.Name}}</p>
+                        <p class="text-sm text-stone-400 dark:text-stone-500">{{.Stats.CompletedItems}}/{{.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
                     </a>
 
                     <!-- Progress -->
                     <div class="flex items-center gap-3">
                         {{if gt .Stats.TotalItems 0}}
-                        <div class="w-16 h-2 bg-stone-100 rounded-full overflow-hidden hidden sm:block">
+                        <div class="w-16 h-2 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden hidden sm:block">
                             <div class="h-full bg-pink-400 rounded-full transition-all" style="width: {{.Stats.Percentage}}%"></div>
                         </div>
-                        <span class="text-sm text-stone-400 w-10 text-right hidden sm:block">{{.Stats.Percentage}}%</span>
+                        <span class="text-sm text-stone-400 dark:text-stone-500 w-10 text-right hidden sm:block">{{.Stats.Percentage}}%</span>
                         {{end}}
 
                         <!-- Actions button with dropdown -->
                         <div class="relative">
                             <button
                                 @click.stop="showActions = !showActions"
-                                class="p-2 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
+                                class="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg transition-colors"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
@@ -74,11 +74,11 @@
                                 x-cloak
                                 x-transition
                                 @click.outside="showActions = false"
-                                class="absolute right-0 top-full mt-1 bg-white rounded-xl border border-stone-200 shadow-lg py-2 z-10 min-w-40"
+                                class="absolute right-0 top-full mt-1 bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 shadow-lg py-2 z-10 min-w-40"
                             >
                                 <button
                                     @click="showActions = false; editList({{.ID}}, '{{.Name}}', '{{.Icon}}')"
-                                    class="w-full px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-3"
+                                    class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -87,7 +87,7 @@
                                 </button>
                                 <button
                                     @click="showActions = false; deleteList({{.ID}}, '{{.Name}}')"
-                                    class="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                    class="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -99,7 +99,7 @@
 
                         <!-- Arrow -->
                         <a href="/lists/{{.ID}}" class="p-1">
-                            <svg class="w-5 h-5 text-stone-300 group-hover:text-pink-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-stone-300 dark:text-stone-600 group-hover:text-pink-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </a>
@@ -110,13 +110,13 @@
         </div>
 
         <!-- Add new list -->
-        <div class="bg-white rounded-xl border border-stone-200 border-dashed p-4">
+        <div class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 border-dashed p-4">
             <button
                 @click="showNewListModal = true"
-                class="w-full flex items-center gap-3 text-stone-400 hover:text-stone-600 transition-colors"
+                class="w-full flex items-center gap-3 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
             >
-                <div class="w-12 h-12 rounded-xl bg-stone-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-12 h-12 rounded-xl bg-stone-50 dark:bg-stone-700 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-stone-300 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
                 </div>
@@ -128,15 +128,15 @@
         <!-- No lists - Onboarding -->
         <div class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
             <!-- Illustration -->
-            <div class="w-32 h-32 mb-8 bg-gradient-to-br from-pink-100 to-pink-50 rounded-3xl flex items-center justify-center">
+            <div class="w-32 h-32 mb-8 bg-gradient-to-br from-pink-100 to-pink-50 dark:from-pink-900/50 dark:to-pink-900/30 rounded-3xl flex items-center justify-center">
                 <svg class="w-16 h-16 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                 </svg>
             </div>
 
             <!-- Welcome text -->
-            <h1 class="text-2xl font-bold text-stone-800 mb-2" x-text="t('onboarding.welcome')"></h1>
-            <p class="text-stone-500 mb-8 max-w-sm" x-text="t('onboarding.description')"></p>
+            <h1 class="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-2" x-text="t('onboarding.welcome')"></h1>
+            <p class="text-stone-500 dark:text-stone-400 mb-8 max-w-sm" x-text="t('onboarding.description')"></p>
 
             <!-- Create first list button -->
             <button
@@ -150,28 +150,28 @@
             <!-- Features hint -->
             <div class="mt-12 grid grid-cols-3 gap-6 text-center max-w-md">
                 <div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                         </svg>
                     </div>
-                    <p class="text-xs text-stone-400" x-text="t('onboarding.feature_sections')"></p>
+                    <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('onboarding.feature_sections')"></p>
                 </div>
                 <div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                         </svg>
                     </div>
-                    <p class="text-xs text-stone-400" x-text="t('onboarding.feature_templates')"></p>
+                    <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('onboarding.feature_templates')"></p>
                 </div>
                 <div>
-                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 mx-auto mb-2 bg-stone-100 dark:bg-stone-700 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                         </svg>
                     </div>
-                    <p class="text-xs text-stone-400" x-text="t('onboarding.feature_offline')"></p>
+                    <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('onboarding.feature_offline')"></p>
                 </div>
             </div>
         </div>
@@ -181,22 +181,22 @@
         <!-- Templates Section -->
         {{if .Templates}}
         <div class="mt-8">
-            <h2 class="text-lg font-semibold text-stone-800 mb-4" x-text="t('templates.title')"></h2>
+            <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('templates.title')"></h2>
             <div class="grid gap-3">
                 {{range .Templates}}
-                <div class="bg-white rounded-xl border border-stone-200 p-4 flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <div class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
                         <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z"></path>
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="font-medium text-stone-800 truncate">{{.Name}}</p>
-                        <p class="text-sm text-stone-400">{{len .Items}} <span x-text="t('templates.items')"></span></p>
+                        <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{.Name}}</p>
+                        <p class="text-sm text-stone-400 dark:text-stone-500">{{len .Items}} <span x-text="t('templates.items')"></span></p>
                     </div>
                     <button
                         @click="applyTemplate({{.ID}})"
-                        class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
+                        class="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium transition-colors"
                         x-text="t('templates.apply')"
                     >Zastosuj</button>
                 </div>
@@ -209,23 +209,23 @@
 
     <!-- New/Edit List Modal -->
     <div x-show="showNewListModal || editingList" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showNewListModal = false; editingList = null"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showNewListModal = false; editingList = null"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
-            <h3 class="text-lg font-semibold text-stone-800 mb-4" x-text="editingList ? t('common.edit') : t('onboarding.list_name')"></h3>
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="editingList ? t('common.edit') : t('onboarding.list_name')"></h3>
 
             <form @submit.prevent="submitList()" class="space-y-4">
                 <!-- Icon picker -->
                 <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-2" x-text="t('lists.icon')"></label>
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('lists.icon')"></label>
                     <div class="flex flex-wrap gap-2">
                         <template x-for="icon in icons" :key="icon">
                             <button
                                 type="button"
                                 @click="selectedIcon = icon"
-                                :class="selectedIcon === icon ? 'bg-pink-100 border-pink-400' : 'bg-pink-50 border-pink-100 hover:border-pink-200'"
+                                :class="selectedIcon === icon ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400' : 'bg-pink-50 dark:bg-pink-900/30 border-pink-100 dark:border-pink-900 hover:border-pink-200 dark:hover:border-pink-700'"
                                 class="w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xl transition-colors"
                             >
                                 <span style="filter: grayscale(100%) sepia(50%) hue-rotate(-30deg) saturate(300%);" x-text="icon"></span>
@@ -236,23 +236,23 @@
 
                 <!-- Name input -->
                 <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-2" x-text="t('common.name')"></label>
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('common.name')"></label>
                     <input
                         type="text"
                         x-model="listName"
                         :placeholder="t('onboarding.list_placeholder')"
                         required
-                        class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                        class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                     >
                 </div>
 
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="showNewListModal = false; editingList = null"
-                        class="flex-1 border border-stone-200 text-stone-600 py-3 rounded-lg text-sm font-medium"
+                        class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
                         x-text="t('common.cancel')">
                     </button>
                     <button type="submit"
-                        class="flex-1 bg-pink-400 text-white py-3 rounded-lg text-sm font-medium"
+                        class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-lg text-sm font-medium transition-colors"
                         x-text="editingList ? t('common.save') : t('common.create')">
                     </button>
                 </div>
@@ -261,29 +261,67 @@
     </div>
 
     <!-- Settings Modal -->
-    <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showSettings = false"></div>
-        <div class="relative bg-white rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
+    <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+         x-data="{ currentTheme: localStorage.getItem('theme') || 'system' }">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
 
             <!-- Header -->
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-stone-800" x-text="t('settings.title')"></h3>
-                <button @click="showSettings = false" class="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100">
+                <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100" x-text="t('settings.title')"></h3>
+                <button @click="showSettings = false" class="p-1 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
 
+            <!-- Theme Selection -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.theme')"></label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button
+                        @click="setTheme('light'); currentTheme = 'light'"
+                        :class="currentTheme === 'light' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <span x-text="t('settings.theme_light')"></span>
+                    </button>
+                    <button
+                        @click="setTheme('dark'); currentTheme = 'dark'"
+                        :class="currentTheme === 'dark' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                        <span x-text="t('settings.theme_dark')"></span>
+                    </button>
+                    <button
+                        @click="setTheme('system'); currentTheme = 'system'"
+                        :class="currentTheme === 'system' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-2V4a8 8 0 110 16z"></path>
+                        </svg>
+                        <span x-text="t('settings.theme_system')"></span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Language Selection -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-stone-600 mb-2" x-text="t('settings.language')"></label>
+                <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.language')"></label>
                 <select
                     @change="changeLanguage($event.target.value)"
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"
+                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 dark:text-stone-100"
                 >
                     <template x-for="locale in window.locales" :key="locale.code">
                         <option :value="locale.code" :selected="window.currentLang === locale.code" x-text="locale.flag + ' ' + locale.name"></option>
@@ -294,7 +332,7 @@
             <!-- Logout -->
             <form action="/logout" method="POST" class="mb-6">
                 <button type="submit"
-                    class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors">
+                    class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
@@ -303,14 +341,14 @@
             </form>
 
             <!-- Sponsor & Bug report -->
-            <div class="pt-4 border-t border-stone-100 space-y-2">
+            <div class="pt-4 border-t border-stone-100 dark:border-stone-700 space-y-2">
                 <a href="https://github.com/sponsors/PanSalut" target="_blank" rel="noopener"
-                   class="flex items-center gap-2 text-xs text-stone-400 hover:text-pink-500 transition-colors group">
+                   class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-pink-500 transition-colors group">
                     <span class="text-base group-hover:animate-pulse">💖</span>
                     <span x-text="t('settings.sponsor')"></span>
                 </a>
                 <a href="https://github.com/PanSalut/Koffan/issues" target="_blank" rel="noopener"
-                   class="flex items-center gap-2 text-xs text-stone-400 hover:text-stone-600 transition-colors group">
+                   class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors group">
                     <span class="text-base">🐛</span>
                     <span x-text="t('settings.report_bug')"></span>
                 </a>

@@ -14,6 +14,22 @@
     <meta name="theme-color" content="#f9a8d4">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+    <!-- Dark mode initialization (must run before body renders to prevent flash) -->
+    <script>
+        (function() {
+            function getThemePreference() {
+                const stored = localStorage.getItem('theme');
+                if (stored === 'dark' || stored === 'light') return stored;
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            const theme = getThemePreference();
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+            window.getThemePreference = getThemePreference;
+        })();
+    </script>
+
     <!-- i18n translations -->
     <script>
         window.translations = {{.Translations | toJSON}};
@@ -64,12 +80,39 @@
             localStorage.setItem('language', lang);
             window.location.reload();
         }
+
+        // Theme change helper
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                document.querySelector('meta[name="theme-color"]').content = '#1c1917';
+            } else if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                document.querySelector('meta[name="theme-color"]').content = '#f9a8d4';
+            } else {
+                // 'system' - remove stored preference
+                localStorage.removeItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.classList.toggle('dark', prefersDark);
+                document.querySelector('meta[name="theme-color"]').content = prefersDark ? '#1c1917' : '#f9a8d4';
+            }
+        }
+
+        // Listen for system preference changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme('system');
+            }
+        });
     </script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -200,6 +243,10 @@
             transition: opacity 0.2s ease-out;
             pointer-events: none;
         }
+        .dark .pull-to-refresh-spinner {
+            background: #292524;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
         .pull-to-refresh-spinner.visible {
             opacity: 1;
         }
@@ -226,6 +273,9 @@
             pointer-events: none;
             transition: opacity 0.25s ease-out;
         }
+        .dark .refresh-overlay {
+            background: #1c1917;
+        }
         .refresh-overlay.active {
             opacity: 1;
             pointer-events: auto;
@@ -238,9 +288,30 @@
         .safe-area-pb {
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
+
+        /* Custom scrollbar for dark mode */
+        .dark ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #292524;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #57534e;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #78716c;
+        }
+        /* Firefox */
+        .dark * {
+            scrollbar-color: #57534e #292524;
+            scrollbar-width: thin;
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 dark:bg-stone-900 min-h-screen transition-colors duration-200">
     <!-- Refresh overlay -->
     <div id="refresh-overlay" class="refresh-overlay"></div>
 

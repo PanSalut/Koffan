@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Settings",
+    "theme": "Theme",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
     "language": "Language",
     "coming_soon": "Coming soon...",
     "sponsor": "Want to support the app? Add to cart!",

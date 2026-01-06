@@ -1,7 +1,7 @@
 {{define "partials/item"}}
 <div
     id="item-{{.Item.ID}}"
-    class="px-4 py-3 flex items-center gap-3 hover:bg-stone-50 transition-all group {{if .Item.Uncertain}}bg-amber-50/50{{end}}"
+    class="px-4 py-3 flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
 >
     <!-- Checkbox -->
     <button
@@ -12,7 +12,7 @@
         hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
         class="flex-shrink-0 w-11 h-11 flex items-center justify-center -m-3"
     >
-        <span class="w-5 h-5 rounded-full border-2 border-stone-300 hover:border-pink-400 transition-all hover:scale-110"></span>
+        <span class="w-5 h-5 rounded-full border-2 border-stone-300 dark:border-stone-500 hover:border-pink-400 transition-all hover:scale-110"></span>
     </button>
 
     <!-- Content (clickable to toggle) -->
@@ -25,12 +25,12 @@
     >
         <div class="flex items-center gap-2">
             {{if .Item.Uncertain}}
-            <span class="text-amber-500 text-xs">?</span>
+            <span class="text-amber-500 dark:text-amber-400 text-xs">?</span>
             {{end}}
-            <p class="text-sm text-stone-700 truncate">{{.Item.Name}}</p>
+            <p class="text-sm text-stone-700 dark:text-stone-200 truncate">{{.Item.Name}}</p>
         </div>
         {{if .Item.Description}}
-        <p class="text-xs text-stone-400 truncate mt-0.5">{{.Item.Description}}</p>
+        <p class="text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">{{.Item.Description}}</p>
         {{end}}
     </div>
 
@@ -39,7 +39,7 @@
         <!-- Uncertain toggle -->
         <button
             onclick="window.toggleUncertain({{.Item.ID}})"
-            class="p-1.5 rounded-md hover:bg-stone-100 {{if .Item.Uncertain}}text-amber-500{{else}}text-stone-400{{end}} transition-colors uncertain-btn"
+            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 {{if .Item.Uncertain}}text-amber-500{{else}}text-stone-400 dark:text-stone-500{{end}} transition-colors uncertain-btn"
             :title="{{if .Item.Uncertain}}t('actions.remove_mark'){{else}}t('actions.mark_uncertain'){{end}}"
         >
             <svg class="w-4 h-4 uncertain-icon" fill="{{if .Item.Uncertain}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@
                 name: $el.dataset.itemName,
                 description: $el.dataset.itemDescription || ''
             })"
-            class="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors"
+            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
             :title="t('common.edit')"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +68,7 @@
         <!-- Move up -->
         <button
             @click="$dispatch('move-item', {id: {{.Item.ID}}, direction: 'up'})"
-            class="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors"
+            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
             :title="t('actions.move_up')"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@
         <!-- Move down -->
         <button
             @click="$dispatch('move-item', {id: {{.Item.ID}}, direction: 'down'})"
-            class="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors"
+            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
             :title="t('actions.move_down')"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@
         <div x-data="{ open: false }" class="relative">
             <button
                 @click="open = !open"
-                class="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors"
+                class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
                 :title="t('actions.move')"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,7 @@
                 x-show="open"
                 @click.outside="open = false"
                 x-transition
-                class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl border border-stone-200 z-50 py-1"
+                class="absolute right-0 mt-1 w-40 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 z-50 py-1"
             >
                 {{range .Sections}}
                 {{if ne .ID $.Item.SectionID}}
@@ -112,7 +112,7 @@
                     hx-swap="none"
                     hx-on::after-request="window.dispatchEvent(new CustomEvent('refresh-list'))"
                     @click="open = false"
-                    class="block w-full text-left px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
+                    class="block w-full text-left px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700"
                 >
                     {{.Name}}
                 </button>
@@ -124,7 +124,7 @@
         <!-- Delete -->
         <button
             @click="if(confirm(t('confirm.delete_item', {name: '{{.Item.Name}}'}))) { const el = document.getElementById('item-{{.Item.ID}}'); window.updateSectionAfterDelete(el); el.classList.add('item-exit'); setTimeout(() => htmx.ajax('DELETE', '/items/{{.Item.ID}}', {target: '#item-{{.Item.ID}}', swap: 'outerHTML'}).then(() => htmx.trigger('#stats-container', 'refresh')), 200); }"
-            class="p-1.5 rounded-md hover:bg-red-50 text-stone-400 hover:text-red-500 transition-colors"
+            class="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
             :title="t('common.delete')"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,7 +147,7 @@
             section_id: parseInt($el.dataset.sectionId),
             uncertain: $el.dataset.uncertain === 'true'
         })"
-        class="md:hidden p-2 rounded-lg text-stone-400 hover:bg-stone-100"
+        class="md:hidden p-2 rounded-lg text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700"
     >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>

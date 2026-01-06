@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Ustawienia",
+    "theme": "Motyw",
+    "theme_light": "Jasny",
+    "theme_dark": "Ciemny",
+    "theme_system": "System",
     "language": "Język",
     "coming_soon": "Wkrótce...",
     "sponsor": "Chcesz wesprzeć rozwój aplikacji? Dorzuć do koszyka!",

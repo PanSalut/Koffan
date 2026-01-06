@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "theme": "Design",
+    "theme_light": "Hell",
+    "theme_dark": "Dunkel",
+    "theme_system": "System",
     "language": "Sprache",
     "coming_soon": "Demnächst verfügbar...",
     "sponsor": "Möchtest du die App unterstützen? Ab in den Warenkorb!",

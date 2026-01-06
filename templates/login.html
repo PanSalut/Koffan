@@ -5,7 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Login - Koffan</title>
+
+    <!-- Dark mode initialization (must run before body renders to prevent flash) -->
+    <script>
+        (function() {
+            function getThemePreference() {
+                const stored = localStorage.getItem('theme');
+                if (stored === 'dark' || stored === 'light') return stored;
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            const theme = getThemePreference();
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f9a8d4',
+                    }
+                }
+            }
+        }
+    </script>
     <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
 
     <!-- i18n translations -->
@@ -56,31 +84,31 @@
         });
     </script>
 </head>
-<body class="bg-stone-50 min-h-screen flex items-center justify-center px-4" x-data>
-    <div class="bg-white p-8 rounded-2xl border border-stone-200 shadow-sm w-full max-w-sm">
+<body class="bg-stone-50 dark:bg-stone-900 min-h-screen flex items-center justify-center px-4 transition-colors duration-200" x-data>
+    <div class="bg-white dark:bg-stone-800 p-8 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-sm w-full max-w-sm">
         <div class="text-center mb-8">
             <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-16 mx-auto mb-4">
-            <p class="text-sm text-stone-400 mt-1" x-text="t('login.subtitle')"></p>
+            <p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t('login.subtitle')"></p>
         </div>
 
         {{if eq .Error "rate_limited"}}
-        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm"
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm"
              x-text="t('login.error_rate_limited')">
         </div>
         {{else if .Error}}
-        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm" x-text="t('login.error_invalid')">
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" x-text="t('login.error_invalid')">
         </div>
         {{end}}
 
         <form action="/login" method="POST">
             <div class="mb-6">
-                <label for="password" class="block text-stone-600 text-sm font-medium mb-2" x-text="t('login.password')">
+                <label for="password" class="block text-stone-600 dark:text-stone-400 text-sm font-medium mb-2" x-text="t('login.password')">
                 </label>
                 <input
                     type="password"
                     id="password"
                     name="password"
-                    class="w-full border border-stone-200 rounded-lg px-4 py-3 text-sm text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                    class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 rounded-lg px-4 py-3 text-sm text-stone-700 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                     :placeholder="t('login.password_placeholder')"
                     autofocus
                     required
@@ -89,7 +117,7 @@
 
             <button
                 type="submit"
-                class="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 transition-colors"
+                class="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 dark:focus:ring-offset-stone-800 transition-colors"
                 x-text="t('login.submit')"
             >
             </button>

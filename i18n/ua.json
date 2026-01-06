@@ -59,6 +59,10 @@
   },
   "settings": {
     "title": "Налаштування",
+    "theme": "Тема",
+    "theme_light": "Світла",
+    "theme_dark": "Темна",
+    "theme_system": "Системна",
     "language": "Мова",
     "coming_soon": "Скоро буде...",
     "sponsor": "Хочеш підтримати застосунок? Додай у кошик!",

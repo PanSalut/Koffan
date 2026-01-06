@@ -59,6 +59,10 @@
 	},
 	"settings": {
 		"title": "Nustatymai",
+		"theme": "Tema",
+		"theme_light": "Šviesus",
+		"theme_dark": "Tamsus",
+		"theme_system": "Sistema",
 		"language": "Kalba",
 		"coming_soon": "Netrukus...",
 		"sponsor": "Norite paremti programėlę? Įdėkite į krepšelį!",
