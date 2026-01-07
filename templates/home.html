@@ -31,10 +31,10 @@
             <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('lists.title')"></h2>
 
             <!-- Lists grid -->
-            <div class="grid gap-3" id="lists-container">
+            <div class="flex flex-wrap gap-3" id="lists-container">
                 {{range .Lists}}
                 <div
-                    class="relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group"
+                    class="relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group w-full"
                     x-data="{ showActions: false }"
                 >
                     <!-- Icon -->

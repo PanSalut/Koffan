@@ -3,16 +3,16 @@
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-stone-50 dark:bg-stone-900 pt-3 transition-colors">
         <div class="container mx-auto max-w-4xl px-4">
-            <div class="flex items-center justify-between h-14 mb-4">
+            <div class="flex items-center justify-between h-14 mb-4 gap-3">
                 <!-- Logo and List Name -->
-                <div class="flex items-center gap-3">
-                    <a href="/" class="hover:opacity-80 transition-opacity" title="Powrót do list">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <a href="/" class="hover:opacity-80 transition-opacity flex-shrink-0" title="Powrót do list">
                         <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-10">
                     </a>
                     <span class="text-stone-300 dark:text-stone-600">/</span>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 overflow-hidden">
                         {{if .List}}<span class="text-xl">{{.List.Icon}}</span>{{end}}
-                        <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 truncate max-w-32 md:max-w-48">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                        <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" title="{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
                     </div>
                 </div>
 
