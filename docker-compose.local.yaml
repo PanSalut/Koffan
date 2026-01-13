@@ -1,8 +1,8 @@
 services:
   shopping-list:
     build: .
-    expose:
-      - "80"
+    ports:
+      - "80:80"
     environment:
       - APP_ENV=production
       - APP_PASSWORD=${APP_PASSWORD:-shopping123}
