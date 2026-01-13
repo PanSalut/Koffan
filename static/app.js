@@ -142,11 +142,6 @@ function shoppingList() {
                 this.openMobileAction(e.detail);
             });
 
-            // Listen for move item events (use window because $dispatch bubbles to window)
-            window.addEventListener('move-item', (e) => {
-                this.moveItemAnimated(e.detail.id, e.detail.direction);
-            });
-
             // Listen for uncertain toggle events (use window because $dispatch bubbles to window)
             window.addEventListener('toggle-uncertain', (e) => {
                 this.toggleUncertainAnimated(e.detail.id);
@@ -157,6 +152,18 @@ function shoppingList() {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.editingItem) {
                     e.preventDefault();
                     this.submitEditItem();
+                }
+            });
+
+            // Initialize mobile drag-and-drop
+            this.$nextTick(() => {
+                this.initMobileSortable();
+            });
+
+            // Re-initialize sortable after HTMX swaps
+            document.body.addEventListener('htmx:afterSwap', (e) => {
+                if (e.detail.target?.id === 'sections-list') {
+                    this.$nextTick(() => this.initMobileSortable());
                 }
             });
         },
@@ -355,10 +362,26 @@ function shoppingList() {
                     }
                 }
 
-                // Refresh data after sync
+                // Refresh data after sync - small delay to ensure server processed all changes
+                await new Promise(resolve => setTimeout(resolve, 150));
                 await this.cacheData();
-                this.refreshList();
+
+                // Force full htmx refresh of sections list
+                const sectionsList = document.getElementById('sections-list');
+                if (sectionsList) {
+                    const refreshUrl = window.location.pathname.startsWith('/lists/')
+                        ? window.location.pathname
+                        : '/';
+                    await htmx.ajax('GET', refreshUrl, {
+                        target: '#sections-list',
+                        swap: 'innerHTML',
+                        select: '#sections-list > *'
+                    });
+                    // Reinitialize sortable after swap
+                    this.$nextTick(() => this.initMobileSortable());
+                }
                 this.refreshStats();
+                console.log('[App] Offline queue processed, UI refreshed');
 
                 return true; // Had queued actions
 
@@ -1377,97 +1400,6 @@ function shoppingList() {
             }
         },
 
-        // Animated item move (swap two items in DOM)
-        async moveItemAnimated(itemId, direction) {
-            if (!this.isOnline) {
-                window.Toast.show(t('offline.action_blocked'), 'warning');
-                return;
-            }
-            const item = document.getElementById(`item-${itemId}`);
-            if (!item) return;
-
-            // Find sibling to swap with
-            let sibling;
-            if (direction === 'up') {
-                sibling = item.previousElementSibling;
-                // Skip non-item elements
-                while (sibling && !sibling.id?.startsWith('item-')) {
-                    sibling = sibling.previousElementSibling;
-                }
-            } else {
-                sibling = item.nextElementSibling;
-                while (sibling && !sibling.id?.startsWith('item-')) {
-                    sibling = sibling.nextElementSibling;
-                }
-            }
-
-            if (!sibling) return; // Already at top/bottom
-
-            // Calculate distance before any changes
-            const itemRect = item.getBoundingClientRect();
-            const siblingRect = sibling.getBoundingClientRect();
-            const distance = siblingRect.top - itemRect.top;
-
-            // Disable all transitions on elements
-            item.style.cssText = 'transition: none !important;';
-            sibling.style.cssText = 'transition: none !important;';
-
-            // Force reflow
-            item.offsetHeight;
-
-            // Now add transform transition and animate
-            item.style.cssText = 'transition: transform 0.2s ease-out !important;';
-            sibling.style.cssText = 'transition: transform 0.2s ease-out !important;';
-
-            // Animate
-            item.style.transform = `translateY(${distance}px)`;
-            sibling.style.transform = `translateY(${-distance}px)`;
-
-            // After animation, actually swap in DOM
-            setTimeout(() => {
-                // Disable transitions before DOM swap
-                item.style.cssText = 'transition: none !important;';
-                sibling.style.cssText = 'transition: none !important;';
-                item.style.transform = '';
-                sibling.style.transform = '';
-
-                // Swap in DOM
-                if (direction === 'up') {
-                    sibling.parentNode.insertBefore(item, sibling);
-                } else {
-                    sibling.parentNode.insertBefore(sibling, item);
-                }
-
-                // Force reflow after DOM swap
-                item.offsetHeight;
-
-                // Clear all inline styles
-                item.style.cssText = '';
-                sibling.style.cssText = '';
-            }, 200);
-
-            // Send request to server in background
-            this.markLocalAction('items_reordered');
-            try {
-                const response = await this.offlineFetch(
-                    `/items/${itemId}/move-${direction}`,
-                    { method: 'POST' },
-                    'move_item_order'
-                );
-
-                if (!response.ok && !response.offline) {
-                    console.error('Failed to move item on server');
-                }
-            } catch (error) {
-                console.error('Failed to move item:', error);
-                await this.queueOfflineAction({
-                    type: 'move_item_order',
-                    url: `/items/${itemId}/move-${direction}`,
-                    method: 'POST'
-                });
-            }
-        },
-
         // Toggle uncertain status with animation (no page refresh)
         async toggleUncertainAnimated(itemId) {
             const item = document.getElementById(`item-${itemId}`);
@@ -1568,6 +1500,166 @@ function shoppingList() {
                     desktopInput.focus();
                     desktopInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
+            }
+        },
+
+        // Drag-and-drop for item reordering
+        initMobileSortable() {
+            // Check if SortableJS is available
+            if (typeof Sortable === 'undefined') {
+                console.warn('[App] SortableJS not loaded');
+                return;
+            }
+
+            // Find all sortable containers (works on both mobile and desktop)
+            const containers = document.querySelectorAll('.items-sortable');
+
+            containers.forEach(container => {
+                // Skip if already initialized
+                if (container._sortableInstance) {
+                    container._sortableInstance.destroy();
+                }
+
+                const sectionId = container.dataset.sectionId;
+
+                container._sortableInstance = new Sortable(container, {
+                    animation: 200,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    handle: '.drag-handle',
+                    draggable: '[data-item-id]',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+
+                    // Allow dragging between sections
+                    group: 'items',
+
+                    // Threshold before starting drag (prevents accidental drags)
+                    delay: 150,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
+
+                    // Scroll behavior - scroll window when near edges
+                    scroll: true,
+                    scrollSensitivity: 150,
+                    scrollSpeed: 15,
+                    bubbleScroll: true,
+                    forceFallback: true,
+                    fallbackOnBody: true,
+                    fallbackTolerance: 3,
+
+                    // Callbacks
+                    onStart: (evt) => {
+                        // Haptic feedback if available
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                        // Prevent body scroll during drag
+                        document.body.classList.add('is-dragging');
+                    },
+
+                    onEnd: async (evt) => {
+                        document.body.classList.remove('is-dragging');
+
+                        const itemId = evt.item.dataset.itemId;
+                        const fromSectionId = evt.from.dataset.sectionId;
+                        const toSectionId = evt.to.dataset.sectionId;
+                        const newIndex = evt.newIndex;
+                        const oldIndex = evt.oldIndex;
+
+                        // Moving to different section
+                        if (fromSectionId !== toSectionId) {
+                            // Pass target position directly - server handles positioning among active items
+                            await this.moveItemToSection(itemId, toSectionId, newIndex);
+                            return;
+                        }
+
+                        // Same section - reorder
+                        if (newIndex !== oldIndex) {
+                            await this.syncItemPosition(itemId, toSectionId, newIndex);
+                        }
+                    }
+                });
+            });
+        },
+
+        // Sync item position with server - single request (supports offline)
+        async syncItemPosition(itemId, sectionId, newIndex) {
+            // Mark as local action to prevent WebSocket race condition
+            this.markLocalAction('items_reordered');
+
+            try {
+                const url = `/items/${itemId}/move`;
+                const options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `section_id=${encodeURIComponent(sectionId)}&position=${encodeURIComponent(newIndex)}`
+                };
+
+                const response = await this.offlineFetch(url, options, 'reorder_item');
+
+                if (response.offline) {
+                    // Queued for later - silent sync, just haptic feedback
+                    if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
+                    return;
+                }
+
+                if (!response.ok) {
+                    console.error('Failed to reorder item');
+                    window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
+                    if (navigator.onLine) this.refreshList();
+                    return;
+                }
+
+                // Haptic feedback on success
+                if (navigator.vibrate) {
+                    navigator.vibrate([10, 50, 10]);
+                }
+            } catch (error) {
+                console.error('Failed to sync item position:', error);
+                window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
+                if (navigator.onLine) this.refreshList();
+            }
+        },
+
+        // Move item to different section via drag-and-drop (supports offline)
+        async moveItemToSection(itemId, sectionId, targetIndex) {
+            this.markLocalAction('item_moved');
+
+            try {
+                const url = `/items/${itemId}/move`;
+                const options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `section_id=${encodeURIComponent(sectionId)}&position=${encodeURIComponent(targetIndex)}`
+                };
+
+                const response = await this.offlineFetch(url, options, 'move_item');
+
+                if (response.offline) {
+                    // Queued for later - silent sync, just haptic feedback
+                    if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
+                    return;
+                }
+
+                if (!response.ok) {
+                    console.error('Failed to move item to section');
+                    window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
+                    if (navigator.onLine) this.refreshList();
+                    return;
+                }
+
+                // Haptic feedback on success
+                if (navigator.vibrate) {
+                    navigator.vibrate([10, 50, 10]);
+                }
+
+                // Refresh to ensure sync
+                if (navigator.onLine) this.refreshList();
+            } catch (error) {
+                console.error('Failed to move item to section:', error);
+                window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
+                if (navigator.onLine) this.refreshList();
             }
         }
     };

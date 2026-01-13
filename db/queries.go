@@ -597,6 +597,180 @@ func MoveItemToSection(id, newSectionID int64) (*Item, error) {
 	return GetItemByID(id)
 }
 
+// MoveItemToSectionAtPosition moves an item to a new section at a specific position among ACTIVE items
+func MoveItemToSectionAtPosition(id, newSectionID int64, targetPosition int) (*Item, error) {
+	tx, err := DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Verify item exists and get current section
+	var currentSectionID int64
+	err = tx.QueryRow("SELECT section_id FROM items WHERE id = ?", id).Scan(&currentSectionID)
+	if err != nil {
+		return nil, err // Item not found
+	}
+
+	// If same section, use regular reorder logic instead
+	if currentSectionID == newSectionID {
+		tx.Rollback()
+		return reorderItemInSection(id, targetPosition)
+	}
+
+	// Get all ACTIVE items in target section, ordered by sort_order
+	rows, err := tx.Query(`
+		SELECT id, sort_order FROM items
+		WHERE section_id = ? AND completed = FALSE
+		ORDER BY sort_order ASC
+	`, newSectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	type itemOrder struct {
+		id        int64
+		sortOrder int
+	}
+	var activeItems []itemOrder
+	for rows.Next() {
+		var item itemOrder
+		if err := rows.Scan(&item.id, &item.sortOrder); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		activeItems = append(activeItems, item)
+	}
+	rows.Close()
+
+	// Determine the target sort_order
+	var targetSortOrder int
+	if len(activeItems) == 0 {
+		// No active items - check if there are ANY items (completed) and use max+1
+		var maxOrder int
+		err = tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM items WHERE section_id = ?", newSectionID).Scan(&maxOrder)
+		if err != nil {
+			return nil, err
+		}
+		targetSortOrder = maxOrder + 1
+	} else if targetPosition <= 0 {
+		// Insert at beginning - use sort_order less than first
+		targetSortOrder = activeItems[0].sortOrder
+	} else if targetPosition >= len(activeItems) {
+		// Insert at end - use sort_order greater than last active
+		targetSortOrder = activeItems[len(activeItems)-1].sortOrder + 1
+	} else {
+		// Insert in middle - use sort_order of item at target position
+		targetSortOrder = activeItems[targetPosition].sortOrder
+	}
+
+	// Shift all items with sort_order >= targetSortOrder up by 1
+	_, err = tx.Exec(`
+		UPDATE items SET sort_order = sort_order + 1
+		WHERE section_id = ? AND sort_order >= ?
+	`, newSectionID, targetSortOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	// Move the item to new section with target sort_order
+	_, err = tx.Exec(`
+		UPDATE items SET section_id = ?, sort_order = ?, updated_at = strftime('%s', 'now')
+		WHERE id = ?
+	`, newSectionID, targetSortOrder, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return GetItemByID(id)
+}
+
+// reorderItemInSection moves an item to a specific position within its current section
+func reorderItemInSection(id int64, targetPosition int) (*Item, error) {
+	tx, err := DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// Get item's current section and sort_order
+	var sectionID int64
+	var currentSortOrder int
+	err = tx.QueryRow("SELECT section_id, sort_order FROM items WHERE id = ?", id).Scan(&sectionID, &currentSortOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all ACTIVE items in section (excluding the moved item), ordered by sort_order
+	rows, err := tx.Query(`
+		SELECT id, sort_order FROM items
+		WHERE section_id = ? AND completed = FALSE AND id != ?
+		ORDER BY sort_order ASC
+	`, sectionID, id)
+	if err != nil {
+		return nil, err
+	}
+
+	type itemOrder struct {
+		id        int64
+		sortOrder int
+	}
+	var otherItems []itemOrder
+	for rows.Next() {
+		var item itemOrder
+		if err := rows.Scan(&item.id, &item.sortOrder); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		otherItems = append(otherItems, item)
+	}
+	rows.Close()
+
+	// Clamp target position
+	if targetPosition < 0 {
+		targetPosition = 0
+	}
+	if targetPosition > len(otherItems) {
+		targetPosition = len(otherItems)
+	}
+
+	// Renumber all active items with moved item at target position
+	newOrder := 0
+	for i, item := range otherItems {
+		if i == targetPosition {
+			// Insert moved item here
+			_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", newOrder, id)
+			if err != nil {
+				return nil, err
+			}
+			newOrder++
+		}
+		_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", newOrder, item.id)
+		if err != nil {
+			return nil, err
+		}
+		newOrder++
+	}
+
+	// If target is at end
+	if targetPosition >= len(otherItems) {
+		_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", newOrder, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return GetItemByID(id)
+}
+
 func MoveItemUp(id int64) error {
 	tx, err := DB.Begin()
 	if err != nil {
@@ -611,22 +785,29 @@ func MoveItemUp(id int64) error {
 		return err
 	}
 
-	if sortOrder == 0 {
+	// Find previous item (closest smaller sort_order) - handles non-contiguous sort_order
+	var prevID int64
+	var prevSortOrder int
+	err = tx.QueryRow(`
+		SELECT id, sort_order FROM items
+		WHERE section_id = ? AND sort_order < ?
+		ORDER BY sort_order DESC
+		LIMIT 1
+	`, sectionID, sortOrder).Scan(&prevID, &prevSortOrder)
+
+	if err == sql.ErrNoRows {
 		return nil // Already at top
 	}
-
-	// Swap with previous item in same section
-	_, err = tx.Exec(`
-		UPDATE items SET sort_order = sort_order + 1
-		WHERE section_id = ? AND sort_order = ?
-	`, sectionID, sortOrder-1)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE items SET sort_order = ? WHERE id = ?
-	`, sortOrder-1, id)
+	// Swap sort_order values
+	_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", sortOrder, prevID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", prevSortOrder, id)
 	if err != nil {
 		return err
 	}
@@ -648,28 +829,29 @@ func MoveItemDown(id int64) error {
 		return err
 	}
 
-	var maxOrder int
-	err = tx.QueryRow("SELECT MAX(sort_order) FROM items WHERE section_id = ?", sectionID).Scan(&maxOrder)
-	if err != nil {
-		return err
-	}
+	// Find next item (closest larger sort_order) - handles non-contiguous sort_order
+	var nextID int64
+	var nextSortOrder int
+	err = tx.QueryRow(`
+		SELECT id, sort_order FROM items
+		WHERE section_id = ? AND sort_order > ?
+		ORDER BY sort_order ASC
+		LIMIT 1
+	`, sectionID, sortOrder).Scan(&nextID, &nextSortOrder)
 
-	if sortOrder >= maxOrder {
+	if err == sql.ErrNoRows {
 		return nil // Already at bottom
 	}
-
-	// Swap with next item in same section
-	_, err = tx.Exec(`
-		UPDATE items SET sort_order = sort_order - 1
-		WHERE section_id = ? AND sort_order = ?
-	`, sectionID, sortOrder+1)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(`
-		UPDATE items SET sort_order = ? WHERE id = ?
-	`, sortOrder+1, id)
+	// Swap sort_order values
+	_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", sortOrder, nextID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("UPDATE items SET sort_order = ? WHERE id = ?", nextSortOrder, id)
 	if err != nil {
 		return err
 	}

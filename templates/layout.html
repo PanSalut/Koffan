@@ -132,6 +132,9 @@
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
 
+    <!-- SortableJS for mobile drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
     <style>
         [x-cloak] { display: none !important; }
         .htmx-request .htmx-indicator { display: inline-block; }
@@ -308,6 +311,50 @@
         .dark * {
             scrollbar-color: #57534e #292524;
             scrollbar-width: thin;
+        }
+
+        /* Drag-and-drop states */
+        [data-item-id] {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .sortable-ghost {
+            opacity: 0.5;
+            background: #fce7f3 !important;
+        }
+        .dark .sortable-ghost {
+            background: rgba(244, 114, 182, 0.3) !important;
+        }
+        .sortable-chosen {
+            background: #fdf2f8 !important;
+            border-left: 3px solid #ec4899 !important;
+        }
+        .dark .sortable-chosen {
+            background: rgba(244, 114, 182, 0.15) !important;
+            border-left: 3px solid #ec4899 !important;
+        }
+        .sortable-drag {
+            opacity: 0 !important;
+        }
+        body.is-dragging {
+            overflow: hidden;
+            touch-action: none;
+            cursor: grabbing !important;
+        }
+        body.is-dragging * {
+            cursor: grabbing !important;
+        }
+        .drag-handle {
+            opacity: 0.4;
+            transition: opacity 0.2s ease;
+        }
+        .drag-handle:active {
+            opacity: 1;
+        }
+        .is-dragging * {
+            user-select: none;
+            -webkit-user-select: none;
         }
     </style>
 </head>

@@ -5,9 +5,30 @@ import (
 	"log"
 	"shopping-list/db"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+// retryOnBusy retries a database operation if it fails with SQLITE_BUSY
+func retryOnBusy[T any](maxRetries int, operation func() (T, error)) (T, error) {
+	var result T
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		result, err = operation()
+		if err == nil {
+			return result, nil
+		}
+		// Check if error is database locked (SQLITE_BUSY)
+		if !strings.Contains(err.Error(), "database is locked") {
+			return result, err
+		}
+		// Wait before retry with exponential backoff
+		time.Sleep(time.Duration(10*(i+1)) * time.Millisecond)
+	}
+	return result, err
+}
 
 // CreateItem creates a new item in a section
 func CreateItem(c *fiber.Ctx) error {
@@ -159,6 +180,7 @@ func ToggleUncertain(c *fiber.Ctx) error {
 }
 
 // MoveItemToSection moves an item to a different section
+// Optional parameter: position (index among active items in target section)
 func MoveItemToSection(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
@@ -170,9 +192,28 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Invalid section ID")
 	}
 
-	item, err := db.MoveItemToSection(id, newSectionID)
-	if err != nil {
-		return c.Status(500).SendString("Failed to move item")
+	var item *db.Item
+
+	// Check if position parameter is provided (for cross-section drag-and-drop)
+	positionStr := c.FormValue("position")
+	if positionStr != "" {
+		position, err := strconv.Atoi(positionStr)
+		if err != nil {
+			return c.Status(400).SendString("Invalid position")
+		}
+		// Use retry for concurrent access protection
+		item, err = retryOnBusy(3, func() (*db.Item, error) {
+			return db.MoveItemToSectionAtPosition(id, newSectionID, position)
+		})
+		if err != nil {
+			log.Printf("MoveItemToSection failed after retries: %v", err)
+			return c.Status(500).SendString("Failed to move item")
+		}
+	} else {
+		item, err = db.MoveItemToSection(id, newSectionID)
+		if err != nil {
+			return c.Status(500).SendString("Failed to move item")
+		}
 	}
 
 	// Broadcast to WebSocket clients

@@ -39,7 +39,7 @@
     </div>
 
     <!-- Active Items Container -->
-    <div class="divide-y divide-stone-100 dark:divide-stone-700 active-items">
+    <div class="divide-y divide-stone-100 dark:divide-stone-700 active-items items-sortable" data-section-id="{{.Section.ID}}">
         {{range .Section.Items}}
         {{if not .Completed}}
         {{template "partials/item" dict "Item" . "Sections" $.Sections}}

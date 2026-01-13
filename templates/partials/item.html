@@ -1,8 +1,22 @@
 {{define "partials/item"}}
 <div
     id="item-{{.Item.ID}}"
-    class="px-4 py-3 flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
+    data-item-id="{{.Item.ID}}"
+    data-section-id="{{.Item.SectionID}}"
+    class="px-4 py-3 flex items-center gap-0.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group select-none {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
 >
+    <!-- Drag Handle -->
+    <div class="drag-handle flex-shrink-0 w-5 h-10 flex items-center justify-center -ml-2 touch-none cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:text-stone-400 dark:hover:text-stone-500 transition-colors">
+        <svg class="w-4 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="9" cy="5" r="1.5"/>
+            <circle cx="15" cy="5" r="1.5"/>
+            <circle cx="9" cy="12" r="1.5"/>
+            <circle cx="15" cy="12" r="1.5"/>
+            <circle cx="9" cy="19" r="1.5"/>
+            <circle cx="15" cy="19" r="1.5"/>
+        </svg>
+    </div>
+
     <!-- Checkbox -->
     <button
         hx-post="/items/{{.Item.ID}}/toggle"
@@ -17,7 +31,7 @@
 
     <!-- Content (clickable to toggle) -->
     <div
-        class="flex-1 min-w-0 cursor-pointer"
+        class="flex-1 min-w-0 cursor-pointer ml-2"
         hx-post="/items/{{.Item.ID}}/toggle"
         hx-target="#item-{{.Item.ID}}"
         hx-swap="outerHTML"
@@ -62,28 +76,6 @@
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-            </svg>
-        </button>
-
-        <!-- Move up -->
-        <button
-            @click="$dispatch('move-item', {id: {{.Item.ID}}, direction: 'up'})"
-            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
-            :title="t('actions.move_up')"
-        >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-            </svg>
-        </button>
-
-        <!-- Move down -->
-        <button
-            @click="$dispatch('move-item', {id: {{.Item.ID}}, direction: 'down'})"
-            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
-            :title="t('actions.move_down')"
-        >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
         </button>
 
