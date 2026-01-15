@@ -32,21 +32,21 @@
     "note_optional": "Notiz (optional)...",
     "name": "Name...",
     "new_product": "Neues Produkt",
-    "select_section": "Abteilung wählen...",
-    "section": "Abteilung...",
+    "select_section": "Kategorie wählen...",
+    "section": "Kategorie...",
     "add_more": "Mehr hinzufügen",
     "no_items": "Keine Produkte",
     "add_first_item": "Füge dein erstes Produkt hinzu",
-    "quick_add": "Schnell zur Abteilung hinzufügen"
+    "quick_add": "Schnell zur Kategorie hinzufügen"
   },
   "sections": {
-    "title": "Abteilungen",
-    "new_section": "Neue Abteilung...",
-    "section_list": "Abteilungsliste",
-    "manage": "Abteilungen verwalten",
+    "title": "Kategorien",
+    "new_section": "Neue Kategorie...",
+    "section_list": "Kategorienliste",
+    "manage": "Kategorien verwalten",
     "select": "Auswählen",
-    "no_sections": "Keine Abteilungen",
-    "add_first_section": "Fügen Sie Ihre erste Abteilung hinzu"
+    "no_sections": "Keine Kategorien",
+    "add_first_section": "Fügen Sie Ihre erste Kategorie hinzu"
   },
   "actions": {
     "move_up": "Nach oben",
@@ -88,8 +88,8 @@
   },
   "confirm": {
     "delete_item": "\"{{name}}\" löschen?",
-    "delete_sections": "{{count}} ausgewählte Abteilungen löschen?",
-    "delete_section": "Abteilung '{{name}}' löschen?",
+    "delete_sections": "{{count}} ausgewählte Kategorien löschen?",
+    "delete_section": "Kategorie '{{name}}' löschen?",
     "delete_completed_items": "Alle gekauften Artikel löschen?"
   },
   "stats": {
@@ -147,7 +147,7 @@
     "from_list_hint": "Die Vorlage wird aus den nicht gekauften Artikeln der aktiven Liste erstellt.",
     "edit": "Vorlage bearbeiten",
     "items": "Artikel",
-    "section": "Abteilung",
+    "section": "Kategorie",
     "add_item": "Artikel hinzufügen",
     "empty": "Vorlage ist leer"
   },
@@ -157,7 +157,7 @@
     "list_name": "Listenname",
     "list_placeholder": "z.B. Wocheneinkauf",
     "create_list": "Einkaufsliste erstellen",
-    "feature_sections": "Abteilungen",
+    "feature_sections": "Kategorien",
     "feature_templates": "Real-time",
     "feature_offline": "Offline"
   }
