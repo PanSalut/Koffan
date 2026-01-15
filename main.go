@@ -18,14 +18,7 @@ import (
 )
 
 func main() {
-	// Initialize database
-	db.Init()
-	defer db.Close()
-
-	// Clean expired sessions on startup
-	db.CleanExpiredSessions()
-
-	// Initialize i18n
+	// Initialize i18n first (before db, so migrations can use translations)
 	if err := i18n.Init(); err != nil {
 		log.Fatal("Failed to initialize i18n:", err)
 	}
@@ -34,6 +27,13 @@ func main() {
 	if lang := os.Getenv("DEFAULT_LANG"); lang != "" {
 		i18n.SetDefaultLang(lang)
 	}
+
+	// Initialize database
+	db.Init()
+	defer db.Close()
+
+	// Clean expired sessions on startup
+	db.CleanExpiredSessions()
 
 	// Initialize login rate limiter
 	handlers.InitLoginRateLimiter()

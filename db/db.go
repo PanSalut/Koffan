@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"shopping-list/i18n"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -188,8 +189,9 @@ func migrateToMultipleLists() {
 		return
 	}
 
-	// Create default list
-	result, err := DB.Exec(`INSERT INTO lists (name, sort_order, is_active) VALUES ('Lista zakupów', 0, TRUE)`)
+	// Create default list with localized name
+	defaultListName := i18n.Get(i18n.GetDefaultLang(), "list.shopping_list")
+	result, err := DB.Exec(`INSERT INTO lists (name, sort_order, is_active) VALUES (?, 0, TRUE)`, defaultListName)
 	if err != nil {
 		log.Println("Migration failed - creating default list:", err)
 		return
