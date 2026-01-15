@@ -46,7 +46,8 @@
 		"manage": "Tvarkyti skyrius",
 		"select": "Pasirinkti",
 		"no_sections": "Nėra skyrių",
-		"add_first_section": "Pridėkite pirmą skyrių, kad pradėtumėte"
+		"add_first_section": "Pridėkite pirmą skyrių, kad pradėtumėte",
+		"add_section_btn": "Pridėti pirmą skyrių"
 	},
 	"actions": {
 		"move_up": "Perkelti aukštyn",

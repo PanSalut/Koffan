@@ -46,7 +46,8 @@
     "manage": "Zarządzaj sekcjami",
     "select": "Wybierz",
     "no_sections": "Brak sekcji",
-    "add_first_section": "Dodaj pierwszą sekcję aby rozpocząć"
+    "add_first_section": "Dodaj pierwszą sekcję aby rozpocząć",
+    "add_section_btn": "Dodaj pierwszą sekcję"
   },
   "actions": {
     "move_up": "W górę",

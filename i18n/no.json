@@ -46,7 +46,8 @@
     "manage": "Administrer seksjoner",
     "select": "Velg",
     "no_sections": "Ingen seksjoner",
-    "add_first_section": "Legg til din første seksjon for å komme i gang"
+    "add_first_section": "Legg til din første seksjon for å komme i gang",
+    "add_section_btn": "Legg til første seksjon"
   },
   "actions": {
     "move_up": "Flytt opp",

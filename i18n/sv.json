@@ -46,7 +46,8 @@
     "manage": "Hantera avdelningar",
     "select": "Välj",
     "no_sections": "Inga avdelningar",
-    "add_first_section": "Lägg till din första avdelning för att komma igång"
+    "add_first_section": "Lägg till din första avdelning för att komma igång",
+    "add_section_btn": "Lägg till första avdelningen"
   },
   "actions": {
     "move_up": "Flytta upp",

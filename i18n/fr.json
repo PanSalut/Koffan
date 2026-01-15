@@ -46,7 +46,8 @@
     "manage": "Gérer les rayons",
     "select": "Sélectionner",
     "no_sections": "Aucun rayon",
-    "add_first_section": "Ajoutez votre premier rayon pour commencer"
+    "add_first_section": "Ajoutez votre premier rayon pour commencer",
+    "add_section_btn": "Ajouter premier rayon"
   },
   "actions": {
     "move_up": "Monter",

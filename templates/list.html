@@ -186,6 +186,11 @@
                 </div>
                 <p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t('sections.no_sections')"></p>
                 <p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t('sections.add_first_section')"></p>
+                <button
+                    @click="showManageSections = true"
+                    class="mt-4 bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                    x-text="t('sections.add_section_btn')">
+                </button>
             </div>
             {{end}}
         </div>

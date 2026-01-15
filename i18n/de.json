@@ -46,7 +46,8 @@
     "manage": "Kategorien verwalten",
     "select": "Auswählen",
     "no_sections": "Keine Kategorien",
-    "add_first_section": "Fügen Sie Ihre erste Kategorie hinzu"
+    "add_first_section": "Fügen Sie Ihre erste Kategorie hinzu",
+    "add_section_btn": "Erste Kategorie hinzufügen"
   },
   "actions": {
     "move_up": "Nach oben",

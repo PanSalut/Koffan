@@ -46,7 +46,8 @@
     "manage": "Manage sections",
     "select": "Select",
     "no_sections": "No sections",
-    "add_first_section": "Add your first section to get started"
+    "add_first_section": "Add your first section to get started",
+    "add_section_btn": "Add first section"
   },
   "actions": {
     "move_up": "Move up",
