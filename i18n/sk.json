@@ -1,0 +1,165 @@
+{
+  "meta": {
+    "code": "sk",
+    "name": "Slovenčina",
+    "flag": "SK"
+  },
+  "common": {
+    "add": "Pridať",
+    "cancel": "Zrušiť",
+    "save": "Uložiť",
+    "delete": "Odstrániť",
+    "edit": "Upraviť",
+    "close": "Zatvoriť",
+    "create": "Vytvoriť",
+    "name": "Názov",
+    "description": "Popis"
+  },
+  "nav": {
+    "settings": "Nastavenia",
+    "logout": "Odhlásiť sa"
+  },
+  "list": {
+    "title": "Koffan nákupný zoznam",
+    "empty_list": "prázdny zoznam",
+    "shopping_list": "Nákupný zoznam",
+    "completed": "hotovo",
+    "bought": "Kúpené"
+  },
+  "items": {
+    "what_to_buy": "Čo treba kúpiť?",
+    "note": "Poznámky...",
+    "note_optional": "Poznámky (voliteľné)...",
+    "name": "Názov...",
+    "new_product": "Nový produkt",
+    "select_section": "Výber sekcie...",
+    "section": "Sekcia...",
+    "add_more": "Pridať viac",
+    "no_items": "Žiadne produkty",
+    "add_first_item": "Pridaj svoj prvý produkt",
+    "quick_add": "Rýchle pridanie do sekcie"
+  },
+  "sections": {
+    "title": "Sekcie",
+    "new_section": "Nová sekcia...",
+    "section_list": "Zoznam sekcií",
+    "manage": "Spravovať sekcie",
+    "select": "Vybrať",
+    "no_sections": "Žiadne sekcie",
+    "add_first_section": "Pre začiatok pridaj svoju prvú sekciu",
+    "add_section_btn": "Pridať prvú sekciu"
+  },
+  "actions": {
+    "move_up": "Posunúť nahor",
+    "move_down": "Posunúť nadol",
+    "move": "Posunúť",
+    "uncertain": "Neisté",
+    "certain": "Isté",
+    "remove_mark": "Odstrániť označenie",
+    "mark_uncertain": "Označiť ako neisté"
+  },
+  "settings": {
+    "title": "Nastavenia",
+    "theme": "Téma",
+    "theme_light": "Svetlá",
+    "theme_dark": "Tmavá",
+    "theme_system": "Systém",
+    "language": "Jazyk",
+    "coming_soon": "Už čoskoro...",
+    "sponsor": "Chcete podporiť aplikáciu? Pridajte do košíka!",
+    "report_bug": "Našli ste chybu? Dajte mi vedieť!",
+    "tab_account": "Účet",
+    "tab_shopping_list": "Nákupný zoznam",
+    "delete_completed": "Odstrániť všetky kúpené položky",
+    "delete_completed_description": "Odstráni z nákupného zoznamu všetky položky označené ako kúpené.",
+    "history_section_mode": "Sekcia pre návrhy z histórie",
+    "use_first_section": "Použi prvú sekciu",
+    "use_first_section_desc": "Ak sekcia neexistuje, pridaj do prvej dostupnej",
+    "auto_create_section": "Automaticky vytvor sekciu",
+    "auto_create_section_desc": "Ak sekcia neexistuje, vytvor novú s rovnakým názvom"
+  },
+  "login": {
+    "title": "Prihlásenie - Koffan",
+    "subtitle": "Pre pokračovanie sa prihlás",
+    "password": "Heslo",
+    "password_placeholder": "Zadaj heslo...",
+    "submit": "Prihlásenie",
+    "error_invalid": "Neplatné heslo",
+    "error_rate_limited": "Príliš veľa pokusov o prihlásenie. Skús to opäť neskôr."
+  },
+  "confirm": {
+    "delete_item": "Odstrániť \"{{name}}\"?",
+    "delete_sections": "Odstrániť {{count}} zvolených sekcií?",
+    "delete_section": "Odstrániť sekciu '{{name}}'?",
+    "delete_completed_items": "Odstrániť všetky kúpené položky?"
+  },
+  "stats": {
+    "progress": "Postup"
+  },
+  "status": {
+    "syncing": "synchronizácia"
+  },
+  "error": {
+    "generic": "Chyba",
+    "delete_items": "Chyba pri odstraňovaní položiek"
+  },
+  "offline": {
+    "title": "Offline režim",
+    "message": "Si offline. Všetky zmeny budú synchronizované automaticky po obnovení spojenia.",
+    "hint": "Zmeny sa zosynchronizujú automaticky",
+    "action_blocked": "Táto akcia si vyžaduje internetové pripojenie",
+    "available_actions": "Dostupné offline:",
+    "can_add": "Pridávanie produktov",
+    "can_toggle": "Označenie a odznačenie položiek",
+    "can_edit": "Úprava produktov",
+    "can_uncertain": "Označenie ako neisté",
+    "back_online": "Si opäť online. Všetky zmeny sa zosynchronizovali!",
+    "queued": "Uložené pre synchronizáciu"
+  },
+  "history": {
+    "title": "História produktov",
+    "description": "Produkty používané pre automatické návrhy. Odstráň položky, ktoré boli pridané omylom alebo ich už viac nepotrebuješ.",
+    "manage": "Správa histórie",
+    "search_placeholder": "Vyhľadávanie v histórii...",
+    "empty": "Žiadne uložené produkty",
+    "delete_selected": "Odstrániť označené",
+    "confirm_delete": "Odstrániť \"{{name}}\" z histórie?",
+    "confirm_delete_batch": "Odstrániť {{count}} zvolených produktov histórie?",
+    "deleted": "Odstrániť {{count}} produktov"
+  },
+  "lists": {
+    "title": "Tvoje zoznamy",
+    "manage": "Správa zoznamov",
+    "new_list": "Pridať nový zoznam...",
+    "no_lists": "Žiadne zoznamy",
+    "add_first_list": "Pridaj svoj prvý nákupný zoznam",
+    "switch": "Prepnúť na",
+    "active": "Aktívny",
+    "icon": "Ikonka",
+    "delete_confirm": "Odstrániť zoznam \"{{name}}\"? Všetky položky budú stratené."
+  },
+  "templates": {
+    "title": "Šablóny",
+    "new_template": "Nová šablóna",
+    "apply": "Použiť",
+    "applied": "Šablóna použitá",
+    "confirm_apply": "Pridať položky zo šablóny do aktívneho zoznamu?",
+    "create_from_list": "Vytvoriť šablónu zo zoznamu",
+    "from_list_hint": "Šablóna bude vytvorená z nenakúpených položiek v aktívnom zozname.",
+    "edit": "Upraviť šablónu",
+    "items": "položky",
+    "section": "Sekcia",
+    "add_item": "Pridať položku",
+    "empty": "Šablóna je prázdna"
+  },
+  "onboarding": {
+    "welcome": "Vitaj v Koffane!",
+    "description": "Tvoj osobný nákupný pomocník. Pre začiatok vytvor svoj prvý nákupný zoznam.",
+    "list_name": "Názov zoznamu",
+    "list_placeholder": "napr. Týždenný nákup",
+    "create_list": "Vytvoriť nákupný zoznam",
+    "feature_sections": "Sekcie",
+    "feature_templates": "Naživo",
+    "feature_offline": "Offline"
+  }
+}
