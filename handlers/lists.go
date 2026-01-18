@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"shopping-list/db"
 	"shopping-list/i18n"
@@ -216,6 +217,11 @@ func SetActiveList(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("list_activated", map[string]int64{"id": id})
+
+	// For regular GET requests (not HTMX), redirect to selected list
+	if c.Get("HX-Request") == "" {
+		return c.Redirect(fmt.Sprintf("/lists/%d", id))
+	}
 
 	// Check if this is from the main page (needs redirect) or lists page
 	if c.Get("HX-Current-URL") != "" && !contains(c.Get("HX-Current-URL"), "/lists") {
