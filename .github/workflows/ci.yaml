@@ -3,7 +3,7 @@ name: Docker Hub + Github Packages
 on:
   workflow_dispatch:
   push:
-    tags: ["*.*.*"]
+    tags: ["v*.*.*"]
 
 jobs:
   build:
