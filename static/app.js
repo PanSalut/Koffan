@@ -90,6 +90,7 @@ function shoppingList() {
         showEditModal: false,
         showSettings: false,
         showOfflineModal: false,
+        showListSwitcher: false,
 
         // Section management
         selectMode: false,

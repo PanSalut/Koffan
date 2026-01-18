@@ -12,7 +12,15 @@
                     <span class="text-stone-300 dark:text-stone-600">/</span>
                     <div class="flex items-center gap-2 overflow-hidden">
                         {{if .List}}<span class="text-xl">{{.List.Icon}}</span>{{end}}
-                        <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" title="{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                        <button
+                            @click="showListSwitcher = !showListSwitcher"
+                            class="flex items-center gap-2 overflow-hidden hover:opacity-70 transition-opacity"
+                        >
+                            <h1 class="text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" title="{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                            <svg class="w-4 h-4 text-stone-400 dark:text-stone-500 flex-shrink-0 transition-transform" :class="showListSwitcher && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -868,6 +876,39 @@
                     <span x-text="t('history.delete_selected') + ' (' + selectedHistoryIds.length + ')'"></span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- List Switcher Dropdown -->
+    <div
+        x-show="showListSwitcher"
+        x-cloak
+        @click.outside="showListSwitcher = false"
+        @keydown.escape.window="showListSwitcher = false"
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="fixed top-16 left-4 md:left-auto md:ml-4 min-w-[240px] max-w-[300px] max-h-[60vh] overflow-y-auto bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg z-50"
+        style="margin-left: max(1rem, calc((100vw - 56rem) / 2 + 1rem));"
+    >
+        <div class="py-2">
+            {{range .Lists}}
+            <a
+                href="/lists/{{.ID}}/activate"
+                class="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors {{if eq .ID $.List.ID}}bg-pink-50 dark:bg-pink-900/30{{end}}"
+            >
+                <span class="text-lg">{{.Icon}}</span>
+                <span class="flex-1 truncate text-sm font-medium {{if eq .ID $.List.ID}}text-pink-600 dark:text-pink-400{{else}}text-stone-700 dark:text-stone-200{{end}}">{{.Name}}</span>
+                {{if eq .ID $.List.ID}}
+                <svg class="w-4 h-4 text-pink-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{end}}
+            </a>
+            {{end}}
         </div>
     </div>
 
