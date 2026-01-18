@@ -26,7 +26,7 @@ jobs:
       - name: Check if tag exists
         id: check_tag
         run: |
-          if git rev-parse "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "refs/tags/v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -37,7 +37,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="v${{ steps.version.outputs.version }}"
 
           # Create tag
           git tag "$VERSION"
@@ -45,5 +45,5 @@ jobs:
 
           # Create GitHub Release
           gh release create "$VERSION" \
-            --title "v$VERSION" \
+            --title "$VERSION" \
             --generate-notes
