@@ -80,7 +80,8 @@
     "use_first_section": "Usar primeira secção",
     "use_first_section_desc": "Se a secção não existe, adicionar à primeira disponível",
     "auto_create_section": "Criar secção automaticamente",
-    "auto_create_section_desc": "Se a secção não existe, criar uma nova com o mesmo nome"
+    "auto_create_section_desc": "Se a secção não existe, criar uma nova com o mesmo nome",
+    "update_available": "Nova versão disponível"
   },
   "login": {
     "title": "Iniciar sessão - Koffan",

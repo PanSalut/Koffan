@@ -80,7 +80,8 @@
     "use_first_section": "Použi prvú sekciu",
     "use_first_section_desc": "Ak sekcia neexistuje, pridaj do prvej dostupnej",
     "auto_create_section": "Automaticky vytvor sekciu",
-    "auto_create_section_desc": "Ak sekcia neexistuje, vytvor novú s rovnakým názvom"
+    "auto_create_section_desc": "Ak sekcia neexistuje, vytvor novú s rovnakým názvom",
+    "update_available": "Dostupná nová verzia"
   },
   "login": {
     "title": "Prihlásenie - Koffan",

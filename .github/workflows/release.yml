@@ -1,0 +1,49 @@
+name: Auto Release
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "VERSION"
+
+jobs:
+  release:
+    if: github.repository == 'PanSalut/Koffan'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read VERSION
+        id: version
+        run: echo "version=$(cat VERSION | tr -d '\n')" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag and release
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Create tag
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+          # Create GitHub Release
+          gh release create "$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes

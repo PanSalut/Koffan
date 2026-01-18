@@ -13,8 +13,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build with CGO enabled (required for SQLite)
-RUN CGO_ENABLED=1 go build -o shopping-list .
+# Read version and build with ldflags
+RUN VERSION=$(cat VERSION | tr -d '\n') && \
+    CGO_ENABLED=1 go build -ldflags "-X shopping-list/handlers.AppVersion=$VERSION" -o shopping-list .
 
 # Production stage
 FROM alpine:3.19

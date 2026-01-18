@@ -80,7 +80,8 @@
     "use_first_section": "Utiliser la première section",
     "use_first_section_desc": "Si la section n'existe pas, ajouter à la première disponible",
     "auto_create_section": "Créer la section automatiquement",
-    "auto_create_section_desc": "Si la section n'existe pas, en créer une nouvelle avec le même nom"
+    "auto_create_section_desc": "Si la section n'existe pas, en créer une nouvelle avec le même nom",
+    "update_available": "Nouvelle version disponible"
   },
   "login": {
     "title": "Connexion - Koffan",

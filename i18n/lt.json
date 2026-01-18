@@ -80,7 +80,8 @@
 		"use_first_section": "Naudoti pirmą skyrių",
 		"use_first_section_desc": "Jei skyrius neegzistuoja, pridėti prie pirmo galimo",
 		"auto_create_section": "Automatiškai kurti skyrių",
-		"auto_create_section_desc": "Jei skyrius neegzistuoja, sukurti naują su tuo pačiu pavadinimu"
+		"auto_create_section_desc": "Jei skyrius neegzistuoja, sukurti naują su tuo pačiu pavadinimu",
+		"update_available": "Galima nauja versija"
 	},
 	"login": {
 		"title": "Prisijungimas – Koffan",

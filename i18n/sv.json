@@ -80,7 +80,8 @@
     "use_first_section": "Använd första avdelningen",
     "use_first_section_desc": "Om avdelningen inte finns, använd första tillgängliga",
     "auto_create_section": "Autoskapa avdelning",
-    "auto_create_section_desc": "Om avdelning inte finns, skapa en ny med samma namn"
+    "auto_create_section_desc": "Om avdelning inte finns, skapa en ny med samma namn",
+    "update_available": "Ny version tillgänglig"
   },
   "login": {
     "title": "Logga in - Koffan",

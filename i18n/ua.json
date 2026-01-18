@@ -80,7 +80,8 @@
     "use_first_section": "Використовувати першу секцію",
     "use_first_section_desc": "Якщо секція не існує, додати до першої доступної",
     "auto_create_section": "Автоматично створювати секцію",
-    "auto_create_section_desc": "Якщо секція не існує, створити нову з такою ж назвою"
+    "auto_create_section_desc": "Якщо секція не існує, створити нову з такою ж назвою",
+    "update_available": "Доступна нова версія"
   },
   "login": {
     "title": "Вхід - Koffan",

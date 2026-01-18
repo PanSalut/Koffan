@@ -80,7 +80,8 @@
     "use_first_section": "Ersten Abschnitt verwenden",
     "use_first_section_desc": "Wenn der Abschnitt nicht existiert, zum ersten verfügbaren hinzufügen",
     "auto_create_section": "Abschnitt automatisch erstellen",
-    "auto_create_section_desc": "Wenn der Abschnitt nicht existiert, einen neuen mit gleichem Namen erstellen"
+    "auto_create_section_desc": "Wenn der Abschnitt nicht existiert, einen neuen mit gleichem Namen erstellen",
+    "update_available": "Neue Version verfügbar"
   },
   "login": {
     "title": "Anmeldung - Koffan",

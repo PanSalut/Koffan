@@ -265,8 +265,8 @@
 
     <!-- Settings Modal -->
     <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', appVersion: '' }"
-         x-init="fetch('/api/version').then(r => r.json()).then(d => appVersion = d.version).catch(() => appVersion = 'unknown')">
+         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', currentVersion: '', updateAvailable: false, releaseUrl: '' }"
+         x-init="fetch('/api/version').then(r => r.json()).then(d => { currentVersion = d.current || 'unknown'; updateAvailable = d.update_available || false; releaseUrl = d.release_url || ''; }).catch(() => currentVersion = 'unknown')">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
         <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
              x-transition:enter="transition ease-out duration-200"
@@ -380,8 +380,16 @@
                     </a>
                     <!-- Version -->
                     <div class="pt-2 text-xs text-stone-300 dark:text-stone-600 text-center">
-                        Koffan <span x-text="appVersion"></span>
+                        Koffan <span x-text="currentVersion"></span>
                     </div>
+                    <!-- Update notification -->
+                    <a x-show="updateAvailable"
+                       :href="releaseUrl"
+                       target="_blank"
+                       rel="noopener"
+                       class="mt-2 block text-center text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                        <span x-text="t('settings.update_available')"></span> →
+                    </a>
                 </div>
             </div>
 

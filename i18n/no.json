@@ -80,7 +80,8 @@
     "use_first_section": "Bruk første seksjon",
     "use_first_section_desc": "Hvis seksjonen ikke finnes, legg til i første tilgjengelige",
     "auto_create_section": "Opprett seksjon automatisk",
-    "auto_create_section_desc": "Hvis seksjonen ikke finnes, opprett en ny med samme navn"
+    "auto_create_section_desc": "Hvis seksjonen ikke finnes, opprett en ny med samme navn",
+    "update_available": "Ny versjon tilgjengelig"
   },
   "login": {
     "title": "Innlogging - Koffan",
