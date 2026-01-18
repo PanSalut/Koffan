@@ -1,1 +1,0 @@
-# Koffan - Rules for Claude
