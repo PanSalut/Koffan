@@ -47,3 +47,6 @@ jobs:
           gh release create "$VERSION" \
             --title "$VERSION" \
             --generate-notes
+
+          # Trigger Docker build
+          gh workflow run ci.yaml --ref "$VERSION"
