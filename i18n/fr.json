@@ -13,7 +13,8 @@
     "close": "Fermer",
     "create": "Créer",
     "name": "Nom",
-    "description": "Description"
+    "description": "Description",
+    "reserved_name": "Ce nom est réservé à l'usage du système"
   },
   "nav": {
     "settings": "Paramètres",
@@ -24,7 +25,8 @@
     "empty_list": "liste vide",
     "shopping_list": "Liste de courses",
     "completed": "terminé",
-    "bought": "Acheté"
+    "bought": "Acheté",
+    "name_exists": "Une liste avec ce nom existe déjà"
   },
   "items": {
     "what_to_buy": "Qu'acheter ?",
@@ -47,7 +49,8 @@
     "select": "Sélectionner",
     "no_sections": "Aucun rayon",
     "add_first_section": "Ajoutez votre premier rayon pour commencer",
-    "add_section_btn": "Ajouter premier rayon"
+    "add_section_btn": "Ajouter premier rayon",
+    "default": "Général"
   },
   "actions": {
     "move_up": "Monter",
@@ -70,6 +73,7 @@
     "report_bug": "Un bug ? Fais-le moi savoir !",
     "tab_account": "Compte",
     "tab_shopping_list": "Liste de courses",
+    "tab_data": "Données",
     "delete_completed": "Supprimer tous les achetés",
     "delete_completed_description": "Supprime tous les articles marqués comme achetés de la liste.",
     "history_section_mode": "Section pour les suggestions d'historique",
@@ -161,5 +165,48 @@
     "feature_sections": "Rayons",
     "feature_templates": "Real-time",
     "feature_offline": "Hors ligne"
+  },
+  "export": {
+    "title": "Exporter les données",
+    "download_json": "Télécharger en JSON",
+    "download_csv": "Télécharger en CSV",
+    "include_templates": "Inclure les modèles"
+  },
+  "import": {
+    "title": "Importer des données",
+    "select_file": "Sélectionner un fichier à importer",
+    "preview_title": "Aperçu de l'import",
+    "confirm": "Importer",
+    "success": "Données importées avec succès",
+    "error": "Échec de l'import",
+    "error_preview": "Impossible de prévisualiser le fichier",
+    "error_file_too_large": "Fichier trop volumineux (max 5Mo)",
+    "error_invalid_format": "Format de fichier invalide. Utilisez JSON ou CSV.",
+    "error_invalid_file": "Fichier invalide",
+    "lists": "Listes",
+    "items": "Articles",
+    "templates": "Modèles",
+    "history": "Historique des suggestions",
+    "conflict_warning": "Ces listes existent déjà :",
+    "conflict_skip": "Ignorer - ne pas importer ces listes",
+    "conflict_replace": "Remplacer - supprimer les existantes et importer les nouvelles",
+    "conflict_copy": "Créer une copie - ajouter avec suffixe (copie)",
+    "copy_suffix": "copie"
+  },
+  "danger_zone": {
+    "title": "Zone dangereuse",
+    "clear_database": "Effacer la base de données",
+    "clear_database_warning": "Cette action supprimera définitivement toutes les données de la base de données. Cette action est irréversible.",
+    "confirm_title": "Supprimer toutes les données ?",
+    "will_delete": "Les éléments suivants seront définitivement supprimés :",
+    "delete_lists": "Toutes les listes de courses",
+    "delete_sections": "Tous les rayons",
+    "delete_items": "Tous les articles",
+    "delete_templates": "Tous les modèles",
+    "delete_history": "Tout l'historique des produits",
+    "type_to_confirm": "Tapez ",
+    "success": "La base de données a été effacée",
+    "error": "Échec de l'effacement de la base de données",
+    "error_invalid_confirmation": "Mot de confirmation invalide"
   }
 }

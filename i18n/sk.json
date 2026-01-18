@@ -13,7 +13,8 @@
     "close": "Zatvoriť",
     "create": "Vytvoriť",
     "name": "Názov",
-    "description": "Popis"
+    "description": "Popis",
+    "reserved_name": "Tento názov je vyhradený pre systémové použitie"
   },
   "nav": {
     "settings": "Nastavenia",
@@ -24,7 +25,8 @@
     "empty_list": "prázdny zoznam",
     "shopping_list": "Nákupný zoznam",
     "completed": "hotovo",
-    "bought": "Kúpené"
+    "bought": "Kúpené",
+    "name_exists": "Zoznam s týmto názvom už existuje"
   },
   "items": {
     "what_to_buy": "Čo treba kúpiť?",
@@ -47,7 +49,8 @@
     "select": "Vybrať",
     "no_sections": "Žiadne sekcie",
     "add_first_section": "Pre začiatok pridaj svoju prvú sekciu",
-    "add_section_btn": "Pridať prvú sekciu"
+    "add_section_btn": "Pridať prvú sekciu",
+    "default": "Všeobecné"
   },
   "actions": {
     "move_up": "Posunúť nahor",
@@ -70,6 +73,7 @@
     "report_bug": "Našli ste chybu? Dajte mi vedieť!",
     "tab_account": "Účet",
     "tab_shopping_list": "Nákupný zoznam",
+    "tab_data": "Dáta",
     "delete_completed": "Odstrániť všetky kúpené položky",
     "delete_completed_description": "Odstráni z nákupného zoznamu všetky položky označené ako kúpené.",
     "history_section_mode": "Sekcia pre návrhy z histórie",
@@ -161,5 +165,48 @@
     "feature_sections": "Sekcie",
     "feature_templates": "Naživo",
     "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Exportovať dáta",
+    "download_json": "Stiahnuť ako JSON",
+    "download_csv": "Stiahnuť ako CSV",
+    "include_templates": "Zahrnúť šablóny"
+  },
+  "import": {
+    "title": "Importovať dáta",
+    "select_file": "Vyber súbor na import",
+    "preview_title": "Náhľad importu",
+    "confirm": "Importovať",
+    "success": "Dáta boli úspešne importované",
+    "error": "Import zlyhal",
+    "error_preview": "Nepodarilo sa zobraziť náhľad súboru",
+    "error_file_too_large": "Súbor je príliš veľký (max 5MB)",
+    "error_invalid_format": "Neplatný formát súboru. Použi JSON alebo CSV.",
+    "error_invalid_file": "Neplatný súbor",
+    "lists": "Zoznamy",
+    "items": "Položky",
+    "templates": "Šablóny",
+    "history": "História návrhov",
+    "conflict_warning": "Tieto zoznamy už existujú:",
+    "conflict_skip": "Preskočiť - neimportovať tieto zoznamy",
+    "conflict_replace": "Nahradiť - odstrániť existujúce a importovať nové",
+    "conflict_copy": "Vytvoriť kópiu - pridať s príponou (kópia)",
+    "copy_suffix": "kópia"
+  },
+  "danger_zone": {
+    "title": "Nebezpečná zóna",
+    "clear_database": "Vymazať databázu",
+    "clear_database_warning": "Táto akcia natrvalo odstráni všetky dáta z databázy. Toto sa nedá vrátiť späť.",
+    "confirm_title": "Odstrániť všetky dáta?",
+    "will_delete": "Natrvalo sa odstráni:",
+    "delete_lists": "Všetky nákupné zoznamy",
+    "delete_sections": "Všetky sekcie",
+    "delete_items": "Všetky položky",
+    "delete_templates": "Všetky šablóny",
+    "delete_history": "Celá história produktov",
+    "type_to_confirm": "Napíš ",
+    "success": "Databáza bola vymazaná",
+    "error": "Nepodarilo sa vymazať databázu",
+    "error_invalid_confirmation": "Neplatné potvrdzujúce slovo"
   }
 }

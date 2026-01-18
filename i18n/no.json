@@ -13,7 +13,8 @@
     "close": "Lukk",
     "create": "Opprett",
     "name": "Navn",
-    "description": "Beskrivelse"
+    "description": "Beskrivelse",
+    "reserved_name": "Dette navnet er reservert for systembruk"
   },
   "nav": {
     "settings": "Innstillinger",
@@ -24,7 +25,8 @@
     "empty_list": "tom liste",
     "shopping_list": "Handleliste",
     "completed": "ferdig",
-    "bought": "Kjøpt"
+    "bought": "Kjøpt",
+    "name_exists": "En liste med dette navnet finnes allerede"
   },
   "items": {
     "what_to_buy": "Hva skal kjøpes?",
@@ -47,7 +49,8 @@
     "select": "Velg",
     "no_sections": "Ingen seksjoner",
     "add_first_section": "Legg til din første seksjon for å komme i gang",
-    "add_section_btn": "Legg til første seksjon"
+    "add_section_btn": "Legg til første seksjon",
+    "default": "Generelt"
   },
   "actions": {
     "move_up": "Flytt opp",
@@ -70,6 +73,7 @@
     "report_bug": "Funnet en feil? Gi beskjed!",
     "tab_account": "Konto",
     "tab_shopping_list": "Handleliste",
+    "tab_data": "Data",
     "delete_completed": "Slett alle kjøpte varer",
     "delete_completed_description": "Fjerner alle varer som er merket som kjøpt fra handlelisten.",
     "history_section_mode": "Seksjon for historikkforslag",
@@ -161,5 +165,48 @@
     "feature_sections": "Seksjoner",
     "feature_templates": "Sanntid",
     "feature_offline": "Frakoblet"
+  },
+  "export": {
+    "title": "Eksporter data",
+    "download_json": "Last ned som JSON",
+    "download_csv": "Last ned som CSV",
+    "include_templates": "Inkluder maler"
+  },
+  "import": {
+    "title": "Importer data",
+    "select_file": "Velg fil å importere",
+    "preview_title": "Forhåndsvisning av import",
+    "confirm": "Importer",
+    "success": "Data importert",
+    "error": "Import mislyktes",
+    "error_preview": "Kunne ikke forhåndsvise fil",
+    "error_file_too_large": "Filen er for stor (maks 5MB)",
+    "error_invalid_format": "Ugyldig filformat. Bruk JSON eller CSV.",
+    "error_invalid_file": "Ugyldig fil",
+    "lists": "Lister",
+    "items": "Varer",
+    "templates": "Maler",
+    "history": "Forslagshistorikk",
+    "conflict_warning": "Disse listene finnes allerede:",
+    "conflict_skip": "Hopp over - ikke importer disse listene",
+    "conflict_replace": "Erstatt - slett eksisterende og importer nye",
+    "conflict_copy": "Lag kopi - legg til med suffiks (kopi)",
+    "copy_suffix": "kopi"
+  },
+  "danger_zone": {
+    "title": "Faresone",
+    "clear_database": "Tøm databasen",
+    "clear_database_warning": "Denne handlingen vil permanent slette alle data fra databasen. Dette kan ikke angres.",
+    "confirm_title": "Slette alle data?",
+    "will_delete": "Følgende vil bli permanent slettet:",
+    "delete_lists": "Alle handlelister",
+    "delete_sections": "Alle seksjoner",
+    "delete_items": "Alle varer",
+    "delete_templates": "Alle maler",
+    "delete_history": "All produkthistorikk",
+    "type_to_confirm": "Skriv ",
+    "success": "Databasen er tømt",
+    "error": "Kunne ikke tømme databasen",
+    "error_invalid_confirmation": "Ugyldig bekreftelsesord"
   }
 }

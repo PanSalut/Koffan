@@ -13,7 +13,8 @@
     "close": "Fechar",
     "create": "Criar",
     "name": "Nome",
-    "description": "Descrição"
+    "description": "Descrição",
+    "reserved_name": "Este nome está reservado para uso do sistema"
   },
   "nav": {
     "settings": "Definições",
@@ -24,7 +25,8 @@
     "empty_list": "lista vazia",
     "shopping_list": "Lista de compras",
     "completed": "concluído",
-    "bought": "Comprado"
+    "bought": "Comprado",
+    "name_exists": "Já existe uma lista com este nome"
   },
   "items": {
     "what_to_buy": "O que comprar?",
@@ -47,7 +49,8 @@
     "select": "Selecionar",
     "no_sections": "Sem secções",
     "add_first_section": "Adicione a sua primeira secção para começar",
-    "add_section_btn": "Adicionar primeira secção"
+    "add_section_btn": "Adicionar primeira secção",
+    "default": "Geral"
   },
   "actions": {
     "move_up": "Subir",
@@ -70,6 +73,7 @@
     "report_bug": "Encontrou um erro? Avise-me!",
     "tab_account": "Conta",
     "tab_shopping_list": "Lista de compras",
+    "tab_data": "Dados",
     "delete_completed": "Excluir todos os comprados",
     "delete_completed_description": "Remove todos os itens marcados como comprados da lista.",
     "history_section_mode": "Secção para sugestões do histórico",
@@ -161,5 +165,48 @@
     "feature_sections": "Secções",
     "feature_templates": "Real-time",
     "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Exportar dados",
+    "download_json": "Baixar como JSON",
+    "download_csv": "Baixar como CSV",
+    "include_templates": "Incluir modelos"
+  },
+  "import": {
+    "title": "Importar dados",
+    "select_file": "Selecionar arquivo para importar",
+    "preview_title": "Pré-visualização da importação",
+    "confirm": "Importar",
+    "success": "Dados importados com sucesso",
+    "error": "Falha na importação",
+    "error_preview": "Não foi possível pré-visualizar o arquivo",
+    "error_file_too_large": "Arquivo muito grande (máx 5MB)",
+    "error_invalid_format": "Formato de arquivo inválido. Use JSON ou CSV.",
+    "error_invalid_file": "Arquivo inválido",
+    "lists": "Listas",
+    "items": "Itens",
+    "templates": "Modelos",
+    "history": "Histórico de sugestões",
+    "conflict_warning": "Estas listas já existem:",
+    "conflict_skip": "Ignorar - não importar estas listas",
+    "conflict_replace": "Substituir - excluir existentes e importar novas",
+    "conflict_copy": "Criar cópia - adicionar com sufixo (cópia)",
+    "copy_suffix": "cópia"
+  },
+  "danger_zone": {
+    "title": "Zona de perigo",
+    "clear_database": "Limpar base de dados",
+    "clear_database_warning": "Esta ação irá eliminar permanentemente todos os dados da base de dados. Isto não pode ser desfeito.",
+    "confirm_title": "Eliminar todos os dados?",
+    "will_delete": "Serão permanentemente eliminados:",
+    "delete_lists": "Todas as listas de compras",
+    "delete_sections": "Todas as secções",
+    "delete_items": "Todos os itens",
+    "delete_templates": "Todos os modelos",
+    "delete_history": "Todo o histórico de produtos",
+    "type_to_confirm": "Digite ",
+    "success": "A base de dados foi limpa",
+    "error": "Falha ao limpar a base de dados",
+    "error_invalid_confirmation": "Palavra de confirmação inválida"
   }
 }

@@ -13,7 +13,8 @@
     "close": "Zamknij",
     "create": "Utwórz",
     "name": "Nazwa",
-    "description": "Opis"
+    "description": "Opis",
+    "reserved_name": "Ta nazwa jest zarezerwowana dla systemu"
   },
   "nav": {
     "settings": "Ustawienia",
@@ -24,7 +25,8 @@
     "empty_list": "pusta lista",
     "shopping_list": "Lista zakupów",
     "completed": "gotowe",
-    "bought": "Kupione"
+    "bought": "Kupione",
+    "name_exists": "Lista o takiej nazwie już istnieje"
   },
   "items": {
     "what_to_buy": "Co kupić?",
@@ -47,7 +49,8 @@
     "select": "Wybierz",
     "no_sections": "Brak sekcji",
     "add_first_section": "Dodaj pierwszą sekcję aby rozpocząć",
-    "add_section_btn": "Dodaj pierwszą sekcję"
+    "add_section_btn": "Dodaj pierwszą sekcję",
+    "default": "Ogólne"
   },
   "actions": {
     "move_up": "W górę",
@@ -70,6 +73,7 @@
     "report_bug": "Coś nie działa? Daj znać!",
     "tab_account": "Konto",
     "tab_shopping_list": "Lista zakupów",
+    "tab_data": "Dane",
     "delete_completed": "Usuń wszystkie kupione",
     "delete_completed_description": "Usuwa wszystkie przedmioty oznaczone jako kupione z listy zakupów.",
     "history_section_mode": "Sekcja przy podpowiedzi z historii",
@@ -161,5 +165,48 @@
     "feature_sections": "Sekcje",
     "feature_templates": "Real-time",
     "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Eksport danych",
+    "download_json": "Pobierz jako JSON",
+    "download_csv": "Pobierz jako CSV",
+    "include_templates": "Dołącz szablony"
+  },
+  "import": {
+    "title": "Import danych",
+    "select_file": "Wybierz plik do importu",
+    "preview_title": "Podgląd importu",
+    "confirm": "Importuj",
+    "success": "Dane zaimportowane pomyślnie",
+    "error": "Import nie powiódł się",
+    "error_preview": "Nie udało się podejrzeć pliku",
+    "error_file_too_large": "Plik jest za duży (max 5MB)",
+    "error_invalid_format": "Nieprawidłowy format pliku. Użyj JSON lub CSV.",
+    "error_invalid_file": "Nieprawidłowy plik",
+    "lists": "Listy",
+    "items": "Produkty",
+    "templates": "Szablony",
+    "history": "Historia podpowiedzi",
+    "conflict_warning": "Te listy już istnieją:",
+    "conflict_skip": "Pomiń - nie importuj tych list",
+    "conflict_replace": "Zastąp - usuń istniejące i wgraj nowe",
+    "conflict_copy": "Utwórz kopię - dodaj z sufiksem (kopia)",
+    "copy_suffix": "kopia"
+  },
+  "danger_zone": {
+    "title": "Strefa niebezpieczna",
+    "clear_database": "Wyczyść bazę danych",
+    "clear_database_warning": "Ta akcja trwale usunie wszystkie dane z bazy danych. Nie można tego cofnąć.",
+    "confirm_title": "Usunąć wszystkie dane?",
+    "will_delete": "Zostaną trwale usunięte:",
+    "delete_lists": "Wszystkie listy zakupów",
+    "delete_sections": "Wszystkie sekcje",
+    "delete_items": "Wszystkie produkty",
+    "delete_templates": "Wszystkie szablony",
+    "delete_history": "Cała historia produktów",
+    "type_to_confirm": "Wpisz ",
+    "success": "Baza danych została wyczyszczona",
+    "error": "Nie udało się wyczyścić bazy danych",
+    "error_invalid_confirmation": "Nieprawidłowe słowo potwierdzające"
   }
 }

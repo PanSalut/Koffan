@@ -13,7 +13,8 @@
 		"close": "Uždaryti",
 		"create": "Sukurti",
 		"name": "Pavadinimas",
-		"description": "Aprašymas"
+		"description": "Aprašymas",
+		"reserved_name": "Šis pavadinimas yra rezervuotas sistemos naudojimui"
 	},
 	"nav": {
 		"settings": "Nustatymai",
@@ -24,7 +25,8 @@
 		"empty_list": "tuščias sąrašas",
 		"shopping_list": "Pirkinių sąrašas",
 		"completed": "atlikta",
-		"bought": "Nupirkta"
+		"bought": "Nupirkta",
+		"name_exists": "Sąrašas su tokiu pavadinimu jau egzistuoja"
 	},
 	"items": {
 		"what_to_buy": "Ką pirkti?",
@@ -47,7 +49,8 @@
 		"select": "Pasirinkti",
 		"no_sections": "Nėra skyrių",
 		"add_first_section": "Pridėkite pirmą skyrių, kad pradėtumėte",
-		"add_section_btn": "Pridėti pirmą skyrių"
+		"add_section_btn": "Pridėti pirmą skyrių",
+		"default": "Bendra"
 	},
 	"actions": {
 		"move_up": "Perkelti aukštyn",
@@ -70,6 +73,7 @@
 		"report_bug": "Radote klaidą? Praneškite!",
 		"tab_account": "Paskyra",
 		"tab_shopping_list": "Pirkinių sąrašas",
+		"tab_data": "Duomenys",
 		"delete_completed": "Ištrinti visus nupirktus elementus",
 		"delete_completed_description": "Pašalina visus elementus, pažymėtus kaip nupirktus, iš pirkinių sąrašo.",
 		"history_section_mode": "Skyrius istorijos pasiūlymams",
@@ -161,5 +165,48 @@
 		"feature_sections": "Skyriai",
 		"feature_templates": "Realiu laiku",
 		"feature_offline": "Neprisijungus"
+	},
+	"export": {
+		"title": "Eksportuoti duomenis",
+		"download_json": "Atsisiųsti kaip JSON",
+		"download_csv": "Atsisiųsti kaip CSV",
+		"include_templates": "Įtraukti šablonus"
+	},
+	"import": {
+		"title": "Importuoti duomenis",
+		"select_file": "Pasirinkite failą importavimui",
+		"preview_title": "Importo peržiūra",
+		"confirm": "Importuoti",
+		"success": "Duomenys sėkmingai importuoti",
+		"error": "Importas nepavyko",
+		"error_preview": "Nepavyko peržiūrėti failo",
+		"error_file_too_large": "Failas per didelis (maks. 5MB)",
+		"error_invalid_format": "Netinkamas failo formatas. Naudokite JSON arba CSV.",
+		"error_invalid_file": "Netinkamas failas",
+		"lists": "Sąrašai",
+		"items": "Elementai",
+		"templates": "Šablonai",
+		"history": "Pasiūlymų istorija",
+		"conflict_warning": "Šie sąrašai jau egzistuoja:",
+		"conflict_skip": "Praleisti - neimportuoti šių sąrašų",
+		"conflict_replace": "Pakeisti - ištrinti esamus ir importuoti naujus",
+		"conflict_copy": "Sukurti kopiją - pridėti su priesaga (kopija)",
+		"copy_suffix": "kopija"
+	},
+	"danger_zone": {
+		"title": "Pavojinga zona",
+		"clear_database": "Išvalyti duomenų bazę",
+		"clear_database_warning": "Šis veiksmas visam laikui ištrins visus duomenis iš duomenų bazės. Tai negalima atšaukti.",
+		"confirm_title": "Ištrinti visus duomenis?",
+		"will_delete": "Bus visam laikui ištrinta:",
+		"delete_lists": "Visi pirkinių sąrašai",
+		"delete_sections": "Visi skyriai",
+		"delete_items": "Visi elementai",
+		"delete_templates": "Visi šablonai",
+		"delete_history": "Visa produktų istorija",
+		"type_to_confirm": "Įveskite ",
+		"success": "Duomenų bazė išvalyta",
+		"error": "Nepavyko išvalyti duomenų bazės",
+		"error_invalid_confirmation": "Netinkamas patvirtinimo žodis"
 	}
 }

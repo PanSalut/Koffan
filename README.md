@@ -161,6 +161,7 @@ Data is stored in `/data/shopping.db`. The volume ensures your data persists acr
 For more information, check the **[Wiki](https://github.com/PanSalut/Koffan/wiki)**:
 
 - [REST API](https://github.com/PanSalut/Koffan/wiki/REST-API) - Programmatic access, migrations, integrations
+- [Multiple Instances](https://github.com/PanSalut/Koffan/wiki/Multiple-Instances) - Running separate instances for different households
 
 ## Feature Requests
 
@@ -168,11 +169,20 @@ Have an idea? Check [open feature requests](https://github.com/PanSalut/Koffan/i
 
 Want to suggest something new? [Create an issue](https://github.com/PanSalut/Koffan/issues/new).
 
-## Support
+## Sponsors
 
-If you find this project useful, consider supporting its development:
+I love and admire the open source philosophy. That's why I created Koffan - to give back to the community that has given me so much over the years.
+
+If you find this project useful and want to support my work (completely optional!), you can become a sponsor:
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?style=for-the-badge)](https://github.com/sponsors/PanSalut)
+
+### Thank You
+
+I'm incredibly grateful to these amazing people for supporting Koffan:
+
+- [@chip-well](https://github.com/chip-well)
+- [@Pffeffi](https://github.com/Pffeffi)
 
 ## License
 

@@ -102,6 +102,18 @@ func CreateList(c *fiber.Ctx) error {
 	if len(name) > MaxListNameLength {
 		return c.Status(400).SendString("Name too long (max 100 characters)")
 	}
+	if name == "[HISTORY]" {
+		return c.Status(400).SendString("This name is reserved for system use")
+	}
+
+	// Check for duplicate name
+	exists, err := db.ListNameExists(name, 0)
+	if err != nil {
+		return c.Status(500).SendString("Failed to check list name")
+	}
+	if exists {
+		return c.Status(400).SendString("list_name_exists")
+	}
 
 	icon := c.FormValue("icon")
 	if icon == "" {
@@ -138,6 +150,18 @@ func UpdateList(c *fiber.Ctx) error {
 	}
 	if len(name) > MaxListNameLength {
 		return c.Status(400).SendString("Name too long (max 100 characters)")
+	}
+	if name == "[HISTORY]" {
+		return c.Status(400).SendString("This name is reserved for system use")
+	}
+
+	// Check for duplicate name (excluding current list)
+	exists, err := db.ListNameExists(name, id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to check list name")
+	}
+	if exists {
+		return c.Status(400).SendString("list_name_exists")
 	}
 
 	icon := c.FormValue("icon")

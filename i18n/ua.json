@@ -13,7 +13,8 @@
     "close": "Закрити",
     "create": "Створити",
     "name": "Назва",
-    "description": "Опис"
+    "description": "Опис",
+    "reserved_name": "Ця назва зарезервована для системного використання"
   },
   "nav": {
     "settings": "Налаштування",
@@ -24,7 +25,8 @@
     "empty_list": "список порожній",
     "shopping_list": "Список покупок",
     "completed": "готово",
-    "bought": "Куплено"
+    "bought": "Куплено",
+    "name_exists": "Список з такою назвою вже існує"
   },
   "items": {
     "what_to_buy": "Що купити?",
@@ -47,7 +49,8 @@
     "select": "Обрати",
     "no_sections": "Немає секцій",
     "add_first_section": "Додай першу секцію, щоб почати",
-    "add_section_btn": "Додати першу секцію"
+    "add_section_btn": "Додати першу секцію",
+    "default": "Загальне"
   },
   "actions": {
     "move_up": "Перемістити вгору",
@@ -70,6 +73,7 @@
     "report_bug": "Знайшов баг? Повідом мені!",
     "tab_account": "Обліковий запис",
     "tab_shopping_list": "Список покупок",
+    "tab_data": "Дані",
     "delete_completed": "Видалити всі куплені товари",
     "delete_completed_description": "Видаляє зі списку всі товари, позначені як куплені.",
     "history_section_mode": "Секція для підказок з історії",
@@ -161,5 +165,48 @@
     "feature_sections": "Секції",
     "feature_templates": "Real-time",
     "feature_offline": "Офлайн"
+  },
+  "export": {
+    "title": "Експорт даних",
+    "download_json": "Завантажити як JSON",
+    "download_csv": "Завантажити як CSV",
+    "include_templates": "Включити шаблони"
+  },
+  "import": {
+    "title": "Імпорт даних",
+    "select_file": "Вибери файл для імпорту",
+    "preview_title": "Попередній перегляд імпорту",
+    "confirm": "Імпортувати",
+    "success": "Дані успішно імпортовано",
+    "error": "Помилка імпорту",
+    "error_preview": "Не вдалося попередньо переглянути файл",
+    "error_file_too_large": "Файл занадто великий (макс. 5MB)",
+    "error_invalid_format": "Невірний формат файлу. Використовуй JSON або CSV.",
+    "error_invalid_file": "Невірний файл",
+    "lists": "Списки",
+    "items": "Товари",
+    "templates": "Шаблони",
+    "history": "Історія підказок",
+    "conflict_warning": "Ці списки вже існують:",
+    "conflict_skip": "Пропустити - не імпортувати ці списки",
+    "conflict_replace": "Замінити - видалити існуючі та імпортувати нові",
+    "conflict_copy": "Створити копію - додати з суфіксом (копія)",
+    "copy_suffix": "копія"
+  },
+  "danger_zone": {
+    "title": "Небезпечна зона",
+    "clear_database": "Очистити базу даних",
+    "clear_database_warning": "Ця дія назавжди видалить усі дані з бази даних. Це не можна скасувати.",
+    "confirm_title": "Видалити всі дані?",
+    "will_delete": "Буде назавжди видалено:",
+    "delete_lists": "Усі списки покупок",
+    "delete_sections": "Усі секції",
+    "delete_items": "Усі товари",
+    "delete_templates": "Усі шаблони",
+    "delete_history": "Уся історія товарів",
+    "type_to_confirm": "Введіть ",
+    "success": "Базу даних очищено",
+    "error": "Не вдалося очистити базу даних",
+    "error_invalid_confirmation": "Невірне слово підтвердження"
   }
 }

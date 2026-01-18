@@ -13,7 +13,8 @@
     "close": "Close",
     "create": "Create",
     "name": "Name",
-    "description": "Description"
+    "description": "Description",
+    "reserved_name": "This name is reserved for system use"
   },
   "nav": {
     "settings": "Settings",
@@ -24,7 +25,8 @@
     "empty_list": "empty list",
     "shopping_list": "Shopping list",
     "completed": "done",
-    "bought": "Bought"
+    "bought": "Bought",
+    "name_exists": "A list with this name already exists"
   },
   "items": {
     "what_to_buy": "What to buy?",
@@ -47,7 +49,8 @@
     "select": "Select",
     "no_sections": "No sections",
     "add_first_section": "Add your first section to get started",
-    "add_section_btn": "Add first section"
+    "add_section_btn": "Add first section",
+    "default": "General"
   },
   "actions": {
     "move_up": "Move up",
@@ -161,5 +164,69 @@
     "feature_sections": "Sections",
     "feature_templates": "Real-time",
     "feature_offline": "Offline"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
+    "language": "Language",
+    "coming_soon": "Coming soon...",
+    "sponsor": "Want to support the app? Add to cart!",
+    "report_bug": "Found a bug? Let me know!",
+    "tab_account": "Account",
+    "tab_shopping_list": "Shopping list",
+    "tab_data": "Data",
+    "delete_completed": "Delete all bought items",
+    "delete_completed_description": "Removes all items marked as bought from the shopping list.",
+    "history_section_mode": "Section for history suggestions",
+    "use_first_section": "Use first section",
+    "use_first_section_desc": "If section doesn't exist, add to first available",
+    "auto_create_section": "Auto-create section",
+    "auto_create_section_desc": "If section doesn't exist, create a new one with the same name"
+  },
+  "export": {
+    "title": "Export Data",
+    "download_json": "Download as JSON",
+    "download_csv": "Download as CSV",
+    "include_templates": "Include templates"
+  },
+  "import": {
+    "title": "Import Data",
+    "select_file": "Select file to import",
+    "preview_title": "Import Preview",
+    "confirm": "Import",
+    "success": "Data imported successfully",
+    "error": "Import failed",
+    "error_preview": "Failed to preview file",
+    "error_file_too_large": "File is too large (max 5MB)",
+    "error_invalid_format": "Invalid file format. Use JSON or CSV.",
+    "error_invalid_file": "Invalid file",
+    "lists": "Lists",
+    "items": "Items",
+    "templates": "Templates",
+    "history": "Suggestions history",
+    "conflict_warning": "These lists already exist:",
+    "conflict_skip": "Skip - don't import these lists",
+    "conflict_replace": "Replace - delete existing and import new",
+    "conflict_copy": "Copy - create with suffix (copy)",
+    "copy_suffix": "copy"
+  },
+  "danger_zone": {
+    "title": "Danger Zone",
+    "clear_database": "Clear Database",
+    "clear_database_warning": "This action will permanently delete all data from the database. This cannot be undone.",
+    "confirm_title": "Delete all data?",
+    "will_delete": "The following will be permanently deleted:",
+    "delete_lists": "All shopping lists",
+    "delete_sections": "All sections",
+    "delete_items": "All items",
+    "delete_templates": "All templates",
+    "delete_history": "All product history",
+    "type_to_confirm": "Type ",
+    "success": "Database has been cleared",
+    "error": "Failed to clear database",
+    "error_invalid_confirmation": "Invalid confirmation word"
   }
 }

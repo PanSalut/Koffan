@@ -120,6 +120,9 @@ func main() {
 	// REST API (before auth middleware - uses token auth)
 	api.Register(app)
 
+	// Public endpoints (no auth required)
+	app.Get("/api/version", handlers.GetVersion)
+
 	// Auth middleware for all other routes
 	app.Use(handlers.AuthMiddleware)
 
@@ -196,6 +199,16 @@ func main() {
 
 	// Batch operations
 	app.Post("/sections/batch-delete", handlers.BatchDeleteSections)
+
+	// Import/Export
+	app.Get("/export", handlers.ExportAllData)
+	app.Get("/export/list/:id", handlers.ExportSingleList)
+	app.Get("/export/preview", handlers.GetExportPreview)
+	app.Post("/import", handlers.ImportData)
+	app.Post("/import/preview", handlers.PreviewImport)
+
+	// Database management
+	app.Post("/api/database/clear", handlers.ClearDatabase)
 
 	// Get port from env or default to 3000
 	port := os.Getenv("PORT")

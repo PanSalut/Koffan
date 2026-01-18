@@ -148,6 +148,28 @@ func CreateList(name, icon string) (*List, error) {
 	return GetListByID(id)
 }
 
+// ListNameExists checks if a list with the given name already exists (case-insensitive)
+// excludeID allows excluding a specific list (useful when updating)
+func ListNameExists(name string, excludeID int64) (bool, error) {
+	var count int
+	var err error
+	if excludeID > 0 {
+		err = DB.QueryRow(`
+			SELECT COUNT(*) FROM lists
+			WHERE name = ? COLLATE NOCASE AND id != ?
+		`, name, excludeID).Scan(&count)
+	} else {
+		err = DB.QueryRow(`
+			SELECT COUNT(*) FROM lists
+			WHERE name = ? COLLATE NOCASE
+		`, name).Scan(&count)
+	}
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // UpdateList updates a list's name and icon
 func UpdateList(id int64, name, icon string) (*List, error) {
 	if icon == "" {
@@ -972,6 +994,32 @@ func SaveItemHistory(name string, sectionID int64) error {
 	return err
 }
 
+// SaveItemHistoryWithCount saves item history with a specific usage count (used for import)
+func SaveItemHistoryWithCount(name string, sectionID int64, usageCount int) error {
+	_, err := DB.Exec(`
+		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
+		VALUES (?, ?, ?, strftime('%s', 'now'))
+		ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
+			last_section_id = CASE WHEN excluded.last_section_id > 0 THEN excluded.last_section_id ELSE last_section_id END,
+			usage_count = CASE WHEN excluded.usage_count > usage_count THEN excluded.usage_count ELSE usage_count END,
+			last_used_at = strftime('%s', 'now')
+	`, name, sectionID, usageCount)
+	return err
+}
+
+// SaveItemHistoryWithCountTx saves item history with a specific usage count within a transaction
+func SaveItemHistoryWithCountTx(tx *sql.Tx, name string, sectionID int64, usageCount int) error {
+	_, err := tx.Exec(`
+		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
+		VALUES (?, ?, ?, strftime('%s', 'now'))
+		ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
+			last_section_id = CASE WHEN excluded.last_section_id > 0 THEN excluded.last_section_id ELSE last_section_id END,
+			usage_count = CASE WHEN excluded.usage_count > usage_count THEN excluded.usage_count ELSE usage_count END,
+			last_used_at = strftime('%s', 'now')
+	`, name, sectionID, usageCount)
+	return err
+}
+
 // levenshteinDistance calculates the edit distance between two strings
 func levenshteinDistance(s1, s2 string) int {
 	s1 = strings.ToLower(s1)
@@ -1579,4 +1627,88 @@ func GetMaxItemOrderTx(tx *sql.Tx, sectionID int64) int {
 	var maxOrder int
 	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM items WHERE section_id = ?", sectionID).Scan(&maxOrder)
 	return maxOrder
+}
+
+// GetSectionIDByNameTx finds section ID by name (case-insensitive) within a transaction
+// Returns 0 if section not found
+func GetSectionIDByNameTx(tx *sql.Tx, sectionName string) int64 {
+	if sectionName == "" {
+		return 0
+	}
+
+	var sectionID int64
+	err := tx.QueryRow(`
+		SELECT id FROM sections
+		WHERE name = ? COLLATE NOCASE
+		LIMIT 1
+	`, sectionName).Scan(&sectionID)
+
+	if err != nil {
+		return 0
+	}
+	return sectionID
+}
+
+// GetSectionNameForItem finds the section name where an item currently exists
+// Used as fallback when last_section_id is not set in history
+func GetSectionNameForItem(itemName string) string {
+	var sectionName string
+	err := DB.QueryRow(`
+		SELECT s.name FROM items i
+		JOIN sections s ON i.section_id = s.id
+		WHERE i.name = ? COLLATE NOCASE
+		LIMIT 1
+	`, itemName).Scan(&sectionName)
+
+	if err != nil {
+		return ""
+	}
+	return sectionName
+}
+
+// ==================== DATABASE CLEAR ====================
+
+// ClearAllData clears all user data from database (lists, sections, items, templates, history)
+// Sessions are preserved so user remains logged in
+func ClearAllData() error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Delete in proper order due to foreign key constraints
+	// 1. template_items (references templates)
+	if _, err := tx.Exec("DELETE FROM template_items"); err != nil {
+		return fmt.Errorf("failed to delete template_items: %w", err)
+	}
+
+	// 2. templates
+	if _, err := tx.Exec("DELETE FROM templates"); err != nil {
+		return fmt.Errorf("failed to delete templates: %w", err)
+	}
+
+	// 3. items (references sections)
+	if _, err := tx.Exec("DELETE FROM items"); err != nil {
+		return fmt.Errorf("failed to delete items: %w", err)
+	}
+
+	// 4. sections (references lists)
+	if _, err := tx.Exec("DELETE FROM sections"); err != nil {
+		return fmt.Errorf("failed to delete sections: %w", err)
+	}
+
+	// 5. lists
+	if _, err := tx.Exec("DELETE FROM lists"); err != nil {
+		return fmt.Errorf("failed to delete lists: %w", err)
+	}
+
+	// 6. item_history
+	if _, err := tx.Exec("DELETE FROM item_history"); err != nil {
+		return fmt.Errorf("failed to delete item_history: %w", err)
+	}
+
+	// Note: sessions are NOT deleted - user remains logged in
+
+	return tx.Commit()
 }

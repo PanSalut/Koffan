@@ -41,6 +41,9 @@ func CreateSection(c *fiber.Ctx) error {
 	if len(name) > MaxSectionNameLength {
 		return c.Status(400).SendString("Name too long (max 100 characters)")
 	}
+	if name == "[HISTORY]" {
+		return c.Status(400).SendString("This name is reserved for system use")
+	}
 
 	section, err := db.CreateSection(name)
 	if err != nil {
@@ -70,6 +73,9 @@ func UpdateSection(c *fiber.Ctx) error {
 	}
 	if len(name) > MaxSectionNameLength {
 		return c.Status(400).SendString("Name too long (max 100 characters)")
+	}
+	if name == "[HISTORY]" {
+		return c.Status(400).SendString("This name is reserved for system use")
 	}
 
 	section, err := db.UpdateSection(id, name)

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"shopping-list/i18n"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -189,26 +188,10 @@ func migrateToMultipleLists() {
 		return
 	}
 
-	// Create default list with localized name
-	defaultListName := i18n.Get(i18n.GetDefaultLang(), "list.shopping_list")
-	result, err := DB.Exec(`INSERT INTO lists (name, sort_order, is_active) VALUES (?, 0, TRUE)`, defaultListName)
-	if err != nil {
-		log.Println("Migration failed - creating default list:", err)
-		return
-	}
-	defaultListID, _ := result.LastInsertId()
-
 	// Add list_id column to sections
 	_, err = DB.Exec("ALTER TABLE sections ADD COLUMN list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE")
 	if err != nil {
 		log.Println("Migration failed - adding list_id to sections:", err)
-		return
-	}
-
-	// Update existing sections to use default list
-	_, err = DB.Exec("UPDATE sections SET list_id = ?", defaultListID)
-	if err != nil {
-		log.Println("Migration failed - updating sections with list_id:", err)
 		return
 	}
 

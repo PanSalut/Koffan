@@ -70,6 +70,13 @@ func CreateSection(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.Name == "[HISTORY]" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "validation_error",
+			Message: "This name is reserved for system use",
+		})
+	}
+
 	// Check if list exists
 	_, err := db.GetListByID(req.ListID)
 	if err != nil {
@@ -126,6 +133,13 @@ func UpdateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "validation_error",
 			Message: "Name exceeds maximum length of 100 characters",
+		})
+	}
+
+	if req.Name == "[HISTORY]" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "validation_error",
+			Message: "This name is reserved for system use",
 		})
 	}
 

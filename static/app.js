@@ -49,6 +49,26 @@ window.Toast = {
     }
 };
 
+// Form error handler for section creation
+window.handleSectionFormError = function(form, xhr) {
+    // Remove any existing error message
+    form.querySelector('.error-msg')?.remove();
+
+    // Get error text from response
+    let errorText = xhr.responseText || 'Error';
+
+    // Translate known error codes
+    if (errorText === 'This name is reserved for system use') {
+        errorText = window.getTranslation?.('common.reserved_name') || 'Ta nazwa jest zarezerwowana dla systemu';
+    }
+
+    // Create and insert error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-msg text-sm text-red-500';
+    errorDiv.textContent = errorText;
+    form.appendChild(errorDiv);
+};
+
 // Shopping List Alpine.js Component
 function shoppingList() {
     return {
@@ -81,6 +101,12 @@ function shoppingList() {
         historySearch: '',
         selectedHistoryIds: [],
         historySectionMode: localStorage.getItem('history_section_mode') || 'use_first_section',
+
+        // Import/Export
+        showImportPreview: false,
+        importPreview: {},
+        importFile: null,
+        importConflictResolution: 'skip',
 
         // Stats (updated from server)
         stats: {
@@ -680,6 +706,12 @@ function shoppingList() {
                 htmx.ajax('GET', '/sections/list', {
                     target: '#manage-sections-list',
                     swap: 'innerHTML'
+                }).then(() => {
+                    // Reinitialize Alpine.js for new elements after HTMX swap
+                    const el = document.getElementById('manage-sections-list');
+                    if (el) {
+                        Alpine.initTree(el);
+                    }
                 });
             }
 
@@ -1660,6 +1692,99 @@ function shoppingList() {
                 console.error('Failed to move item to section:', error);
                 window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
                 if (navigator.onLine) this.refreshList();
+            }
+        },
+
+        // Import/Export functions
+        async handleImportFile(file) {
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                if (window.Toast) {
+                    window.Toast.show(t('import.error_file_too_large'), 'warning');
+                }
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['application/json', 'text/csv'];
+            const validExtensions = ['.json', '.csv'];
+            const hasValidType = validTypes.includes(file.type) || validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+            if (!hasValidType) {
+                if (window.Toast) {
+                    window.Toast.show(t('import.error_invalid_format'), 'warning');
+                }
+                return;
+            }
+
+            this.importFile = file;
+
+            // Send file for preview
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/import/preview', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const preview = await response.json();
+
+                if (!preview.valid) {
+                    if (window.Toast) {
+                        window.Toast.show(preview.error || t('import.error_invalid_file'), 'warning');
+                    }
+                    return;
+                }
+
+                this.importPreview = preview;
+                this.importConflictResolution = 'skip';
+                this.showSettings = false;
+                this.showImportPreview = true;
+            } catch (error) {
+                console.error('Failed to preview import:', error);
+                if (window.Toast) {
+                    window.Toast.show(t('import.error_preview'), 'warning');
+                }
+            }
+        },
+
+        async confirmImport() {
+            if (!this.importFile) return;
+
+            const formData = new FormData();
+            formData.append('file', this.importFile);
+            formData.append('conflict_resolution', this.importConflictResolution);
+            formData.append('copy_suffix', this.t('import.copy_suffix'));
+
+            try {
+                const response = await fetch('/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.showImportPreview = false;
+                    if (window.Toast) {
+                        window.Toast.show(t('import.success'), 'success');
+                    }
+                    // Reload to show imported data
+                    window.location.reload();
+                } else {
+                    if (window.Toast) {
+                        window.Toast.show(result.error || t('import.error'), 'warning');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to import:', error);
+                if (window.Toast) {
+                    window.Toast.show(t('import.error'), 'warning');
+                }
             }
         }
     };

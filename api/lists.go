@@ -83,6 +83,28 @@ func CreateList(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.Name == "[HISTORY]" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "validation_error",
+			Message: "This name is reserved for system use",
+		})
+	}
+
+	// Check for duplicate name
+	exists, err := db.ListNameExists(req.Name, 0)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to check list name",
+		})
+	}
+	if exists {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "list_name_exists",
+			Message: "A list with this name already exists",
+		})
+	}
+
 	icon := NormalizeIcon(req.Icon)
 	list, err := db.CreateList(req.Name, icon)
 	if err != nil {
@@ -144,6 +166,28 @@ func UpdateList(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "validation_error",
 			Message: "Name exceeds maximum length of 100 characters",
+		})
+	}
+
+	if name == "[HISTORY]" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "validation_error",
+			Message: "This name is reserved for system use",
+		})
+	}
+
+	// Check for duplicate name (excluding current list)
+	exists, err := db.ListNameExists(name, int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to check list name",
+		})
+	}
+	if exists {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "list_name_exists",
+			Message: "A list with this name already exists",
 		})
 	}
 

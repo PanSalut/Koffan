@@ -240,10 +240,13 @@
                     <input
                         type="text"
                         x-model="listName"
+                        @input="listNameError = ''"
                         :placeholder="t('onboarding.list_placeholder')"
                         required
-                        class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                        :class="listNameError ? 'border-rose-400 dark:border-rose-500' : 'border-stone-200 dark:border-stone-600'"
+                        class="w-full border dark:bg-stone-700 dark:text-stone-100 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                     >
+                    <p x-show="listNameError" x-text="listNameError" class="mt-1.5 text-sm text-rose-500 dark:text-rose-400"></p>
                 </div>
 
                 <div class="flex gap-3 pt-2">
@@ -262,9 +265,10 @@
 
     <!-- Settings Modal -->
     <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-         x-data="{ currentTheme: localStorage.getItem('theme') || 'system' }">
+         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', appVersion: '' }"
+         x-init="fetch('/api/version').then(r => r.json()).then(d => appVersion = d.version).catch(() => appVersion = 'unknown')">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
-        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-sm p-6"
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
@@ -279,79 +283,347 @@
                 </button>
             </div>
 
-            <!-- Theme Selection -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.theme')"></label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button
-                        @click="setTheme('light'); currentTheme = 'light'"
-                        :class="currentTheme === 'light' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
-                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            <!-- Choice Chips (Tabs) -->
+            <div class="flex gap-2 mb-6">
+                <button
+                    @click="settingsTab = 'account'"
+                    :class="settingsTab === 'account'
+                        ? 'bg-pink-400 text-white'
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'"
+                    class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                    <span x-text="t('settings.tab_account')"></span>
+                </button>
+                <button
+                    @click="settingsTab = 'data'"
+                    :class="settingsTab === 'data'
+                        ? 'bg-pink-400 text-white'
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'"
+                    class="flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                    <span x-text="t('settings.tab_data')"></span>
+                </button>
+            </div>
+
+            <!-- Tab: Account -->
+            <div x-show="settingsTab === 'account'" x-cloak x-transition>
+                <!-- Theme Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.theme')"></label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            @click="setTheme('light'); currentTheme = 'light'"
+                            :class="currentTheme === 'light' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_light')"></span>
+                        </button>
+                        <button
+                            @click="setTheme('dark'); currentTheme = 'dark'"
+                            :class="currentTheme === 'dark' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_dark')"></span>
+                        </button>
+                        <button
+                            @click="setTheme('system'); currentTheme = 'system'"
+                            :class="currentTheme === 'system' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                            class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-2V4a8 8 0 110 16z"></path>
+                            </svg>
+                            <span x-text="t('settings.theme_system')"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Language Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.language')"></label>
+                    <select
+                        @change="changeLanguage($event.target.value)"
+                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 dark:text-stone-100"
                     >
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        <template x-for="locale in window.locales" :key="locale.code">
+                            <option :value="locale.code" :selected="window.currentLang === locale.code" x-text="locale.flag + ' ' + locale.name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Logout -->
+                <form action="/logout" method="POST" class="mb-6">
+                    <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
-                        <span x-text="t('settings.theme_light')"></span>
+                        <span x-text="t('nav.logout')"></span>
                     </button>
-                    <button
-                        @click="setTheme('dark'); currentTheme = 'dark'"
-                        :class="currentTheme === 'dark' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
-                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                        </svg>
-                        <span x-text="t('settings.theme_dark')"></span>
-                    </button>
-                    <button
-                        @click="setTheme('system'); currentTheme = 'system'"
-                        :class="currentTheme === 'system' ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
-                        class="px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-2V4a8 8 0 110 16z"></path>
-                        </svg>
-                        <span x-text="t('settings.theme_system')"></span>
-                    </button>
+                </form>
+
+                <!-- Sponsor & Bug report -->
+                <div class="pt-4 border-t border-stone-100 dark:border-stone-700 space-y-2">
+                    <a href="https://github.com/sponsors/PanSalut" target="_blank" rel="noopener"
+                       class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-pink-500 transition-colors group">
+                        <span class="text-base group-hover:animate-pulse">💖</span>
+                        <span x-text="t('settings.sponsor')"></span>
+                    </a>
+                    <a href="https://github.com/PanSalut/Koffan/issues" target="_blank" rel="noopener"
+                       class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors group">
+                        <span class="text-base">🐛</span>
+                        <span x-text="t('settings.report_bug')"></span>
+                    </a>
+                    <!-- Version -->
+                    <div class="pt-2 text-xs text-stone-300 dark:text-stone-600 text-center">
+                        Koffan <span x-text="appVersion"></span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Language Selection -->
+            <!-- Tab: Data (Import/Export) -->
+            <div x-show="settingsTab === 'data'" x-cloak x-transition>
+                <!-- Export Section -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('export.title')"></h4>
+                    <div class="space-y-3">
+                        <!-- Export JSON -->
+                        <a href="/export?format=json&include_templates=true&include_history=true"
+                           download
+                           class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-600 border border-stone-200 dark:border-stone-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <span x-text="t('export.download_json')"></span>
+                        </a>
+                        <!-- Export CSV -->
+                        <a href="/export?format=csv"
+                           download
+                           class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-600 border border-stone-200 dark:border-stone-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            <span x-text="t('export.download_csv')"></span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Import Section -->
+                <div class="border-t border-stone-100 dark:border-stone-700 pt-6">
+                    <h4 class="text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('import.title')"></h4>
+                    <div
+                        class="border-2 border-dashed border-stone-200 dark:border-stone-600 rounded-xl p-6 text-center hover:border-pink-400 transition-colors cursor-pointer"
+                        @click="$refs.importFileInputHome.click()"
+                        @dragover.prevent="$el.classList.add('border-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20')"
+                        @dragleave.prevent="$el.classList.remove('border-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20')"
+                        @drop.prevent="$el.classList.remove('border-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20'); handleImportFile($event.dataTransfer.files[0])"
+                    >
+                        <input type="file" x-ref="importFileInputHome" accept=".json,.csv" class="hidden" @change="handleImportFile($event.target.files[0])">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-sm text-stone-500 dark:text-stone-400" x-text="t('import.select_file')"></p>
+                        <p class="text-xs text-stone-400 dark:text-stone-500 mt-1">JSON, CSV (max 5MB)</p>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="border-t border-stone-100 dark:border-stone-700 pt-6 mt-6">
+                    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                        <h4 class="text-sm font-medium text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            <span x-text="t('danger_zone.title')"></span>
+                        </h4>
+                        <p class="text-xs text-red-600 dark:text-red-400 mb-3" x-text="t('danger_zone.clear_database_warning')"></p>
+                        <button
+                            @click="showClearDatabaseModal = true"
+                            :disabled="!isOnline"
+                            :class="!isOnline ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700 dark:hover:bg-red-600'"
+                            class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600 dark:bg-red-700 text-white text-sm font-medium transition-colors"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            <span x-text="t('danger_zone.clear_database')"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Preview Modal -->
+    <div x-show="showImportPreview" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showImportPreview = false"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
+             x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-4" x-text="t('import.preview_title')"></h3>
+
+            <!-- Preview content -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.language')"></label>
-                <select
-                    @change="changeLanguage($event.target.value)"
-                    class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 dark:text-stone-100"
-                >
-                    <template x-for="locale in window.locales" :key="locale.code">
-                        <option :value="locale.code" :selected="window.currentLang === locale.code" x-text="locale.flag + ' ' + locale.name"></option>
+                <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-stone-500 dark:text-stone-400" x-text="t('import.lists')"></span>
+                        <span class="font-medium text-stone-700 dark:text-stone-200" x-text="importPreview.lists_count"></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-stone-500 dark:text-stone-400" x-text="t('import.items')"></span>
+                        <span class="font-medium text-stone-700 dark:text-stone-200" x-text="importPreview.items_count"></span>
+                    </div>
+                    <template x-if="importPreview.templates_count > 0">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-stone-500 dark:text-stone-400" x-text="t('import.templates')"></span>
+                            <span class="font-medium text-stone-700 dark:text-stone-200" x-text="importPreview.templates_count"></span>
+                        </div>
                     </template>
-                </select>
+                    <template x-if="importPreview.history_count > 0">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-stone-500 dark:text-stone-400" x-text="t('import.history')"></span>
+                            <span class="font-medium text-stone-700 dark:text-stone-200" x-text="importPreview.history_count"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Conflict warning -->
+                <template x-if="importPreview.conflicting_lists && importPreview.conflicting_lists.length > 0">
+                    <div class="mt-4 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-lg p-4">
+                        <p class="text-sm font-medium text-rose-700 dark:text-rose-300 mb-2" x-text="t('import.conflict_warning')"></p>
+                        <ul class="text-sm text-rose-600 dark:text-rose-400 list-disc list-inside">
+                            <template x-for="name in importPreview.conflicting_lists" :key="name">
+                                <li x-text="name"></li>
+                            </template>
+                        </ul>
+
+                        <!-- Conflict resolution options -->
+                        <div class="mt-4 space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="conflict_resolution_home" value="skip" x-model="importConflictResolution" class="text-pink-500 focus:ring-pink-500">
+                                <span class="text-sm text-stone-700 dark:text-stone-200" x-text="t('import.conflict_skip')"></span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="conflict_resolution_home" value="replace" x-model="importConflictResolution" class="text-pink-500 focus:ring-pink-500">
+                                <span class="text-sm text-stone-700 dark:text-stone-200" x-text="t('import.conflict_replace')"></span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="conflict_resolution_home" value="copy" x-model="importConflictResolution" class="text-pink-500 focus:ring-pink-500">
+                                <span class="text-sm text-stone-700 dark:text-stone-200" x-text="t('import.conflict_copy')"></span>
+                            </label>
+                        </div>
+                    </div>
+                </template>
             </div>
 
-            <!-- Logout -->
-            <form action="/logout" method="POST" class="mb-6">
-                <button type="submit"
-                    class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                    <span x-text="t('nav.logout')"></span>
+            <div class="flex gap-3">
+                <button type="button" @click="showImportPreview = false"
+                    class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
+                    x-text="t('common.cancel')">
                 </button>
-            </form>
+                <button type="button" @click="confirmImport()"
+                    class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-lg text-sm font-medium transition-colors"
+                    x-text="t('import.confirm')">
+                </button>
+            </div>
+        </div>
+    </div>
 
-            <!-- Sponsor & Bug report -->
-            <div class="pt-4 border-t border-stone-100 dark:border-stone-700 space-y-2">
-                <a href="https://github.com/sponsors/PanSalut" target="_blank" rel="noopener"
-                   class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-pink-500 transition-colors group">
-                    <span class="text-base group-hover:animate-pulse">💖</span>
-                    <span x-text="t('settings.sponsor')"></span>
-                </a>
-                <a href="https://github.com/PanSalut/Koffan/issues" target="_blank" rel="noopener"
-                   class="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors group">
-                    <span class="text-base">🐛</span>
-                    <span x-text="t('settings.report_bug')"></span>
-                </a>
+    <!-- Clear Database Confirmation Modal -->
+    <div x-show="showClearDatabaseModal" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showClearDatabaseModal = false; clearDatabaseInput = ''"></div>
+        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
+             x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
+
+            <!-- Warning icon -->
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 text-center mb-2" x-text="t('danger_zone.confirm_title')"></h3>
+
+            <!-- What will be deleted -->
+            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
+                <p class="text-sm font-medium text-red-700 dark:text-red-400 mb-2" x-text="t('danger_zone.will_delete')"></p>
+                <ul class="text-sm text-red-600 dark:text-red-400 space-y-1">
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span x-text="t('danger_zone.delete_lists')"></span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span x-text="t('danger_zone.delete_sections')"></span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span x-text="t('danger_zone.delete_items')"></span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span x-text="t('danger_zone.delete_templates')"></span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span x-text="t('danger_zone.delete_history')"></span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Confirmation input -->
+            <div class="mb-4">
+                <label class="block text-sm text-stone-600 dark:text-stone-400 mb-2">
+                    <span x-text="t('danger_zone.type_to_confirm')"></span>
+                    <span class="font-mono font-bold text-red-600 dark:text-red-400">DELETE</span>
+                </label>
+                <input
+                    type="text"
+                    x-model="clearDatabaseInput"
+                    placeholder="DELETE"
+                    autocomplete="off"
+                    class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 dark:text-stone-100 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent font-mono"
+                >
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button" @click="showClearDatabaseModal = false; clearDatabaseInput = ''"
+                    class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"
+                    x-text="t('common.cancel')">
+                </button>
+                <button
+                    type="button"
+                    @click="clearDatabase()"
+                    :disabled="clearDatabaseInput !== 'DELETE' || clearDatabaseLoading"
+                    :class="clearDatabaseInput !== 'DELETE' || clearDatabaseLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'"
+                    class="flex-1 bg-red-600 text-white py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                    <template x-if="clearDatabaseLoading">
+                        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </template>
+                    <span x-text="t('common.delete')"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -364,9 +636,19 @@ function homePage() {
         showSettings: false,
         editingList: null,
         listName: '',
+        listNameError: '',
         selectedIcon: '🛒',
         icons: ['🛒', '🏠', '🎁', '🎄', '🎂', '🍕', '🥗', '💊', '🐕', '🧹', '📦', '✈️', '🏋️', '📚', '🛠️', '💼'],
         isOnline: navigator.onLine,
+        // Import state
+        showImportPreview: false,
+        importPreview: {},
+        importFile: null,
+        importConflictResolution: 'skip',
+        // Clear database state
+        showClearDatabaseModal: false,
+        clearDatabaseInput: '',
+        clearDatabaseLoading: false,
 
         t(key) {
             return window.t ? window.t(key) : key;
@@ -424,6 +706,7 @@ function homePage() {
         editList(id, name, icon) {
             this.editingList = { id, name, icon };
             this.listName = name;
+            this.listNameError = '';
             this.selectedIcon = icon || '🛒';
         },
 
@@ -522,16 +805,25 @@ function homePage() {
                 }
 
                 if (response.ok) {
+                    this.showNewListModal = false;
+                    this.editingList = null;
+                    this.listName = '';
+                    this.listNameError = '';
+                    this.selectedIcon = '🛒';
                     window.location.reload();
+                } else {
+                    const errorText = await response.text();
+                    if (errorText === 'list_name_exists') {
+                        this.listNameError = this.t('list.name_exists');
+                    } else if (errorText === 'This name is reserved for system use') {
+                        this.listNameError = this.t('common.reserved_name');
+                    } else {
+                        this.listNameError = errorText;
+                    }
                 }
             } catch (error) {
                 console.error('Failed to save list:', error);
             }
-
-            this.showNewListModal = false;
-            this.editingList = null;
-            this.listName = '';
-            this.selectedIcon = '🛒';
         },
 
         createOfflineListHtml(id, name, icon) {
@@ -569,6 +861,141 @@ function homePage() {
                 }
             } catch (error) {
                 console.error('Failed to apply template:', error);
+            }
+        },
+
+        async handleImportFile(file) {
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                if (window.Toast) {
+                    window.Toast.show(this.t('import.error_file_too_large'), 'warning');
+                }
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['application/json', 'text/csv'];
+            const validExtensions = ['.json', '.csv'];
+            const hasValidType = validTypes.includes(file.type) || validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+            if (!hasValidType) {
+                if (window.Toast) {
+                    window.Toast.show(this.t('import.error_invalid_format'), 'warning');
+                }
+                return;
+            }
+
+            this.importFile = file;
+
+            // Send file for preview
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/import/preview', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const preview = await response.json();
+
+                if (!preview.valid) {
+                    if (window.Toast) {
+                        window.Toast.show(preview.error || this.t('import.error_invalid_file'), 'warning');
+                    }
+                    return;
+                }
+
+                this.importPreview = preview;
+                this.importConflictResolution = 'skip';
+                this.showSettings = false;
+                this.showImportPreview = true;
+            } catch (error) {
+                console.error('Failed to preview import:', error);
+                if (window.Toast) {
+                    window.Toast.show(this.t('import.error_preview'), 'warning');
+                }
+            }
+        },
+
+        async confirmImport() {
+            if (!this.importFile) return;
+
+            const formData = new FormData();
+            formData.append('file', this.importFile);
+            formData.append('conflict_resolution', this.importConflictResolution);
+            formData.append('copy_suffix', this.t('import.copy_suffix'));
+
+            try {
+                const response = await fetch('/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.showImportPreview = false;
+                    if (window.Toast) {
+                        window.Toast.show(this.t('import.success'), 'success');
+                    }
+                    // Reload to show imported data
+                    window.location.reload();
+                } else {
+                    if (window.Toast) {
+                        window.Toast.show(result.error || this.t('import.error'), 'warning');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to import:', error);
+                if (window.Toast) {
+                    window.Toast.show(this.t('import.error'), 'warning');
+                }
+            }
+        },
+
+        async clearDatabase() {
+            if (this.clearDatabaseInput !== 'DELETE' || this.clearDatabaseLoading) return;
+
+            this.clearDatabaseLoading = true;
+
+            try {
+                const response = await fetch('/api/database/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ confirmation: this.clearDatabaseInput })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.showClearDatabaseModal = false;
+                    this.clearDatabaseInput = '';
+                    if (window.Toast) {
+                        window.Toast.show(this.t('danger_zone.success'), 'success');
+                    }
+                    // Redirect to home page
+                    window.location.href = '/';
+                } else {
+                    if (window.Toast) {
+                        if (result.error === 'invalid_confirmation') {
+                            window.Toast.show(this.t('danger_zone.error_invalid_confirmation'), 'warning');
+                        } else {
+                            window.Toast.show(result.error || this.t('danger_zone.error'), 'warning');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to clear database:', error);
+                if (window.Toast) {
+                    window.Toast.show(this.t('danger_zone.error'), 'warning');
+                }
+            } finally {
+                this.clearDatabaseLoading = false;
             }
         }
     };

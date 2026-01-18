@@ -13,7 +13,8 @@
     "close": "Stäng",
     "create": "Skapa",
     "name": "Namn",
-    "description": "Beskrivning"
+    "description": "Beskrivning",
+    "reserved_name": "Detta namn är reserverat för systemanvändning"
   },
   "nav": {
     "settings": "Inställningar",
@@ -24,7 +25,8 @@
     "empty_list": "tom lista",
     "shopping_list": "Inköpslista",
     "completed": "klar",
-    "bought": "Köpt"
+    "bought": "Köpt",
+    "name_exists": "En lista med detta namn finns redan"
   },
   "items": {
     "what_to_buy": "Vad skall köpas?",
@@ -47,7 +49,8 @@
     "select": "Välj",
     "no_sections": "Inga avdelningar",
     "add_first_section": "Lägg till din första avdelning för att komma igång",
-    "add_section_btn": "Lägg till första avdelningen"
+    "add_section_btn": "Lägg till första avdelningen",
+    "default": "Allmänt"
   },
   "actions": {
     "move_up": "Flytta upp",
@@ -70,6 +73,7 @@
     "report_bug": "Hittat något fel? Berätta!",
     "tab_account": "Konto",
     "tab_shopping_list": "Inköpslista",
+    "tab_data": "Data",
     "delete_completed": "Radera alla köpta varor",
     "delete_completed_description": "Tar bort alla varor markerade som köpta från inköpslistan.",
     "history_section_mode": "Sektion för historiska avdelningsförslag",
@@ -161,5 +165,48 @@
     "feature_sections": "Avdelningar",
     "feature_templates": "Mallar",
     "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Exportera data",
+    "download_json": "Ladda ner som JSON",
+    "download_csv": "Ladda ner som CSV",
+    "include_templates": "Inkludera mallar"
+  },
+  "import": {
+    "title": "Importera data",
+    "select_file": "Välj fil att importera",
+    "preview_title": "Förhandsgranskning av import",
+    "confirm": "Importera",
+    "success": "Data importerad",
+    "error": "Import misslyckades",
+    "error_preview": "Kunde inte förhandsgranska fil",
+    "error_file_too_large": "Filen är för stor (max 5MB)",
+    "error_invalid_format": "Ogiltigt filformat. Använd JSON eller CSV.",
+    "error_invalid_file": "Ogiltig fil",
+    "lists": "Listor",
+    "items": "Varor",
+    "templates": "Mallar",
+    "history": "Förslagshistorik",
+    "conflict_warning": "Dessa listor finns redan:",
+    "conflict_skip": "Hoppa över - importera inte dessa listor",
+    "conflict_replace": "Ersätt - radera befintliga och importera nya",
+    "conflict_copy": "Skapa kopia - lägg till med suffix (kopia)",
+    "copy_suffix": "kopia"
+  },
+  "danger_zone": {
+    "title": "Farlig zon",
+    "clear_database": "Rensa databasen",
+    "clear_database_warning": "Denna åtgärd raderar permanent all data från databasen. Detta kan inte ångras.",
+    "confirm_title": "Radera all data?",
+    "will_delete": "Följande raderas permanent:",
+    "delete_lists": "Alla inköpslistor",
+    "delete_sections": "Alla avdelningar",
+    "delete_items": "Alla varor",
+    "delete_templates": "Alla mallar",
+    "delete_history": "All produkthistorik",
+    "type_to_confirm": "Skriv ",
+    "success": "Databasen har rensats",
+    "error": "Kunde inte rensa databasen",
+    "error_invalid_confirmation": "Ogiltigt bekräftelseord"
   }
 }

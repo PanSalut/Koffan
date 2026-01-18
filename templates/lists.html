@@ -21,22 +21,25 @@
                 hx-post="/lists"
                 hx-target="#lists-container"
                 hx-swap="beforeend"
-                hx-on::after-request="this.reset()"
-                class="flex items-center gap-3"
+                hx-on::after-request="if(event.detail.successful) { this.reset(); this.querySelector('.error-msg')?.remove(); }"
+                hx-on::response-error="handleListFormError(this, event.detail.xhr)"
+                class="flex flex-col gap-3"
             >
-                <input
-                    type="text"
-                    name="name"
-                    :placeholder="t('lists.new_list')"
-                    placeholder="Nazwa nowej listy..."
-                    required
-                    class="flex-1 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400"
-                >
-                <button
-                    type="submit"
-                    class="bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                    x-text="t('common.add')"
-                >Dodaj</button>
+                <div class="flex items-center gap-3">
+                    <input
+                        type="text"
+                        name="name"
+                        :placeholder="t('lists.new_list')"
+                        placeholder="Nazwa nowej listy..."
+                        required
+                        class="flex-1 border border-stone-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400"
+                    >
+                    <button
+                        type="submit"
+                        class="bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                        x-text="t('common.add')"
+                    >Dodaj</button>
+                </div>
             </form>
         </div>
 
@@ -207,6 +210,27 @@
 </div>
 
 <script>
+function handleListFormError(form, xhr) {
+    // Remove any existing error message
+    form.querySelector('.error-msg')?.remove();
+
+    // Get error text from response
+    let errorText = xhr.responseText || 'Error';
+
+    // Translate known error codes
+    if (errorText === 'list_name_exists') {
+        errorText = window.getTranslation?.('lists.name_exists') || 'Lista o tej nazwie już istnieje';
+    } else if (errorText === 'This name is reserved for system use') {
+        errorText = window.getTranslation?.('common.reserved_name') || 'Ta nazwa jest zarezerwowana dla systemu';
+    }
+
+    // Create and insert error message
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-msg text-sm text-red-500 mt-2';
+    errorDiv.textContent = errorText;
+    form.appendChild(errorDiv);
+}
+
 function listsPage() {
     return {
         showCreateTemplate: false,
