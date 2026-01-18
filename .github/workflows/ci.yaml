@@ -1,23 +1,25 @@
-name: Docker Hub + Github Packages
+name: Docker Build (Manual)
 
 on:
   workflow_dispatch:
-  push:
-    tags: ["v*.*.*"]
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v1.6.7)'
+        required: true
 
 jobs:
   build:
-    # Only run on public repo, skip on internal
     if: github.repository == 'PanSalut/Koffan'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      id-token: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
@@ -36,15 +38,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/pansalut/koffan
+          images: ghcr.io/pansalut/koffan
+          tags: |
+            type=raw,value=${{ github.event.inputs.tag }}
 
       - name: Build and push Docker image
-        id: build-and-push
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
