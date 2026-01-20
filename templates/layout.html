@@ -109,7 +109,7 @@
     </script>
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/tailwind.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -125,15 +125,14 @@
     </script>
 
     <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
+    <script src="/static/htmx.min.js"></script>
+    <script src="/static/htmx-ws.js"></script>
 
     <!-- Alpine.js + Collapse plugin -->
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.5/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <script defer src="/static/alpine.min.js"></script>
 
     <!-- SortableJS for mobile drag-and-drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="/static/sortable.min.js"></script>
 
     <style>
         [x-cloak] { display: none !important; }
@@ -376,7 +375,7 @@
     <script>
         // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js?v=2')
+            navigator.serviceWorker.register('/sw.js?v=4')
                 .then(reg => {
                     console.log('[App] Service Worker registered:', reg.scope);
                     // Force update check

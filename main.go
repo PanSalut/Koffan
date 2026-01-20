@@ -106,6 +106,13 @@ func main() {
 	app.Use(logger.New())
 	app.Use(recover.New())
 
+	// Service Worker at root path
+	app.Get("/sw.js", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "application/javascript")
+		c.Set("Cache-Control", "no-cache")
+		return c.SendFile("./static/sw.js")
+	})
+
 	// Static files
 	app.Static("/static", "./static")
 
