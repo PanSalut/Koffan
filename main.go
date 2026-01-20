@@ -1,9 +1,12 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"html/template"
+	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"shopping-list/api"
 	"shopping-list/db"
@@ -11,11 +14,18 @@ import (
 	"shopping-list/i18n"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
 )
+
+//go:embed templates/*
+var embeddedTemplatesFS embed.FS
+
+//go:embed static/*
+var embeddedStaticFS embed.FS
 
 func main() {
 	// Initialize i18n first (before db, so migrations can use translations)
@@ -39,7 +49,12 @@ func main() {
 	handlers.InitLoginRateLimiter()
 
 	// Initialize template engine
-	engine := html.New("./templates", ".html")
+	templatesRootFS, err := fs.Sub(embeddedTemplatesFS, "templates")
+	if err != nil {
+		log.Fatalf("Embedded templates directory missing: %v", err)
+	}
+
+	engine := html.NewFileSystem(http.FS(templatesRootFS), ".html")
 	engine.Reload(os.Getenv("APP_ENV") != "production")
 
 	// Add custom template functions
@@ -114,7 +129,15 @@ func main() {
 	})
 
 	// Static files
-	app.Static("/static", "./static")
+	staticRootFS, err := fs.Sub(embeddedStaticFS, "static")
+	if err != nil {
+		log.Fatalf("Embedded static directory missing: %v", err)
+	}
+
+	app.Use("/static", filesystem.New(filesystem.Config{
+		Root:   http.FS(staticRootFS),
+		Browse: false,
+	}))
 
 	// Auth routes (before middleware)
 	app.Get("/login", handlers.LoginPage)
