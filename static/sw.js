@@ -1,5 +1,5 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v3';
+const CACHE_VERSION = 'koffan-v5';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 
@@ -8,7 +8,6 @@ const LIST_PAGE_PATTERN = /^\/lists\/\d+$/;
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
-    '/',
     '/static/app.js',
     '/static/offline-storage.js',
     '/static/manifest.json',
@@ -17,16 +16,13 @@ const STATIC_ASSETS = [
     '/static/icon-512.png',
     '/static/favicon.ico',
     '/static/favicon-96.png',
-    '/static/apple-touch-icon.png'
-];
-
-// CDN assets to cache
-const CDN_ASSETS = [
-    'https://cdn.tailwindcss.com',
-    'https://unpkg.com/htmx.org@1.9.10',
-    'https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js',
-    'https://unpkg.com/@alpinejs/collapse@3.13.5/dist/cdn.min.js',
-    'https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js'
+    '/static/apple-touch-icon.png',
+    '/static/tailwind.min.js',
+    '/static/htmx.min.js',
+    '/static/htmx-ws.js',
+    '/static/alpine-collapse.min.js',
+    '/static/alpine.min.js',
+    '/static/sortable.min.js'
 ];
 
 // Install event - cache static assets
@@ -36,23 +32,9 @@ self.addEventListener('install', (event) => {
         caches.open(STATIC_CACHE)
             .then(cache => {
                 console.log('[SW] Caching static assets');
-                // Cache local assets
-                const localPromise = cache.addAll(STATIC_ASSETS).catch(err => {
+                return cache.addAll(STATIC_ASSETS).catch(err => {
                     console.warn('[SW] Some static assets failed to cache:', err);
                 });
-                // Cache CDN assets (may fail due to CORS)
-                const cdnPromise = Promise.all(
-                    CDN_ASSETS.map(url =>
-                        fetch(url, { mode: 'cors' })
-                            .then(response => {
-                                if (response.ok) {
-                                    return cache.put(url, response);
-                                }
-                            })
-                            .catch(() => console.warn('[SW] Failed to cache CDN:', url))
-                    )
-                );
-                return Promise.all([localPromise, cdnPromise]);
             })
             .then(() => self.skipWaiting())
     );
@@ -101,12 +83,6 @@ self.addEventListener('fetch', (event) => {
 
     // Static assets - Cache First
     if (url.pathname.startsWith('/static/')) {
-        event.respondWith(cacheFirst(event.request));
-        return;
-    }
-
-    // CDN assets - Cache First
-    if (CDN_ASSETS.some(cdn => event.request.url.startsWith(cdn.split('/').slice(0, 3).join('/')))) {
         event.respondWith(cacheFirst(event.request));
         return;
     }
@@ -169,7 +145,6 @@ async function networkFirst(request) {
         }
         return response;
     } catch (error) {
-        console.log('[SW] Network first fallback to cache:', request.url);
         const cached = await caches.match(request);
         if (cached) {
             return cached;
@@ -201,8 +176,6 @@ async function listPageStrategy(request) {
         }
         return response;
     } catch (error) {
-        console.log('[SW] List page fallback to cache:', request.url);
-
         // Try to return cached version of this list
         const cached = await caches.match(request);
         if (cached) {
