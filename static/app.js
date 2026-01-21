@@ -1570,6 +1570,52 @@ function shoppingList() {
             // Mark as local action to prevent double refresh from WebSocket
             this.markLocalAction('item_created');
 
+            // Offline: optimistic UI without refresh (like standard add)
+            if (!this.isOnline) {
+                const tempId = 'offline-' + Date.now();
+
+                // Create optimistic item HTML
+                const itemHtml = createOfflineItemHtml(tempId, name, '', sectionId);
+
+                // Find section and add item
+                const sectionEl = document.getElementById(`section-${sectionId}`);
+                if (sectionEl) {
+                    sectionEl.classList.remove('hidden');
+                    const itemsContainer = sectionEl.querySelector('.active-items');
+                    if (itemsContainer) {
+                        itemsContainer.insertAdjacentHTML('afterbegin', itemHtml);
+                    }
+
+                    // Update section counter
+                    const counter = sectionEl.querySelector('.section-counter');
+                    if (counter) {
+                        const parts = counter.textContent.split('/');
+                        const completed = parseInt(parts[0]) || 0;
+                        const total = (parseInt(parts[1]) || 0) + 1;
+                        counter.textContent = `${completed}/${total}`;
+                    }
+                }
+
+                // Queue for sync
+                await window.offlineStorage.queueAction({
+                    type: 'create_item',
+                    url: '/items',
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`,
+                    tempId: tempId
+                });
+
+                // Close quick add (no refresh!)
+                this.closeQuickAdd();
+
+                // Confirmation toast
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
+
+                return;
+            }
+
+            // Online: original behavior
             try {
                 const formData = new URLSearchParams();
                 formData.append('name', name);
@@ -1581,7 +1627,7 @@ function shoppingList() {
                     body: formData.toString()
                 }, 'create_item');
 
-                if (response.ok || !this.isOnline) {
+                if (response.ok) {
                     // Close quick add after successful submit
                     this.closeQuickAdd();
 
@@ -1591,18 +1637,6 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('[QuickAdd] Failed to add item:', error);
-                // Queue for offline
-                await this.queueOfflineAction({
-                    type: 'create_item',
-                    url: '/items',
-                    method: 'POST',
-                    body: { name, section_id: sectionId }
-                });
-
-                // Close quick add and refresh
-                this.closeQuickAdd();
-                this.refreshList();
-                this.refreshStats();
             }
         },
 
