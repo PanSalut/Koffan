@@ -44,7 +44,15 @@ func CreateItem(c *fiber.Ctx) error {
 
 	description := c.FormValue("description")
 
-	item, err := db.CreateItem(sectionID, name, description)
+	// Parse quantity (default to 0)
+	quantity := 0
+	if q := c.FormValue("quantity"); q != "" {
+		if parsed, err := strconv.Atoi(q); err == nil && parsed >= 0 {
+			quantity = parsed
+		}
+	}
+
+	item, err := db.CreateItem(sectionID, name, description, quantity)
 	if err != nil {
 		return c.Status(500).SendString("Failed to create item")
 	}
@@ -62,7 +70,7 @@ func CreateItem(c *fiber.Ctx) error {
 	}, "")
 }
 
-// UpdateItem updates an item's name and description
+// UpdateItem updates an item's name, description and quantity
 func UpdateItem(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
@@ -76,7 +84,21 @@ func UpdateItem(c *fiber.Ctx) error {
 
 	description := c.FormValue("description")
 
-	item, err := db.UpdateItem(id, name, description)
+	// Get existing item to preserve quantity if not provided
+	existing, err := db.GetItemByID(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to get item")
+	}
+
+	// Parse quantity (preserve existing if not provided)
+	quantity := existing.Quantity
+	if q := c.FormValue("quantity"); q != "" {
+		if parsed, err := strconv.Atoi(q); err == nil && parsed >= 0 {
+			quantity = parsed
+		}
+	}
+
+	item, err := db.UpdateItem(id, name, description, quantity)
 	if err != nil {
 		return c.Status(500).SendString("Failed to update item")
 	}

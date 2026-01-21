@@ -162,6 +162,9 @@ func runMigrations() {
 
 	// Migration: Add icon to lists
 	migrateListIcons()
+
+	// Migration: Add quantity to items
+	migrateItemQuantity()
 }
 
 func migrateToMultipleLists() {
@@ -289,6 +292,30 @@ func migrateListIcons() {
 	}
 
 	log.Println("Migration completed: List icons added")
+}
+
+func migrateItemQuantity() {
+	// Check if quantity column exists in items
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('items') WHERE name='quantity'").Scan(&count)
+	if err != nil {
+		log.Println("Migration check failed:", err)
+		return
+	}
+
+	if count > 0 {
+		return // Already migrated
+	}
+
+	log.Println("Running migration: Adding quantity to items...")
+
+	_, err = DB.Exec("ALTER TABLE items ADD COLUMN quantity INTEGER DEFAULT 0")
+	if err != nil {
+		log.Println("Migration failed - adding quantity to items:", err)
+		return
+	}
+
+	log.Println("Migration completed: Item quantity added")
 }
 
 func Close() {

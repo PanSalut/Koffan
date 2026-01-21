@@ -33,6 +33,7 @@
     "note": "Note...",
     "note_optional": "Note (optional)...",
     "name": "Name...",
+    "quantity": "Quantity (e.g. 2)",
     "new_product": "New product",
     "select_section": "Select section...",
     "section": "Section...",

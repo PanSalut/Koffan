@@ -93,7 +93,7 @@ func CreateItem(c *fiber.Ctx) error {
 		})
 	}
 
-	item, err := db.CreateItem(req.SectionID, req.Name, req.Description)
+	item, err := db.CreateItem(req.SectionID, req.Name, req.Description, req.Quantity)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "create_failed",
@@ -150,6 +150,12 @@ func UpdateItem(c *fiber.Ctx) error {
 		description = existing.Description
 	}
 
+	// Use existing quantity if not provided in request
+	quantity := existing.Quantity
+	if req.Quantity != nil {
+		quantity = *req.Quantity
+	}
+
 	if len(name) > MaxItemNameLength {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "validation_error",
@@ -164,7 +170,7 @@ func UpdateItem(c *fiber.Ctx) error {
 		})
 	}
 
-	item, err := db.UpdateItem(int64(id), name, description)
+	item, err := db.UpdateItem(int64(id), name, description, quantity)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "update_failed",

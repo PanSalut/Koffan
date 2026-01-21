@@ -27,6 +27,7 @@ type Item struct {
 	Description string    `json:"description"`
 	Completed   bool      `json:"completed"`
 	Uncertain   bool      `json:"uncertain"`
+	Quantity    int       `json:"quantity"`
 	SortOrder   int       `json:"sort_order"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   int64     `json:"updated_at"`
@@ -506,7 +507,7 @@ func MoveSectionDown(id int64) error {
 
 func GetItemsBySection(sectionID int64) ([]Item, error) {
 	rows, err := DB.Query(`
-		SELECT id, section_id, name, description, completed, uncertain, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 		FROM items
 		WHERE section_id = ?
 		ORDER BY completed ASC, sort_order ASC
@@ -519,7 +520,7 @@ func GetItemsBySection(sectionID int64) ([]Item, error) {
 	var items []Item
 	for rows.Next() {
 		var i Item
-		err := rows.Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+		err := rows.Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -531,23 +532,23 @@ func GetItemsBySection(sectionID int64) ([]Item, error) {
 func GetItemByID(id int64) (*Item, error) {
 	var i Item
 	err := DB.QueryRow(`
-		SELECT id, section_id, name, description, completed, uncertain, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 		FROM items WHERE id = ?
-	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return &i, nil
 }
 
-func CreateItem(sectionID int64, name, description string) (*Item, error) {
+func CreateItem(sectionID int64, name, description string, quantity int) (*Item, error) {
 	// Get max sort_order for this section
 	var maxOrder int
 	DB.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM items WHERE section_id = ?", sectionID).Scan(&maxOrder)
 
 	result, err := DB.Exec(`
-		INSERT INTO items (section_id, name, description, sort_order) VALUES (?, ?, ?, ?)
-	`, sectionID, name, description, maxOrder+1)
+		INSERT INTO items (section_id, name, description, quantity, sort_order) VALUES (?, ?, ?, ?, ?)
+	`, sectionID, name, description, quantity, maxOrder+1)
 	if err != nil {
 		return nil, err
 	}
@@ -556,10 +557,10 @@ func CreateItem(sectionID int64, name, description string) (*Item, error) {
 	return GetItemByID(id)
 }
 
-func UpdateItem(id int64, name, description string) (*Item, error) {
+func UpdateItem(id int64, name, description string, quantity int) (*Item, error) {
 	_, err := DB.Exec(`
-		UPDATE items SET name = ?, description = ?, updated_at = strftime('%s', 'now') WHERE id = ?
-	`, name, description, id)
+		UPDATE items SET name = ?, description = ?, quantity = ?, updated_at = strftime('%s', 'now') WHERE id = ?
+	`, name, description, quantity, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1585,7 +1586,7 @@ func CreateSectionForListTx(tx *sql.Tx, listID int64, name string, sortOrder int
 // CreateItemTx creates an item within a transaction
 func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, sortOrder int) (*Item, error) {
 	result, err := tx.Exec(`
-		INSERT INTO items (section_id, name, description, sort_order) VALUES (?, ?, ?, ?)
+		INSERT INTO items (section_id, name, description, quantity, sort_order) VALUES (?, ?, ?, 0, ?)
 	`, sectionID, name, description, sortOrder)
 	if err != nil {
 		return nil, err
@@ -1595,9 +1596,9 @@ func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, sortOrd
 
 	var i Item
 	err = tx.QueryRow(`
-		SELECT id, section_id, name, description, completed, uncertain, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 		FROM items WHERE id = ?
-	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}

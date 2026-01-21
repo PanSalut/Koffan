@@ -123,6 +123,7 @@ function shoppingList() {
         editingItem: null,
         editItemName: '',
         editItemDescription: '',
+        editItemQuantity: 0,
 
         // Auto-completion
         suggestions: [],
@@ -138,6 +139,10 @@ function shoppingList() {
         showQuickAddSuggestions: false,
         selectedQuickAddSuggestionIndex: -1,
         _quickAddSuggestionTimer: null,
+
+        // Search
+        searchQuery: '',
+        searchResults: [],
 
         // Track pending local actions to avoid WebSocket race conditions
         pendingLocalActions: {},
@@ -1315,13 +1320,16 @@ function shoppingList() {
             if (itemEl) {
                 const offlineName = itemEl.getAttribute('data-offline-name');
                 const offlineDesc = itemEl.getAttribute('data-offline-description');
+                const offlineQty = itemEl.getAttribute('data-offline-quantity');
 
                 // Use offline data if exists, otherwise use original
                 this.editItemName = offlineName !== null ? offlineName : item.name;
                 this.editItemDescription = offlineDesc !== null ? offlineDesc : (item.description || '');
+                this.editItemQuantity = offlineQty !== null ? parseInt(offlineQty) || 0 : (item.quantity || 0);
             } else {
                 this.editItemName = item.name;
                 this.editItemDescription = item.description || '';
+                this.editItemQuantity = item.quantity || 0;
             }
 
             this.$nextTick(() => {
@@ -1336,11 +1344,13 @@ function shoppingList() {
             const itemId = this.editingItem.id;
             const name = this.editItemName.trim();
             const description = this.editItemDescription.trim();
-            const body = `name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`;
+            const quantity = parseInt(this.editItemQuantity) || 0;
+            const body = `name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}&quantity=${quantity}`;
 
             this.editingItem = null;
             this.editItemName = '';
             this.editItemDescription = '';
+            this.editItemQuantity = 0;
 
             // If offline, do optimistic UI update
             if (!this.isOnline) {
@@ -1682,6 +1692,48 @@ function shoppingList() {
             setTimeout(() => {
                 this.showQuickAddSuggestions = false;
             }, 200);
+        },
+
+        // Search functionality
+        performSearch(query) {
+            if (!query || query.length < 2) {
+                this.searchResults = [];
+                return;
+            }
+
+            const items = document.querySelectorAll('[data-item-id]');
+            const results = [];
+            const queryLower = query.toLowerCase();
+
+            items.forEach(el => {
+                const name = el.querySelector('.item-name')?.textContent?.toLowerCase() || '';
+                if (name.includes(queryLower)) {
+                    results.push(el.dataset.itemId);
+                }
+            });
+
+            this.searchResults = results;
+        },
+
+        clearSearch() {
+            this.searchQuery = '';
+            this.searchResults = [];
+        },
+
+        isItemVisible(itemId) {
+            if (!this.searchQuery || this.searchQuery.length < 2) return true;
+            return this.searchResults.includes(String(itemId));
+        },
+
+        isSectionVisible(sectionId) {
+            if (!this.searchQuery || this.searchQuery.length < 2) return true;
+
+            // Check if any item in section matches
+            const sectionEl = document.getElementById('section-' + sectionId);
+            if (!sectionEl) return true;
+
+            const items = sectionEl.querySelectorAll('[data-item-id]');
+            return Array.from(items).some(el => this.searchResults.includes(el.dataset.itemId));
         },
 
         expandToFullModal(sectionId) {

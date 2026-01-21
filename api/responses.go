@@ -94,12 +94,14 @@ type CreateItemRequest struct {
 	SectionID   int64  `json:"section_id"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	Quantity    int    `json:"quantity,omitempty"`
 }
 
 // UpdateItemRequest for updating an item
 type UpdateItemRequest struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
+	Quantity    *int   `json:"quantity,omitempty"`
 	Completed   *bool  `json:"completed,omitempty"`
 	Uncertain   *bool  `json:"uncertain,omitempty"`
 }

@@ -102,6 +102,37 @@
         </div>
     </header>
 
+    <!-- Search Bar -->
+    <div class="container mx-auto max-w-4xl px-4 mb-4" x-show="stats.total > 5" x-cloak>
+        <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text"
+                x-model="searchQuery"
+                @input.debounce.150ms="performSearch($event.target.value)"
+                @keydown.escape="clearSearch()"
+                :placeholder="t('history.search_placeholder')"
+                class="w-full pl-10 pr-10 py-2.5 text-sm border border-stone-200 dark:border-stone-600 rounded-xl bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-colors">
+            <button
+                x-show="searchQuery"
+                x-cloak
+                @click="clearSearch()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <p x-show="searchQuery && searchResults.length > 0" x-cloak class="mt-2 text-xs text-stone-500 dark:text-stone-400">
+            Znaleziono: <span x-text="searchResults.length"></span>
+        </p>
+        <p x-show="searchQuery && searchQuery.length >= 2 && searchResults.length === 0" x-cloak class="mt-2 text-xs text-stone-400 dark:text-stone-500">
+            Brak wyników dla "<span x-text="searchQuery"></span>"
+        </p>
+    </div>
+
     <div class="container mx-auto px-4 max-w-4xl">
         <!-- Desktop controls -->
         <div class="hidden md:block mb-6">
@@ -441,6 +472,11 @@
                     class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
                 <textarea x-model="editItemDescription" :placeholder="t('items.note')" rows="2"
                     class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500"></textarea>
+                <div class="relative">
+                    <input type="number" x-model="editItemQuantity" :placeholder="t('items.quantity')" min="0" max="999"
+                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500 pointer-events-none" x-show="editItemQuantity > 0" x-text="'×'"></span>
+                </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="editingItem = null"
                         class="flex-1 border border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 py-3 rounded-lg text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors"

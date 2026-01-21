@@ -4,6 +4,7 @@
     data-item-id="{{.Item.ID}}"
     data-section-id="{{.Item.SectionID}}"
     class="px-4 py-3 flex items-center gap-0.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group select-none {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
+    x-show="isItemVisible({{.Item.ID}})"
 >
     <!-- Drag Handle -->
     <div class="drag-handle flex-shrink-0 w-5 h-10 flex items-center justify-center -ml-2 touch-none cursor-grab active:cursor-grabbing text-stone-300 dark:text-stone-600 hover:text-stone-400 dark:hover:text-stone-500 transition-colors">
@@ -41,7 +42,10 @@
             {{if .Item.Uncertain}}
             <span class="text-amber-500 dark:text-amber-400 text-xs">?</span>
             {{end}}
-            <p class="text-sm text-stone-700 dark:text-stone-200 truncate">{{.Item.Name}}</p>
+            <p class="item-name text-sm text-stone-700 dark:text-stone-200 truncate">{{.Item.Name}}</p>
+            {{if gt .Item.Quantity 0}}
+            <span class="px-1.5 py-0.5 text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full flex-shrink-0">{{.Item.Quantity}}x</span>
+            {{end}}
         </div>
         {{if .Item.Description}}
         <p class="text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">{{.Item.Description}}</p>
@@ -66,10 +70,12 @@
             data-item-id="{{.Item.ID}}"
             data-item-name="{{.Item.Name}}"
             data-item-description="{{.Item.Description}}"
+            data-item-quantity="{{.Item.Quantity}}"
             @click="$data.editItem({
                 id: parseInt($el.dataset.itemId),
                 name: $el.dataset.itemName,
-                description: $el.dataset.itemDescription || ''
+                description: $el.dataset.itemDescription || '',
+                quantity: parseInt($el.dataset.itemQuantity) || 0
             })"
             class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
             :title="t('common.edit')"
@@ -130,12 +136,14 @@
         data-item-id="{{.Item.ID}}"
         data-item-name="{{.Item.Name}}"
         data-item-description="{{.Item.Description}}"
+        data-item-quantity="{{.Item.Quantity}}"
         data-section-id="{{.Item.SectionID}}"
         data-uncertain="{{.Item.Uncertain}}"
         @click="$dispatch('open-mobile-action', {
             id: parseInt($el.dataset.itemId),
             name: $el.dataset.itemName,
             description: $el.dataset.itemDescription,
+            quantity: parseInt($el.dataset.itemQuantity) || 0,
             section_id: parseInt($el.dataset.sectionId),
             uncertain: $el.dataset.uncertain === 'true'
         })"

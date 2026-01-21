@@ -1,7 +1,9 @@
 {{define "partials/item_completed"}}
 <div
     id="item-{{.Item.ID}}"
+    data-item-id="{{.Item.ID}}"
     class="px-4 py-2.5 flex items-center gap-3 hover:bg-stone-100/50 dark:hover:bg-stone-700/50 transition-all group"
+    x-show="isItemVisible({{.Item.ID}})"
 >
     <!-- Checkbox (checked) -->
     <button
@@ -26,7 +28,12 @@
         hx-swap="outerHTML"
         hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
     >
-        <p class="text-sm text-stone-400 dark:text-stone-500 line-through truncate">{{.Item.Name}}</p>
+        <div class="flex items-center gap-2">
+            <p class="item-name text-sm text-stone-400 dark:text-stone-500 line-through truncate">{{.Item.Name}}</p>
+            {{if gt .Item.Quantity 0}}
+            <span class="px-1.5 py-0.5 text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500 rounded-full flex-shrink-0 line-through">{{.Item.Quantity}}x</span>
+            {{end}}
+        </div>
         {{if .Item.Description}}
         <p class="text-xs text-stone-300 dark:text-stone-500 line-through truncate">{{.Item.Description}}</p>
         {{end}}

@@ -9,7 +9,7 @@
 {{if gt $totalItems 0}}{{$percentage = div (mul $completedItems 100) $totalItems}}{{end}}
 
 <!-- Always render section for offline support - hidden when empty via CSS -->
-<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}">
+<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}" x-show="isSectionVisible({{.Section.ID}})" x-transition>
     <!-- Section Header -->
     <div class="px-4 py-3 border-b border-stone-100 dark:border-stone-700 flex items-center justify-between">
         <div class="flex items-center gap-3">
