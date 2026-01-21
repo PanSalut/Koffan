@@ -371,12 +371,12 @@
 
     {{embed}}
 
-    <script src="/static/offline-storage.js?v=2"></script>
-    <script src="/static/app.js?v=2"></script>
+    <script src="/static/offline-storage.js?v=3"></script>
+    <script src="/static/app.js?v=3"></script>
     <script>
         // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js?v=4')
+            navigator.serviceWorker.register('/sw.js?v=5')
                 .then(reg => {
                     console.log('[App] Service Worker registered:', reg.scope);
                     // Force update check
