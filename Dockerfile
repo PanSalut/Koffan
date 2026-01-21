@@ -32,10 +32,6 @@ RUN apk --no-cache add ca-certificates tzdata libc6-compat
 # Copy binary from builder
 COPY --from=builder /app/shopping-list .
 
-# Copy templates and static files
-COPY --from=builder /app/templates ./templates
-COPY --from=builder /app/static ./static
-
 # Create data directory for database
 RUN mkdir -p /data
 
