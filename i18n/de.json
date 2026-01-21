@@ -39,7 +39,8 @@
     "add_more": "Mehr hinzufügen",
     "no_items": "Keine Produkte",
     "add_first_item": "Füge dein erstes Produkt hinzu",
-    "quick_add": "Schnell zur Kategorie hinzufügen"
+    "quick_add": "Schnell zur Kategorie hinzufügen",
+    "more_options": "Mehr Optionen"
   },
   "sections": {
     "title": "Kategorien",

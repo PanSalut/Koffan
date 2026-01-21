@@ -39,7 +39,8 @@
     "add_more": "Lägg till fler",
     "no_items": "Inga varor",
     "add_first_item": "Lägg till första varan",
-    "quick_add": "Snabbinläggning till avdelning"
+    "quick_add": "Snabbinläggning till avdelning",
+    "more_options": "Fler alternativ"
   },
   "sections": {
     "title": "Avdelning",

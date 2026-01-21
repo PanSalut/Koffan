@@ -25,10 +25,11 @@
                 </svg>
             </span>
             {{end}}
-            <!-- Quick add button -->
+            <!-- Quick add toggle button -->
             <button
-                @click="quickAddToSection({{.Section.ID}})"
-                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-colors"
+                @click="quickAddSectionId === {{.Section.ID}} ? closeQuickAdd() : openQuickAdd({{.Section.ID}})"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-all"
+                :class="quickAddSectionId === {{.Section.ID}} && 'rotate-45 text-pink-500'"
                 :title="t('items.quick_add')"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,6 +37,71 @@
                 </svg>
             </button>
         </div>
+    </div>
+
+    <!-- Quick Add Inline Input -->
+    <div x-show="quickAddSectionId === {{.Section.ID}}" x-cloak
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="px-4 py-3 border-b border-stone-100 dark:border-stone-700 bg-stone-50/50 dark:bg-stone-900/30">
+        <form @submit.prevent="submitQuickAdd({{.Section.ID}})" class="relative">
+            <div class="flex items-center gap-2">
+                <div class="flex-1 relative">
+                    <input
+                        type="text"
+                        id="quick-add-input-{{.Section.ID}}"
+                        x-model="quickAddName"
+                        x-init="$nextTick(() => $el.focus())"
+                        @input="fetchQuickAddSuggestions($event.target.value)"
+                        @keydown="handleQuickAddKeydown($event, {{.Section.ID}})"
+                        @blur="hideQuickAddSuggestionsDelayed()"
+                        @focus="quickAddName.length >= 2 && fetchQuickAddSuggestions(quickAddName)"
+                        autocomplete="off"
+                        :placeholder="t('items.what_to_buy')"
+                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400 dark:placeholder:text-stone-500 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100"
+                    >
+                    <!-- Suggestions dropdown -->
+                    <div x-show="showQuickAddSuggestions && quickAddSuggestions.length > 0"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                        <template x-for="(suggestion, index) in quickAddSuggestions" :key="suggestion.name">
+                            <button type="button"
+                                @mousedown.prevent="selectQuickAddSuggestion(suggestion)"
+                                :class="index === selectedQuickAddSuggestionIndex ? 'bg-pink-50 dark:bg-pink-900/30' : 'hover:bg-stone-50 dark:hover:bg-stone-700'"
+                                class="w-full text-left px-3 py-2 text-sm flex items-center justify-between border-b border-stone-100 dark:border-stone-700 last:border-b-0">
+                                <span x-text="suggestion.name" class="text-stone-700 dark:text-stone-200"></span>
+                                <span class="text-xs text-stone-400 dark:text-stone-500" x-text="suggestion.usage_count + 'x'"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <!-- Submit button -->
+                <button type="submit"
+                    class="w-8 h-8 flex items-center justify-center bg-pink-400 hover:bg-pink-500 text-white rounded-lg transition-colors flex-shrink-0"
+                    :title="t('common.add')"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </button>
+                <!-- Expand to full modal -->
+                <button type="button"
+                    @click="expandToFullModal({{.Section.ID}})"
+                    class="w-8 h-8 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors flex-shrink-0"
+                    :title="t('items.more_options')"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Active Items Container -->

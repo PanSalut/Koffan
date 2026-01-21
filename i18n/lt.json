@@ -39,7 +39,8 @@
 		"add_more": "Pridėti dar",
 		"no_items": "Nėra produktų",
 		"add_first_item": "Pridėkite pirmą produktą",
-		"quick_add": "Greitai pridėti į skyrių"
+		"quick_add": "Greitai pridėti į skyrių",
+		"more_options": "Daugiau parinkčių"
 	},
 	"sections": {
 		"title": "Skyriai",

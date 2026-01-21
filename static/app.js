@@ -131,6 +131,14 @@ function shoppingList() {
         itemNameInput: '',
         _suggestionTimer: null,
 
+        // Quick Add inline
+        quickAddSectionId: null,
+        quickAddName: '',
+        quickAddSuggestions: [],
+        showQuickAddSuggestions: false,
+        selectedQuickAddSuggestionIndex: -1,
+        _quickAddSuggestionTimer: null,
+
         // Track pending local actions to avoid WebSocket race conditions
         pendingLocalActions: {},
         localActionTimeout: 1000, // ms to ignore WebSocket updates after local action
@@ -559,6 +567,12 @@ function shoppingList() {
                         this.refreshSectionsAndSelects();
                         break;
                     case 'item_created':
+                        // If local action - we already refreshed
+                        if (!this.isLocalAction('item_created')) {
+                            this.refreshList();
+                        }
+                        this.refreshStats();
+                        break;
                     case 'item_moved':
                         // Requires full list refresh
                         this.refreshList();
@@ -1505,35 +1519,190 @@ function shoppingList() {
             }
         },
 
-        // Quick add to section - sets section and focuses input
-        quickAddToSection(sectionId) {
-            const isMobile = window.innerWidth < 768;
+        // Quick add inline - opens inline input in section
+        openQuickAdd(sectionId) {
+            // iOS keyboard trick: focus hidden input SYNCHRONOUSLY to trigger keyboard
+            const iosTrigger = document.getElementById('ios-keyboard-trigger');
+            if (iosTrigger) {
+                iosTrigger.focus();
+            }
 
-            if (isMobile) {
-                this.showAddItem = true;
-                this.$nextTick(() => {
-                    const mobileSelect = this.$refs.mobileSectionSelect;
-                    if (mobileSelect) {
-                        mobileSelect.value = sectionId;
+            // Close any other open quick add
+            this.quickAddSectionId = sectionId;
+            this.quickAddName = '';
+            this.quickAddSuggestions = [];
+            this.showQuickAddSuggestions = false;
+            this.selectedQuickAddSuggestionIndex = -1;
+
+            // Transfer focus to actual input after Alpine renders it
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    const input = document.querySelector(`#quick-add-input-${sectionId}`);
+                    if (input) {
+                        input.focus();
                     }
-                    setTimeout(() => {
-                        const nameInput = this.$refs.itemNameInput;
-                        if (nameInput) {
-                            nameInput.focus();
-                        }
-                    }, 350);
-                });
-            } else {
-                const desktopSelect = this.$refs.desktopSectionSelect;
-                if (desktopSelect) {
-                    desktopSelect.value = sectionId;
+                }, 10);
+            });
+        },
+
+        closeQuickAdd() {
+            this.quickAddSectionId = null;
+            this.quickAddName = '';
+            this.quickAddSuggestions = [];
+            this.showQuickAddSuggestions = false;
+            this.selectedQuickAddSuggestionIndex = -1;
+        },
+
+        async submitQuickAdd(sectionId) {
+            const name = this.quickAddName.trim();
+            if (!name) return;
+
+            // Mark as local action to prevent double refresh from WebSocket
+            this.markLocalAction('item_created');
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('name', name);
+                formData.append('section_id', sectionId);
+
+                const response = await this.offlineFetch('/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                }, 'create_item');
+
+                if (response.ok || !this.isOnline) {
+                    // Close quick add after successful submit
+                    this.closeQuickAdd();
+
+                    // Refresh list and stats
+                    this.refreshList();
+                    this.refreshStats();
                 }
-                const desktopInput = this.$refs.desktopNameInput;
-                if (desktopInput) {
-                    desktopInput.focus();
-                    desktopInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (error) {
+                console.error('[QuickAdd] Failed to add item:', error);
+                // Queue for offline
+                await this.queueOfflineAction({
+                    type: 'create_item',
+                    url: '/items',
+                    method: 'POST',
+                    body: { name, section_id: sectionId }
+                });
+
+                // Close quick add and refresh
+                this.closeQuickAdd();
+                this.refreshList();
+                this.refreshStats();
+            }
+        },
+
+        async fetchQuickAddSuggestions(query) {
+            if (this._quickAddSuggestionTimer) {
+                clearTimeout(this._quickAddSuggestionTimer);
+            }
+
+            if (!query || query.length < 2) {
+                this.quickAddSuggestions = [];
+                this.showQuickAddSuggestions = false;
+                return;
+            }
+
+            this._quickAddSuggestionTimer = setTimeout(async () => {
+                try {
+                    if (this.isOnline) {
+                        const response = await fetch(`/api/suggestions?q=${encodeURIComponent(query)}&limit=8`);
+                        if (response.ok) {
+                            this.quickAddSuggestions = await response.json();
+                        }
+                    } else {
+                        this.quickAddSuggestions = await window.offlineStorage.getSuggestions(query);
+                    }
+                    this.showQuickAddSuggestions = this.quickAddSuggestions && this.quickAddSuggestions.length > 0;
+                    this.selectedQuickAddSuggestionIndex = -1;
+                } catch (error) {
+                    console.error('[QuickAdd] Failed to fetch suggestions:', error);
+                    this.quickAddSuggestions = [];
+                    this.showQuickAddSuggestions = false;
+                }
+            }, 150);
+        },
+
+        selectQuickAddSuggestion(suggestion) {
+            this.quickAddName = suggestion.name;
+            this.showQuickAddSuggestions = false;
+            this.quickAddSuggestions = [];
+            this.selectedQuickAddSuggestionIndex = -1;
+        },
+
+        handleQuickAddKeydown(event, sectionId) {
+            // Handle suggestions navigation
+            if (this.showQuickAddSuggestions && this.quickAddSuggestions.length > 0) {
+                switch (event.key) {
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.min(
+                            this.selectedQuickAddSuggestionIndex + 1,
+                            this.quickAddSuggestions.length - 1
+                        );
+                        return;
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.max(this.selectedQuickAddSuggestionIndex - 1, -1);
+                        return;
+                    case 'Enter':
+                        if (this.selectedQuickAddSuggestionIndex >= 0) {
+                            event.preventDefault();
+                            this.selectQuickAddSuggestion(this.quickAddSuggestions[this.selectedQuickAddSuggestionIndex]);
+                            return;
+                        }
+                        break;
                 }
             }
+
+            // Handle Enter to submit
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                this.submitQuickAdd(sectionId);
+                return;
+            }
+
+            // Handle Escape to close
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (this.showQuickAddSuggestions) {
+                    this.showQuickAddSuggestions = false;
+                    this.selectedQuickAddSuggestionIndex = -1;
+                } else {
+                    this.closeQuickAdd();
+                }
+            }
+        },
+
+        hideQuickAddSuggestionsDelayed() {
+            setTimeout(() => {
+                this.showQuickAddSuggestions = false;
+            }, 200);
+        },
+
+        expandToFullModal(sectionId) {
+            const currentName = this.quickAddName;
+            this.closeQuickAdd();
+
+            // Open mobile modal with pre-filled data
+            this.showAddItem = true;
+            this.$nextTick(() => {
+                // Set section
+                const mobileSelect = this.$refs.mobileSectionSelect;
+                if (mobileSelect) {
+                    mobileSelect.value = sectionId;
+                }
+                // Set name
+                const nameInput = this.$refs.itemNameInput;
+                if (nameInput) {
+                    nameInput.value = currentName;
+                    setTimeout(() => nameInput.focus(), 100);
+                }
+            });
         },
 
         // Drag-and-drop for item reordering

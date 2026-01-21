@@ -39,7 +39,8 @@
     "add_more": "Legg til flere",
     "no_items": "Ingen produkter",
     "add_first_item": "Legg til ditt første produkt",
-    "quick_add": "Legg til i seksjon"
+    "quick_add": "Legg til i seksjon",
+    "more_options": "Flere alternativer"
   },
   "sections": {
     "title": "Seksjoner",

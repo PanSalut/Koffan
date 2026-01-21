@@ -39,7 +39,8 @@
     "add_more": "Pridať viac",
     "no_items": "Žiadne produkty",
     "add_first_item": "Pridaj svoj prvý produkt",
-    "quick_add": "Rýchle pridanie do sekcie"
+    "quick_add": "Rýchle pridanie do sekcie",
+    "more_options": "Viac možností"
   },
   "sections": {
     "title": "Sekcie",

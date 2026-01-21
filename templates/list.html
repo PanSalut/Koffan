@@ -1,5 +1,7 @@
 {{define "list"}}
 <div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors">
+    <!-- Hidden input for iOS keyboard trick -->
+    <input type="text" id="ios-keyboard-trigger" class="absolute opacity-0 pointer-events-none" style="position: absolute; top: -9999px; left: -9999px;" tabindex="-1" aria-hidden="true">
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-stone-50 dark:bg-stone-900 pt-3 transition-colors">
         <div class="container mx-auto max-w-4xl px-4">
