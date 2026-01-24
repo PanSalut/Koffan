@@ -183,6 +183,7 @@ I'm incredibly grateful to these amazing people for supporting Koffan:
 
 - [@chip-well](https://github.com/chip-well)
 - [@Pffeffi](https://github.com/Pffeffi)
+- [@van-nutno](https://github.com/van-nutno)
 
 ## License
 
