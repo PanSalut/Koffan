@@ -1584,10 +1584,10 @@ func CreateSectionForListTx(tx *sql.Tx, listID int64, name string, sortOrder int
 }
 
 // CreateItemTx creates an item within a transaction
-func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, sortOrder int) (*Item, error) {
+func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, quantity, sortOrder int) (*Item, error) {
 	result, err := tx.Exec(`
-		INSERT INTO items (section_id, name, description, quantity, sort_order) VALUES (?, ?, ?, 0, ?)
-	`, sectionID, name, description, sortOrder)
+		INSERT INTO items (section_id, name, description, quantity, sort_order) VALUES (?, ?, ?, ?, ?)
+	`, sectionID, name, description, quantity, sortOrder)
 	if err != nil {
 		return nil, err
 	}

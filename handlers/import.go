@@ -483,7 +483,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 					itemDesc = itemDesc[:MaxDescriptionLength]
 				}
 
-				item, err := db.CreateItemTx(tx, section.ID, itemName, itemDesc, itemOrder)
+				item, err := db.CreateItemTx(tx, section.ID, itemName, itemDesc, exportItem.Quantity, itemOrder)
 				if err != nil {
 					continue
 				}
@@ -678,6 +678,12 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 		if len(row) > 6 {
 			itemUncertain = strings.ToLower(strings.TrimSpace(row[6])) == "true"
 		}
+		itemQuantity := 0
+		if len(row) > 7 {
+			if qty, err := strconv.Atoi(strings.TrimSpace(row[7])); err == nil && qty >= 0 {
+				itemQuantity = qty
+			}
+		}
 
 		// Validate item fields
 		if len(itemName) > MaxItemNameLength {
@@ -739,7 +745,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 
 		// Create item
 		if itemName != "" {
-			item, err := db.CreateItemTx(tx, section.ID, itemName, itemDescription, itemOrders[section.ID])
+			item, err := db.CreateItemTx(tx, section.ID, itemName, itemDescription, itemQuantity, itemOrders[section.ID])
 			if err != nil {
 				continue
 			}

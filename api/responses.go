@@ -57,6 +57,7 @@ type BatchSectionInput struct {
 type BatchItemInput struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	Quantity    int    `json:"quantity,omitempty"`
 }
 
 // BatchCreateResponse represents the response from batch creation

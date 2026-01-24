@@ -849,7 +849,8 @@ function shoppingList() {
                 name: item.name,
                 description: item.description || '',
                 section_id: item.section_id,
-                uncertain: item.uncertain
+                uncertain: item.uncertain,
+                quantity: item.quantity || 0
             };
         },
 

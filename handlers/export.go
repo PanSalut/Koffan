@@ -46,6 +46,7 @@ type ExportItem struct {
 	Description string `json:"description"`
 	Completed   bool   `json:"completed"`
 	Uncertain   bool   `json:"uncertain"`
+	Quantity    int    `json:"quantity"`
 }
 
 // ExportTemplate represents a template
@@ -148,6 +149,7 @@ func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHis
 					Description: item.Description,
 					Completed:   item.Completed,
 					Uncertain:   item.Uncertain,
+					Quantity:    item.Quantity,
 				})
 			}
 
@@ -236,6 +238,7 @@ func exportListAsJSON(c *fiber.Ctx, list *db.List, sections []db.Section) error 
 				Description: item.Description,
 				Completed:   item.Completed,
 				Uncertain:   item.Uncertain,
+				Quantity:    item.Quantity,
 			})
 		}
 
@@ -270,7 +273,7 @@ func exportAllAsCSV(c *fiber.Ctx, lists []db.List) error {
 	defer writer.Flush()
 
 	// Header
-	writer.Write([]string{"list_name", "list_icon", "section_name", "item_name", "item_description", "item_completed", "item_uncertain"})
+	writer.Write([]string{"list_name", "list_icon", "section_name", "item_name", "item_description", "item_completed", "item_uncertain", "item_quantity"})
 
 	for _, list := range lists {
 		sections, err := db.GetSectionsByList(list.ID)
@@ -290,6 +293,7 @@ func exportAllAsCSV(c *fiber.Ctx, lists []db.List) error {
 					item.Description,
 					strconv.FormatBool(item.Completed),
 					strconv.FormatBool(item.Uncertain),
+					strconv.Itoa(item.Quantity),
 				})
 			}
 		}
@@ -299,6 +303,7 @@ func exportAllAsCSV(c *fiber.Ctx, lists []db.List) error {
 			writer.Write([]string{
 				list.Name,
 				list.Icon,
+				"",
 				"",
 				"",
 				"",
@@ -327,6 +332,7 @@ func exportAllAsCSV(c *fiber.Ctx, lists []db.List) error {
 					strconv.Itoa(h.UsageCount),
 					"",
 					"",
+					"",
 				})
 			}
 		}
@@ -347,7 +353,7 @@ func exportListAsCSV(c *fiber.Ctx, list *db.List, sections []db.Section) error {
 	defer writer.Flush()
 
 	// Header
-	writer.Write([]string{"list_name", "list_icon", "section_name", "item_name", "item_description", "item_completed", "item_uncertain"})
+	writer.Write([]string{"list_name", "list_icon", "section_name", "item_name", "item_description", "item_completed", "item_uncertain", "item_quantity"})
 
 	for _, section := range sections {
 		for _, item := range section.Items {
@@ -359,6 +365,7 @@ func exportListAsCSV(c *fiber.Ctx, list *db.List, sections []db.Section) error {
 				item.Description,
 				strconv.FormatBool(item.Completed),
 				strconv.FormatBool(item.Uncertain),
+				strconv.Itoa(item.Quantity),
 			})
 		}
 	}

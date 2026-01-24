@@ -120,7 +120,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 
 		var sectionItems []db.Item
 		for itemOrder, itemInput := range sectionInput.Items {
-			item, err := db.CreateItemTx(tx, section.ID, itemInput.Name, itemInput.Description, itemOrder)
+			item, err := db.CreateItemTx(tx, section.ID, itemInput.Name, itemInput.Description, itemInput.Quantity, itemOrder)
 			if err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 					Error:   "create_failed",
@@ -236,7 +236,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 
 		var sectionItems []db.Item
 		for itemOrder, itemInput := range sectionInput.Items {
-			item, err := db.CreateItemTx(tx, section.ID, itemInput.Name, itemInput.Description, itemOrder)
+			item, err := db.CreateItemTx(tx, section.ID, itemInput.Name, itemInput.Description, itemInput.Quantity, itemOrder)
 			if err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 					Error:   "create_failed",
@@ -322,7 +322,7 @@ func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 
 	// Create items
 	for i, itemInput := range req.Items {
-		item, err := db.CreateItemTx(tx, req.SectionID, itemInput.Name, itemInput.Description, baseItemOrder+i)
+		item, err := db.CreateItemTx(tx, req.SectionID, itemInput.Name, itemInput.Description, itemInput.Quantity, baseItemOrder+i)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 				Error:   "create_failed",
