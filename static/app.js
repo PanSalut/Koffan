@@ -152,6 +152,7 @@ function shoppingList() {
         _refreshListTimer: null,
         _refreshStatsTimer: null,
         _isRefreshing: false,
+        _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
 
         // Check if add-item form is currently active (to prevent dropdown updates during form use)
         _isAddFormActive() {
@@ -452,6 +453,10 @@ function shoppingList() {
         async fullRefresh() {
             console.log('[App] Full refresh triggered');
 
+            // Suppress overlay for 2 seconds after returning from background
+            // This prevents flash of gray screen even if WebSocket triggers refresh
+            this._suppressOverlayUntil = Date.now() + 2000;
+
             // Reconnect WebSocket if needed
             if (!this.connected && this.isOnline) {
                 this.reconnectAttempts = 0;
@@ -464,7 +469,7 @@ function shoppingList() {
 
                 // Only refresh if there were no queued actions (processOfflineQueue already did it)
                 if (!hadQueuedActions) {
-                    this.refreshList();
+                    this.refreshList(false);  // No overlay on background return - show cached content immediately
                     this.refreshStats();
                 }
 
@@ -498,7 +503,6 @@ function shoppingList() {
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
-                    // Full refresh when returning from background
                     this.fullRefresh();
                 }
             });
@@ -630,7 +634,7 @@ function shoppingList() {
             }
         },
 
-        refreshList() {
+        refreshList(showOverlay = true) {
             // Debounce - prevent multiple rapid refreshes
             if (this._refreshListTimer) {
                 clearTimeout(this._refreshListTimer);
@@ -644,8 +648,11 @@ function shoppingList() {
                 const sectionsList = document.getElementById('sections-list');
 
                 if (sectionsList) {
-                    // Show overlay
-                    if (overlay) {
+                    // Show overlay only if requested AND not suppressed (after returning from background)
+                    const overlaySuppressed = Date.now() < this._suppressOverlayUntil;
+                    const shouldShowOverlay = showOverlay && overlay && !overlaySuppressed;
+
+                    if (shouldShowOverlay) {
                         overlay.classList.add('active');
                     }
 
@@ -659,20 +666,20 @@ function shoppingList() {
                         swap: 'innerHTML',
                         select: '#sections-list > *'
                     }).then(() => {
-                        // Small delay then fade out overlay
-                        setTimeout(() => {
-                            if (overlay) {
+                        // Small delay then fade out overlay (only if it was shown)
+                        if (shouldShowOverlay) {
+                            setTimeout(() => {
                                 overlay.classList.add('fade-out');
                                 setTimeout(() => {
                                     overlay.classList.remove('active', 'fade-out');
                                     this._isRefreshing = false;
                                 }, 250);
-                            } else {
-                                this._isRefreshing = false;
-                            }
-                        }, 50);
+                            }, 50);
+                        } else {
+                            this._isRefreshing = false;
+                        }
                     }).catch(() => {
-                        if (overlay) {
+                        if (shouldShowOverlay) {
                             overlay.classList.remove('active', 'fade-out');
                         }
                         this._isRefreshing = false;
