@@ -69,6 +69,91 @@ window.handleSectionFormError = function(form, xhr) {
     form.appendChild(errorDiv);
 };
 
+// Fuzzy Search Utilities
+function normalizePolish(str) {
+    const map = {
+        'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
+        'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
+        'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
+        'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z'
+    };
+    return str.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, c => map[c] || c);
+}
+
+function jaroSimilarity(s1, s2) {
+    if (s1 === s2) return 1.0;
+    if (s1.length === 0 || s2.length === 0) return 0.0;
+
+    const matchWindow = Math.floor(Math.max(s1.length, s2.length) / 2) - 1;
+    const s1Matches = new Array(s1.length).fill(false);
+    const s2Matches = new Array(s2.length).fill(false);
+
+    let matches = 0;
+    let transpositions = 0;
+
+    for (let i = 0; i < s1.length; i++) {
+        const start = Math.max(0, i - matchWindow);
+        const end = Math.min(i + matchWindow + 1, s2.length);
+
+        for (let j = start; j < end; j++) {
+            if (s2Matches[j] || s1[i] !== s2[j]) continue;
+            s1Matches[i] = true;
+            s2Matches[j] = true;
+            matches++;
+            break;
+        }
+    }
+
+    if (matches === 0) return 0.0;
+
+    let k = 0;
+    for (let i = 0; i < s1.length; i++) {
+        if (!s1Matches[i]) continue;
+        while (!s2Matches[k]) k++;
+        if (s1[i] !== s2[k]) transpositions++;
+        k++;
+    }
+
+    return (matches / s1.length + matches / s2.length + (matches - transpositions / 2) / matches) / 3;
+}
+
+function jaroWinklerSimilarity(s1, s2) {
+    const jaro = jaroSimilarity(s1, s2);
+    let prefixLength = 0;
+    const maxPrefix = Math.min(4, s1.length, s2.length);
+
+    for (let i = 0; i < maxPrefix; i++) {
+        if (s1[i] === s2[i]) prefixLength++;
+        else break;
+    }
+
+    return jaro + prefixLength * 0.1 * (1 - jaro);
+}
+
+function fuzzyMatchScore(query, text) {
+    const normQuery = normalizePolish(query.toLowerCase());
+    const normText = normalizePolish(text.toLowerCase());
+
+    // Exact substring match
+    if (normText.includes(normQuery)) {
+        const startBonus = normText.startsWith(normQuery) ? 0.1 : 0;
+        return 0.9 + startBonus;
+    }
+
+    // Word-level match
+    const words = normText.split(/\s+/);
+    let bestWordScore = 0;
+    for (const word of words) {
+        const score = jaroWinklerSimilarity(normQuery, word);
+        if (score > bestWordScore) bestWordScore = score;
+    }
+
+    // Full text match
+    const fullScore = jaroWinklerSimilarity(normQuery, normText);
+
+    return Math.max(bestWordScore, fullScore);
+}
+
 // Shopping List Alpine.js Component
 function shoppingList() {
     return {
@@ -194,6 +279,20 @@ function shoppingList() {
                     e.preventDefault();
                     this.submitEditItem();
                 }
+            });
+
+            // Keyboard shortcut for search (Ctrl+F / Cmd+F)
+            document.addEventListener('keydown', (e) => {
+                if (!((e.ctrlKey || e.metaKey) && e.key === 'f')) return;
+                if (window.innerWidth <= 768) return;
+                if (this.stats.total <= 5) return;
+
+                const activeEl = document.activeElement;
+                if (activeEl === this.$refs.searchInput) return;
+
+                e.preventDefault();
+                this.$refs.searchInput?.focus();
+                this.$refs.searchInput?.select();
             });
 
             // Initialize mobile drag-and-drop
@@ -1745,16 +1844,19 @@ function shoppingList() {
 
             const items = document.querySelectorAll('[data-item-id]');
             const results = [];
-            const queryLower = query.toLowerCase();
+            const threshold = 0.8;
 
             items.forEach(el => {
-                const name = el.querySelector('.item-name')?.textContent?.toLowerCase() || '';
-                if (name.includes(queryLower)) {
-                    results.push(el.dataset.itemId);
+                const name = el.querySelector('.item-name')?.textContent || '';
+                const score = fuzzyMatchScore(query, name);
+
+                if (score >= threshold) {
+                    results.push({ id: el.dataset.itemId, score });
                 }
             });
 
-            this.searchResults = results;
+            results.sort((a, b) => b.score - a.score);
+            this.searchResults = results.map(r => r.id);
         },
 
         clearSearch() {
