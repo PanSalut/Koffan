@@ -86,7 +86,12 @@ func UpdateSection(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("section_updated", section)
 
-	// Return updated section partial
+	// Return appropriate partial based on context
+	if c.Get("HX-Target") == "manage-sections-list" {
+		return returnSectionsForModal(c)
+	}
+
+	// Return updated section partial for main list
 	return c.Render("partials/section", fiber.Map{
 		"Section":  section,
 		"Sections": getSectionsForDropdown(),

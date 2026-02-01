@@ -4,6 +4,7 @@
     class="p-3 bg-stone-50 dark:bg-stone-700 rounded-lg border border-stone-100 dark:border-stone-600 flex items-center gap-3"
     :class="{'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800': selectMode && selectedSections.includes({{.Section.ID}})}"
     @click="if(selectMode) toggleSection({{.Section.ID}})"
+    x-data="{ editing: false, editName: '{{.Section.Name}}' }"
 >
     <!-- Select checkbox -->
     <template x-if="selectMode">
@@ -15,12 +16,46 @@
         >
     </template>
 
-    <!-- Section name -->
-    <span class="flex-1 font-medium text-stone-700 dark:text-stone-200 text-sm">{{.Section.Name}}</span>
+    <!-- Section name (view mode) -->
+    <span
+        x-show="!editing"
+        @dblclick="if(!selectMode) { editing = true; editName = '{{.Section.Name}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus()) }"
+        class="flex-1 font-medium text-stone-700 dark:text-stone-200 text-sm cursor-default"
+    >{{.Section.Name}}</span>
+
+    <!-- Section name (edit mode) -->
+    <form
+        x-show="editing"
+        x-cloak
+        @submit.prevent="htmx.ajax('PUT', '/sections/{{.Section.ID}}', {values: {name: editName}, target: '#manage-sections-list', swap: 'innerHTML'}).then(() => { editing = false; $data.refreshSectionsAndSelects() })"
+        class="flex-1"
+    >
+        <input
+            x-ref="editInput{{.Section.ID}}"
+            x-model="editName"
+            @keydown.escape="editing = false; editName = '{{.Section.Name}}'"
+            @blur="if(editName.trim() && editName !== '{{.Section.Name}}') { htmx.ajax('PUT', '/sections/{{.Section.ID}}', {values: {name: editName}, target: '#manage-sections-list', swap: 'innerHTML'}).then(() => { editing = false; $data.refreshSectionsAndSelects() }) } else { editing = false; editName = '{{.Section.Name}}' }"
+            @click.stop
+            maxlength="100"
+            class="w-full border border-pink-300 dark:border-pink-500 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-white dark:bg-stone-600 text-stone-800 dark:text-stone-100"
+        >
+    </form>
 
     <!-- Actions -->
     <template x-if="!selectMode">
         <div class="flex items-center gap-1">
+            <!-- Edit -->
+            <button
+                @click.stop="editing = true; editName = '{{.Section.Name}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus())"
+                x-show="!editing"
+                class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
+                :title="t('common.edit')"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+            </button>
+
             <!-- Move up -->
             <button
                 hx-post="/sections/{{.Section.ID}}/move-up"
