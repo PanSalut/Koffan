@@ -14,7 +14,7 @@
     "create": "Создать",
     "name": "Название",
     "description": "Описание",
-    "reserved_name": "This name is reserved for system use"
+    "reserved_name": "Это название зарезервировано для системного использования"
   },
   "nav": {
     "settings": "Настройки",
@@ -118,8 +118,8 @@
     "new_list": "Создать новый список",
     "no_lists": "Нет списков",
     "add_first_list": "Создайте ваш первый список покупок",
-    "switch": "Switch to",
-    "active": "Active",
+    "switch": "Перейти к",
+    "active": "Активный",
     "icon": "Значок",
     "delete_confirm": "Удалить список \"{{name}}\"? Все содержимое будет утеряно."
   },
