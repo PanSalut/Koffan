@@ -75,13 +75,15 @@
     "report_bug": "Found a bug? Let me know!",
     "tab_account": "Account",
     "tab_shopping_list": "Shopping list",
+    "tab_data": "Data",
     "delete_completed": "Delete all bought items",
     "delete_completed_description": "Removes all items marked as bought from the shopping list.",
     "history_section_mode": "Section for history suggestions",
     "use_first_section": "Use first section",
     "use_first_section_desc": "If section doesn't exist, add to first available",
     "auto_create_section": "Auto-create section",
-    "auto_create_section_desc": "If section doesn't exist, create a new one with the same name"
+    "auto_create_section_desc": "If section doesn't exist, create a new one with the same name",
+    "update_available": "New version available"
   },
   "login": {
     "title": "Login - Koffan",
@@ -166,28 +168,6 @@
     "feature_sections": "Sections",
     "feature_templates": "Real-time",
     "feature_offline": "Offline"
-  },
-  "settings": {
-    "title": "Settings",
-    "theme": "Theme",
-    "theme_light": "Light",
-    "theme_dark": "Dark",
-    "theme_system": "System",
-    "language": "Language",
-    "coming_soon": "Coming soon...",
-    "sponsor": "Want to support the app? Add to cart!",
-    "report_bug": "Found a bug? Let me know!",
-    "tab_account": "Account",
-    "tab_shopping_list": "Shopping list",
-    "tab_data": "Data",
-    "delete_completed": "Delete all bought items",
-    "delete_completed_description": "Removes all items marked as bought from the shopping list.",
-    "history_section_mode": "Section for history suggestions",
-    "use_first_section": "Use first section",
-    "use_first_section_desc": "If section doesn't exist, add to first available",
-    "auto_create_section": "Auto-create section",
-    "auto_create_section_desc": "If section doesn't exist, create a new one with the same name",
-    "update_available": "New version available"
   },
   "export": {
     "title": "Export Data",
