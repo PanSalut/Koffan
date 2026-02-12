@@ -58,7 +58,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - Real-time synchronization (WebSocket)
 - Responsive interface (mobile-first)
 - **Dark mode** - Automatic theme based on system preferences
-- Multi-language support (PL, EN, DE, ES, FR, PT, UK, NO, LT, EL, SK, RU)
+- Multi-language support (PL, EN, DE, ES, FR, PT, UK, NO, LT, EL, SK, SV, RU)
 - Simple login system
 - Rate limiting protection against brute-force attacks
 - **REST API** - Programmatic access for integrations and migrations ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API))
