@@ -3,7 +3,7 @@
     id="item-{{.Item.ID}}"
     data-item-id="{{.Item.ID}}"
     data-section-id="{{.Item.SectionID}}"
-    class="px-4 py-3 flex items-center gap-0.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all group select-none {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
+    class="px-4 py-3 flex items-center gap-0.5 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors group select-none {{if .Item.Uncertain}}bg-amber-50/50 dark:bg-amber-900/30{{end}}"
     x-show="isItemVisible({{.Item.ID}})"
 >
     <!-- Drag Handle -->
@@ -20,23 +20,16 @@
 
     <!-- Checkbox -->
     <button
-        hx-post="/items/{{.Item.ID}}/toggle"
-        hx-target="#item-{{.Item.ID}}"
-        hx-swap="outerHTML"
-        hx-on::before-request="this.querySelector('span').classList.add('checkbox-pulse')"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
+        @click="$data.toggleItem({{.Item.ID}}, {{.Item.SectionID}})"
         class="flex-shrink-0 w-11 h-11 flex items-center justify-center -m-3"
     >
-        <span class="w-5 h-5 rounded-full border-2 border-stone-300 dark:border-stone-500 hover:border-pink-400 transition-all hover:scale-110"></span>
+        <span class="w-5 h-5 rounded-full border-2 border-stone-300 dark:border-stone-500 hover:border-pink-400 transition-transform hover:scale-110"></span>
     </button>
 
     <!-- Content (clickable to toggle) -->
     <div
         class="flex-1 min-w-0 cursor-pointer ml-2"
-        hx-post="/items/{{.Item.ID}}/toggle"
-        hx-target="#item-{{.Item.ID}}"
-        hx-swap="outerHTML"
-        hx-on::after-request="htmx.trigger('#stats-container', 'refresh'); window.dispatchEvent(new CustomEvent('refresh-list'))"
+        @click="$data.toggleItem({{.Item.ID}}, {{.Item.SectionID}})"
     >
         <div class="flex items-center gap-2">
             {{if .Item.Uncertain}}
@@ -56,11 +49,11 @@
     <div class="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <!-- Uncertain toggle -->
         <button
-            onclick="window.toggleUncertain({{.Item.ID}})"
-            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 {{if .Item.Uncertain}}text-amber-500{{else}}text-stone-400 dark:text-stone-500{{end}} transition-colors uncertain-btn"
+            @click="$data.toggleUncertainFetch({{.Item.ID}})"
+            class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 {{if .Item.Uncertain}}text-amber-500{{else}}text-stone-400 dark:text-stone-500{{end}} transition-colors"
             :title="{{if .Item.Uncertain}}t('actions.remove_mark'){{else}}t('actions.mark_uncertain'){{end}}"
         >
-            <svg class="w-4 h-4 uncertain-icon" fill="{{if .Item.Uncertain}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="{{if .Item.Uncertain}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
         </button>
@@ -99,17 +92,14 @@
             <div
                 x-show="open"
                 @click.outside="open = false"
+                x-cloak
                 x-transition
                 class="absolute right-0 mt-1 w-40 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 z-50 py-1"
             >
                 {{range .Sections}}
                 {{if ne .ID $.Item.SectionID}}
                 <button
-                    hx-post="/items/{{$.Item.ID}}/move"
-                    hx-vals='{"section_id": "{{.ID}}"}'
-                    hx-swap="none"
-                    hx-on::after-request="window.dispatchEvent(new CustomEvent('refresh-list'))"
-                    @click="open = false"
+                    @click="open = false; $data.moveItemDesktop({{$.Item.ID}}, {{$.Item.SectionID}}, {{.ID}})"
                     class="block w-full text-left px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700"
                 >
                     {{.Name}}
@@ -121,7 +111,7 @@
 
         <!-- Delete -->
         <button
-            @click="if(confirm(t('confirm.delete_item', {name: '{{.Item.Name}}'}))) { const el = document.getElementById('item-{{.Item.ID}}'); window.updateSectionAfterDelete(el); el.classList.add('item-exit'); setTimeout(() => htmx.ajax('DELETE', '/items/{{.Item.ID}}', {target: '#item-{{.Item.ID}}', swap: 'outerHTML'}).then(() => htmx.trigger('#stats-container', 'refresh')), 200); }"
+            @click="if(confirm(t('confirm.delete_item', {name: '{{.Item.Name | js}}'}))) { $data.deleteItemDirect({{.Item.ID}}, {{.Item.SectionID}}) }"
             class="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
             :title="t('common.delete')"
         >

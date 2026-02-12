@@ -238,6 +238,7 @@ function shoppingList() {
         _refreshStatsTimer: null,
         _isRefreshing: false,
         _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
+        _fullRefreshUntil: 0, // Timestamp until which individual section refreshes are suppressed
 
         // Check if add-item form is currently active (to prevent dropdown updates during form use)
         _isAddFormActive() {
@@ -268,11 +269,6 @@ function shoppingList() {
                 this.openMobileAction(e.detail);
             });
 
-            // Listen for uncertain toggle events (use window because $dispatch bubbles to window)
-            window.addEventListener('toggle-uncertain', (e) => {
-                this.toggleUncertainAnimated(e.detail.id);
-            });
-
             // Keyboard shortcut for save (Cmd+Enter)
             document.addEventListener('keydown', (e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.editingItem) {
@@ -300,11 +296,53 @@ function shoppingList() {
                 this.initMobileSortable();
             });
 
-            // Re-initialize sortable after HTMX swaps
+            // Re-initialize sortable after any remaining HTMX swaps (e.g. section rename)
+            // NOTE: Alpine.initTree is NOT called here - Alpine's MutationObserver
+            // auto-initializes new elements. Calling initTree manually causes duplicate
+            // event handlers (e.g. confirm() dialog appearing multiple times).
+            const _sortableInitTimers = {};
             document.body.addEventListener('htmx:afterSwap', (e) => {
-                if (e.detail.target?.id === 'sections-list') {
-                    this.$nextTick(() => this.initMobileSortable());
+                const target = e.detail.target;
+                const targetId = target?.id || '';
+
+                if (target && targetId) {
+                    const isSection = targetId.startsWith('section-') || targetId === 'sections-list';
+                    if (isSection) {
+                        clearTimeout(_sortableInitTimers[targetId]);
+                        _sortableInitTimers[targetId] = setTimeout(() => {
+                            delete _sortableInitTimers[targetId];
+                            const el = document.getElementById(targetId);
+                            if (el) {
+                                const container = el.querySelector('.items-sortable');
+                                if (container) this.initSortableForContainer(container);
+                            }
+                        }, 50);
+                    }
                 }
+            });
+
+            // Listen for refresh-sections events (fallback)
+            window.addEventListener('refresh-sections', (e) => {
+                const fromSectionId = e.detail.fromSectionId;
+                const toSectionId = e.detail.toSectionId;
+                const fromSection = document.getElementById(`section-${fromSectionId}`);
+                const toSection = document.getElementById(`section-${toSectionId}`);
+                if (fromSection) this.updateSectionCounter(fromSection);
+                if (toSection) {
+                    toSection.classList.remove('hidden');
+                    this.updateSectionCounter(toSection);
+                }
+                this.refreshStats();
+            });
+
+            // Stats refresh triggered by server via HX-Trigger-After-Settle
+            document.body.addEventListener('statsRefresh', () => {
+                htmx.trigger('#stats-container', 'refresh');
+            });
+
+            // Full list refresh triggered by server (e.g. template apply)
+            document.body.addEventListener('refreshList', () => {
+                this.refreshList();
             });
         },
 
@@ -506,20 +544,8 @@ function shoppingList() {
                 await new Promise(resolve => setTimeout(resolve, 150));
                 await this.cacheData();
 
-                // Force full htmx refresh of sections list
-                const sectionsList = document.getElementById('sections-list');
-                if (sectionsList) {
-                    const refreshUrl = window.location.pathname.startsWith('/lists/')
-                        ? window.location.pathname
-                        : '/';
-                    await htmx.ajax('GET', refreshUrl, {
-                        target: '#sections-list',
-                        swap: 'innerHTML',
-                        select: '#sections-list > *'
-                    });
-                    // Reinitialize sortable after swap
-                    this.$nextTick(() => this.initMobileSortable());
-                }
+                // Refresh sections list using lightweight per-section fetches
+                this.refreshList(false);
                 this.refreshStats();
                 console.log('[App] Offline queue processed, UI refreshed');
 
@@ -552,9 +578,8 @@ function shoppingList() {
         async fullRefresh() {
             console.log('[App] Full refresh triggered');
 
-            // Suppress overlay for 2 seconds after returning from background
-            // This prevents flash of gray screen even if WebSocket triggers refresh
-            this._suppressOverlayUntil = Date.now() + 2000;
+            // Suppress individual section refreshes during full refresh to prevent race conditions
+            this._fullRefreshUntil = Date.now() + 3000;
 
             // Reconnect WebSocket if needed
             if (!this.connected && this.isOnline) {
@@ -562,18 +587,22 @@ function shoppingList() {
                 this.connect();
             }
 
-            // Process any pending offline actions first (this already calls refreshList/Stats)
             if (this.isOnline) {
                 const hadQueuedActions = await this.processOfflineQueue();
 
-                // Only refresh if there were no queued actions (processOfflineQueue already did it)
                 if (!hadQueuedActions) {
-                    this.refreshList(false);  // No overlay on background return - show cached content immediately
+                    // Smooth per-section update instead of full innerHTML swap
+                    await this.refreshSectionsSmooth();
                     this.refreshStats();
                 }
 
                 this.cacheData();
             }
+        },
+
+        async refreshSectionsSmooth() {
+            // Delegates to refreshList which now uses lightweight per-section fetches
+            this.refreshList(false);
         },
 
         // Wrapper for fetch that queues action when offline
@@ -598,6 +627,9 @@ function shoppingList() {
         // ===== WEBSOCKET =====
 
         initWebSocket() {
+            if (this._wsInitialized) return;
+            this._wsInitialized = true;
+
             this.connect();
 
             document.addEventListener('visibilitychange', () => {
@@ -608,6 +640,14 @@ function shoppingList() {
         },
 
         connect() {
+            // Close existing connection to prevent duplicates
+            if (this.ws) {
+                this.ws.onclose = null; // Prevent scheduleReconnect from firing
+                this.ws.close();
+                this.ws = null;
+            }
+            this.stopPingPong();
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;
 
@@ -623,6 +663,7 @@ function shoppingList() {
                 this.ws.onclose = () => {
                     console.log('WebSocket disconnected');
                     this.connected = false;
+                    this.stopPingPong();
                     this.scheduleReconnect();
                 };
 
@@ -647,17 +688,33 @@ function shoppingList() {
                 return;
             }
 
+            // Clear any pending reconnect timer
+            if (this._reconnectTimer) {
+                clearTimeout(this._reconnectTimer);
+            }
+
             this.reconnectAttempts++;
             const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-            setTimeout(() => this.connect(), delay);
+            this._reconnectTimer = setTimeout(() => {
+                this._reconnectTimer = null;
+                this.connect();
+            }, delay);
         },
 
         startPingPong() {
-            setInterval(() => {
+            this.stopPingPong();
+            this._pingInterval = setInterval(() => {
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify({ type: 'ping' }));
                 }
             }, 30000);
+        },
+
+        stopPingPong() {
+            if (this._pingInterval) {
+                clearInterval(this._pingInterval);
+                this._pingInterval = null;
+            }
         },
 
         handleMessage(data) {
@@ -665,62 +722,161 @@ function shoppingList() {
                 const message = JSON.parse(data);
                 console.log('WebSocket message:', message.type);
 
+                // Skip refresh-triggering messages during full refresh (background return)
+                if (Date.now() < this._fullRefreshUntil && message.type !== 'pong') {
+                    console.log(`[App] Skipping WebSocket message '${message.type}' - full refresh in progress`);
+                    return;
+                }
+
+                const sectionId = message.data?.section_id;
+
                 switch (message.type) {
                     case 'section_created':
+                        // Skip on creating client - HTMX already handled DOM insertion
+                        if (!this.isLocalAction('section_created')) {
+                            // Add new section to DOM without refreshing the entire list
+                            if (message.data?.id) {
+                                const sectionsList = document.getElementById('sections-list');
+                                if (sectionsList && !document.getElementById(`section-${message.data.id}`)) {
+                                    fetch(`/sections/${message.data.id}/html`).then(r => {
+                                        if (r.ok) return r.text();
+                                    }).then(html => {
+                                        // Re-check to avoid race condition with concurrent fetches
+                                        if (html && sectionsList && !document.getElementById(`section-${message.data.id}`)) {
+                                            sectionsList.insertAdjacentHTML('beforeend', html.trim());
+                                            this.$nextTick(() => {
+                                                const newEl = document.getElementById(`section-${message.data.id}`);
+                                                if (newEl) {
+                                                    const container = newEl.querySelector('.items-sortable');
+                                                    if (container) this.initSortableForContainer(container);
+                                                }
+                                                this.initMobileSortable();
+                                            });
+                                        }
+                                    }).catch(e => console.error('[App] Failed to add new section:', e));
+                                }
+                            }
+                            this.refreshSectionSelectsFromServer();
+                            this.refreshManageSectionsModal();
+                        }
+                        break;
                     case 'section_updated':
+                        if (!this.isLocalAction('section_updated')) {
+                            // Refresh only the changed section, not the entire list
+                            if (message.data?.id) {
+                                this.refreshSection(message.data.id);
+                            }
+                            this.refreshSectionSelectsFromServer();
+                            this.refreshManageSectionsModal();
+                        }
+                        break;
                     case 'section_deleted':
+                        if (!this.isLocalAction('section_deleted')) {
+                            // Remove section from DOM
+                            if (message.data?.id) {
+                                const delEl = document.getElementById(`section-${message.data.id}`);
+                                if (delEl) {
+                                    Alpine.destroyTree(delEl);
+                                    delEl.remove();
+                                }
+                            }
+                            this.refreshSectionSelectsFromServer();
+                            this.refreshManageSectionsModal();
+                            this.refreshStats();
+                        }
+                        break;
                     case 'sections_deleted':
+                        if (!this.isLocalAction('sections_deleted')) {
+                            // Remove multiple sections from DOM
+                            if (message.data?.ids) {
+                                for (const id of message.data.ids) {
+                                    const delSecEl = document.getElementById(`section-${id}`);
+                                    if (delSecEl) {
+                                        Alpine.destroyTree(delSecEl);
+                                        delSecEl.remove();
+                                    }
+                                }
+                            }
+                            this.refreshSectionSelectsFromServer();
+                            this.refreshManageSectionsModal();
+                            this.refreshStats();
+                        }
+                        break;
                     case 'sections_reordered':
-                        // Sections changed - refresh sections list and selects
-                        this.refreshSectionsAndSelects();
+                        if (!this.isLocalAction('sections_reordered')) {
+                            // Lightweight reorder - move existing DOM elements
+                            this.reorderSections();
+                            this.refreshManageSectionsModal();
+                        }
                         break;
                     case 'item_created':
-                        // If local action - we already refreshed
                         if (!this.isLocalAction('item_created')) {
-                            this.refreshList();
+                            const itemId = message.data?.id;
+                            if (itemId && sectionId) {
+                                this.insertRemoteItem(itemId, sectionId);
+                            } else {
+                                sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                            }
                         }
                         this.refreshStats();
                         break;
                     case 'item_moved':
-                        // Requires full list refresh
-                        this.refreshList();
+                        if (!this.isLocalAction('item_moved')) {
+                            const fromId = message.data?.from_section_id;
+                            const toId = message.data?.section_id;
+                            if (fromId) this.refreshSection(fromId);
+                            if (toId && toId !== fromId) this.refreshSection(toId);
+                        }
                         this.refreshStats();
                         break;
                     case 'item_deleted':
-                        // If local action - HTMX already deleted element
-                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_deleted')) {
-                            this.refreshList();
+                            const delItemId = message.data?.id;
+                            if (delItemId && sectionId) {
+                                this.removeRemoteItem(delItemId, sectionId);
+                            } else {
+                                sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                            }
                         }
                         this.refreshStats();
                         break;
                     case 'items_reordered':
-                        // If local action - HTMX already updated order
-                        // If remote - refresh list to sync
                         if (!this.isLocalAction('items_reordered')) {
-                            this.refreshList();
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
                         }
-                        this.refreshStats();
                         break;
                     case 'item_toggled':
-                        // If local action - HTMX already updated element
-                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_toggled')) {
-                            this.refreshList();
+                            const togItemId = message.data?.id;
+                            const togCompleted = message.data?.completed;
+                            if (togItemId && sectionId) {
+                                this.toggleRemoteItem(togItemId, sectionId, togCompleted);
+                            } else {
+                                sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                            }
                         }
                         this.refreshStats();
                         break;
                     case 'item_updated':
-                        // If local action - HTMX already updated element
-                        // If remote - refresh list to sync
                         if (!this.isLocalAction('item_updated')) {
-                            this.refreshList();
+                            const updItemId = message.data?.id;
+                            if (updItemId) {
+                                this.replaceRemoteItem(updItemId);
+                            } else {
+                                sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                            }
                         }
                         this.refreshStats();
                         break;
-                    case 'completed_items_deleted':
-                        // All purchased items were deleted
+                    case 'template_applied':
+                        // Template adds items to multiple sections - full refresh needed
                         this.refreshList();
+                        this.refreshStats();
+                        break;
+                    case 'completed_items_deleted':
+                        if (!this.isLocalAction('completed_items_deleted')) {
+                            this.removeAllCompletedItemsFromDOM();
+                        }
                         this.refreshStats();
                         break;
                     case 'pong':
@@ -739,120 +895,214 @@ function shoppingList() {
                 clearTimeout(this._refreshListTimer);
             }
 
-            this._refreshListTimer = setTimeout(() => {
+            this._refreshListTimer = setTimeout(async () => {
                 if (this._isRefreshing) return;
                 this._isRefreshing = true;
 
-                const overlay = document.getElementById('refresh-overlay');
-                const sectionsList = document.getElementById('sections-list');
+                try {
+                    // Fetch current sections list as JSON
+                    const resp = await fetch('/sections/list?format=json');
+                    if (!resp.ok) { this._isRefreshing = false; return; }
+                    const sections = await resp.json();
+                    const sectionsList = document.getElementById('sections-list');
+                    if (!sectionsList) { this._isRefreshing = false; return; }
 
-                if (sectionsList) {
-                    // Show overlay only if requested AND not suppressed (after returning from background)
-                    const overlaySuppressed = Date.now() < this._suppressOverlayUntil;
-                    const shouldShowOverlay = showOverlay && overlay && !overlaySuppressed;
+                    const serverIds = new Set(sections.map(s => s.id));
+                    const domIds = new Set();
+                    sectionsList.querySelectorAll(':scope > [id^="section-"]').forEach(el => {
+                        const id = parseInt(el.id.replace('section-', ''));
+                        if (id) domIds.add(id);
+                    });
 
-                    if (shouldShowOverlay) {
-                        overlay.classList.add('active');
+                    // Remove sections no longer on server
+                    for (const id of domIds) {
+                        if (!serverIds.has(id)) {
+                            const el = document.getElementById(`section-${id}`);
+                            if (el) { Alpine.destroyTree(el); el.remove(); }
+                        }
                     }
 
-                    // Use current URL if on a list page, otherwise use /
-                    const refreshUrl = window.location.pathname.startsWith('/lists/')
-                        ? window.location.pathname
-                        : '/';
-
-                    htmx.ajax('GET', refreshUrl, {
-                        target: '#sections-list',
-                        swap: 'innerHTML',
-                        select: '#sections-list > *'
-                    }).then(() => {
-                        // Small delay then fade out overlay (only if it was shown)
-                        if (shouldShowOverlay) {
-                            setTimeout(() => {
-                                overlay.classList.add('fade-out');
-                                setTimeout(() => {
-                                    overlay.classList.remove('active', 'fade-out');
-                                    this._isRefreshing = false;
-                                }, 250);
-                            }, 50);
+                    // Refresh existing + add new sections
+                    for (const section of sections) {
+                        const el = document.getElementById(`section-${section.id}`);
+                        if (el) {
+                            await this.refreshSection(section.id);
                         } else {
-                            this._isRefreshing = false;
+                            const r = await fetch(`/sections/${section.id}/html`);
+                            if (r.ok) {
+                                const html = await r.text();
+                                sectionsList.insertAdjacentHTML('beforeend', html.trim());
+                            }
                         }
-                    }).catch(() => {
-                        if (shouldShowOverlay) {
-                            overlay.classList.remove('active', 'fade-out');
-                        }
-                        this._isRefreshing = false;
-                    });
-                } else {
-                    this._isRefreshing = false;
+                    }
+
+                    // Fix order (like reorderSections)
+                    for (const section of sections) {
+                        const el = document.getElementById(`section-${section.id}`);
+                        if (el) sectionsList.appendChild(el);
+                    }
+
+                    this.$nextTick(() => this.initMobileSortable());
+                    this.updateSectionSelects(sections);
+                } catch (e) {
+                    console.error('[App] refreshList failed:', e);
                 }
 
-                const manageSectionsList = document.getElementById('manage-sections-list');
-                if (manageSectionsList) {
-                    htmx.ajax('GET', '/sections/list', {
-                        target: '#manage-sections-list',
-                        swap: 'innerHTML'
-                    });
-                }
+                this._isRefreshing = false;
             }, 100); // 100ms debounce
         },
 
-        refreshSection(sectionId) {
+        async refreshSection(sectionId) {
+            // Skip if a full refresh is in progress (prevents race conditions)
+            if (Date.now() < this._fullRefreshUntil) {
+                console.log(`[App] Skipping refreshSection(${sectionId}) - full refresh in progress`);
+                return;
+            }
             const section = document.getElementById(`section-${sectionId}`);
-            if (section) {
-                const refreshUrl = window.location.pathname.startsWith('/lists/')
-                    ? window.location.pathname
-                    : '/';
-                htmx.ajax('GET', refreshUrl, {
-                    target: `#section-${sectionId}`,
-                    swap: 'outerHTML',
-                    select: `#section-${sectionId}`
+            if (!section) return;
+
+            try {
+                const resp = await fetch(`/sections/${sectionId}/html`);
+                if (!resp.ok) return;
+                const html = await resp.text();
+                // Verify section still exists (may have been removed by concurrent operation)
+                if (!section.parentNode) return;
+                section.insertAdjacentHTML('afterend', html.trim());
+                // Remove old section first to prevent duplicates, then clean up Alpine
+                section.remove();
+                try { Alpine.destroyTree(section); } catch (_) {}
+                this.$nextTick(() => {
+                    const el = document.getElementById(`section-${sectionId}`);
+                    if (el) {
+                        const container = el.querySelector('.items-sortable');
+                        if (container) this.initSortableForContainer(container);
+                    }
                 });
+            } catch (e) {
+                console.error('[App] refreshSection failed:', e);
             }
         },
 
-        refreshItem(itemId) {
-            const item = document.getElementById(`item-${itemId}`);
-            if (item) {
-                const refreshUrl = window.location.pathname.startsWith('/lists/')
-                    ? window.location.pathname
-                    : '/';
-                htmx.ajax('GET', refreshUrl, {
-                    target: `#item-${itemId}`,
-                    swap: 'outerHTML',
-                    select: `#item-${itemId}`
-                });
+        updateSectionCounter(section) {
+            const activeItems = section.querySelectorAll('.active-items > [id^="item-"]').length;
+            const completedContainer = section.querySelector('.completed-items');
+            const completedItems = completedContainer ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
+            const totalItems = activeItems + completedItems;
+
+            const counter = section.querySelector('.section-counter');
+            if (counter) {
+                counter.textContent = `${completedItems}/${totalItems}`;
             }
+
+            if (totalItems === 0) {
+                section.classList.add('hidden');
+            } else {
+                section.classList.remove('hidden');
+            }
+        },
+
+        updateCompletedCount(section) {
+            const completedContainer = section.querySelector('.completed-items');
+            const completedItems = completedContainer ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
+
+            const countSpan = section.querySelector('.completed-wrapper .completed-count');
+            if (countSpan) {
+                countSpan.textContent = completedItems;
+            }
+        },
+
+        // Show/hide completed wrapper based on completed items count
+        updateCompletedVisibility(section) {
+            const completedWrapper = section.querySelector('.completed-wrapper');
+            const completedContainer = section.querySelector('.completed-items');
+            const completedCount = completedContainer
+                ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
+
+            if (completedWrapper) {
+                completedWrapper.style.display = completedCount === 0 ? 'none' : '';
+            }
+            const countEl = section.querySelector('.completed-count');
+            if (countEl) countEl.textContent = completedCount;
+        },
+
+        handleAfterMove(itemId, fromSectionId, toSectionId, newItemHtml) {
+            const item = document.getElementById(`item-${itemId}`);
+            const fromSection = document.getElementById(`section-${fromSectionId}`);
+            const toSection = document.getElementById(`section-${toSectionId}`);
+
+            if (item && toSection) {
+                const targetContainer = toSection.querySelector('.active-items');
+                if (targetContainer) {
+                    if (newItemHtml) {
+                        // Replace with server HTML using insertAdjacentHTML for proper Alpine init
+                        Alpine.destroyTree(item);
+                        item.remove();
+                        targetContainer.insertAdjacentHTML('beforeend', newItemHtml.trim());
+                    } else {
+                        targetContainer.appendChild(item);
+                        item.dataset.sectionId = String(toSectionId);
+                    }
+                }
+            }
+
+            if (fromSection) {
+                this.updateSectionCounter(fromSection);
+            }
+            if (toSection) {
+                toSection.classList.remove('hidden');
+                this.updateSectionCounter(toSection);
+            }
+
+            this.refreshStats();
+            this.$nextTick(() => this.initMobileSortable());
         },
 
         async refreshSectionsAndSelects() {
-            // Refresh sections list in management modal
-            const manageSectionsList = document.getElementById('manage-sections-list');
-            if (manageSectionsList) {
-                htmx.ajax('GET', '/sections/list', {
-                    target: '#manage-sections-list',
-                    swap: 'innerHTML'
-                }).then(() => {
-                    // Reinitialize Alpine.js for new elements after HTMX swap
-                    const el = document.getElementById('manage-sections-list');
-                    if (el) {
-                        Alpine.initTree(el);
-                    }
-                });
-            }
-
-            // Refresh main sections list
+            // refreshList() now handles section selects update internally
             this.refreshList();
+        },
 
-            // Fetch new sections and update selects
+        async refreshSectionSelectsFromServer() {
             try {
-                const response = await fetch('/sections/list?format=json');
-                if (response.ok) {
-                    const sections = await response.json();
+                const r = await fetch('/sections/list?format=json');
+                if (r.ok) {
+                    const sections = await r.json();
                     this.updateSectionSelects(sections);
                 }
-            } catch (error) {
-                console.error('Failed to refresh sections:', error);
+            } catch (e) {
+                console.error('[App] refreshSectionSelectsFromServer failed:', e);
+            }
+        },
+
+        refreshManageSectionsModal() {
+            const manageSectionsList = document.getElementById('manage-sections-list');
+            if (manageSectionsList) {
+                fetch('/sections/list').then(r => {
+                    if (r.ok) return r.text();
+                }).then(html => {
+                    if (html) {
+                        manageSectionsList.innerHTML = html;
+                        htmx.process(manageSectionsList);
+                    }
+                }).catch(e => console.error('[App] manage sections refresh failed:', e));
+            }
+        },
+
+        async reorderSections() {
+            try {
+                const response = await fetch('/sections/list?format=json');
+                if (!response.ok) return;
+                const sections = await response.json();
+                const sectionsList = document.getElementById('sections-list');
+                if (sectionsList) {
+                    for (const section of sections) {
+                        const el = document.getElementById(`section-${section.id}`);
+                        if (el) sectionsList.appendChild(el);
+                    }
+                }
+                this.updateSectionSelects(sections);
+            } catch (e) {
+                console.error('[App] reorderSections failed:', e);
             }
         },
 
@@ -931,6 +1181,7 @@ function shoppingList() {
             if (!confirmed) return;
 
             try {
+                this.markLocalAction('sections_deleted');
                 const response = await fetch('/sections/batch-delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -938,10 +1189,19 @@ function shoppingList() {
                 });
 
                 if (response.ok) {
+                    // Remove deleted sections from DOM
+                    for (const id of this.selectedSections) {
+                        const el = document.getElementById(`section-${id}`);
+                        if (el) {
+                            Alpine.destroyTree(el);
+                            el.remove();
+                        }
+                    }
                     this.selectMode = false;
                     this.selectedSections = [];
-                    // Refresh sections list and selects without page reload
-                    this.refreshSectionsAndSelects();
+                    this.refreshSectionSelectsFromServer();
+                    this.refreshManageSectionsModal();
+                    this.refreshStats();
                 }
             } catch (error) {
                 console.error('Failed to delete sections:', error);
@@ -967,35 +1227,104 @@ function shoppingList() {
         async toggleUncertain() {
             if (!this.mobileActionItem) return;
             const itemId = this.mobileActionItem.id;
+            const sectionId = this.mobileActionItem.section_id;
 
             // Mark as local action to prevent WebSocket race condition
             this.markLocalAction('item_updated');
 
-            // Optimistic UI update
+            // Optimistic UI update for modal
             this.mobileActionItem.uncertain = !this.mobileActionItem.uncertain;
             this.mobileActionItem = null;
 
-            try {
-                const response = await this.offlineFetch(
-                    `/items/${itemId}/uncertain`,
-                    { method: 'POST' },
-                    'toggle_uncertain'
-                );
-
-                if (response.ok && !response.offline) {
-                    this.refreshList();
-                }
-            } catch (error) {
-                console.error('Failed to toggle uncertain:', error);
+            if (!this.isOnline) {
                 // Queue for offline sync
                 await this.queueOfflineAction({
                     type: 'toggle_uncertain',
                     url: `/items/${itemId}/uncertain`,
                     method: 'POST'
                 });
+                return;
             }
 
-            this.refreshList();
+            // Fetch + DOM replace (no HTMX)
+            try {
+                const response = await fetch(`/items/${itemId}/uncertain`, { method: 'POST' });
+                if (!response.ok) return;
+                const html = await response.text();
+                if (!html.trim()) return;
+                const oldItem = document.getElementById(`item-${itemId}`);
+                if (oldItem) {
+                    oldItem.insertAdjacentHTML('afterend', html.trim());
+                    Alpine.destroyTree(oldItem);
+                    oldItem.remove();
+                }
+            } catch (error) {
+                console.error('[Uncertain] Failed:', error);
+            }
+        },
+
+        // Toggle uncertain via desktop button (no mobile action sheet)
+        async toggleUncertainFetch(itemId) {
+            this.markLocalAction('item_updated');
+            try {
+                const response = await fetch(`/items/${itemId}/uncertain`, { method: 'POST' });
+                if (!response.ok) return;
+                const html = await response.text();
+                if (!html.trim()) return;
+                const oldItem = document.getElementById(`item-${itemId}`);
+                if (oldItem) {
+                    oldItem.insertAdjacentHTML('afterend', html.trim());
+                    Alpine.destroyTree(oldItem);
+                    oldItem.remove();
+                }
+            } catch (error) {
+                console.error('[Uncertain] Failed:', error);
+            }
+        },
+
+        // Toggle item completed status via fetch (no HTMX - avoids section re-render)
+        _toggleInFlight: {},
+        async toggleItem(itemId, sectionId) {
+            // Prevent concurrent toggles on the same item
+            if (this._toggleInFlight[itemId]) return;
+            this._toggleInFlight[itemId] = true;
+
+            this.markLocalAction('item_toggled');
+
+            try {
+                const response = await fetch(`/items/${itemId}/toggle`, { method: 'POST' });
+                if (!response.ok) {
+                    console.error('[Toggle] Server error:', response.status);
+                    return;
+                }
+
+                // Refresh the entire section to get correct sort order
+                await this.refreshSection(sectionId);
+                this.refreshStats();
+            } catch (error) {
+                console.error('[Toggle] Failed:', error);
+            } finally {
+                delete this._toggleInFlight[itemId];
+            }
+        },
+
+        async moveItemDesktop(itemId, fromSectionId, toSectionId) {
+            this.markLocalAction('item_moved');
+            try {
+                const response = await fetch(`/items/${itemId}/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `section_id=${toSectionId}`
+                });
+                if (!response.ok) {
+                    console.error('Failed to move item');
+                    return;
+                }
+                const html = await response.text();
+                this.handleAfterMove(itemId, fromSectionId, toSectionId, html);
+            } catch (error) {
+                console.error('Failed to move item:', error);
+            }
         },
 
         async moveToSection(sectionId) {
@@ -1006,7 +1335,9 @@ function shoppingList() {
                 return;
             }
             const itemId = this.mobileActionItem.id;
+            const fromSectionId = this.mobileActionItem.section_id;
             this.mobileActionItem = null;
+            this.markLocalAction('item_moved');
 
             try {
                 const response = await this.offlineFetch(
@@ -1020,18 +1351,11 @@ function shoppingList() {
                 );
 
                 if (response.ok) {
-                    this.refreshList();
+                    const html = await response.text();
+                    this.handleAfterMove(itemId, fromSectionId, parseInt(sectionId), html);
                 }
             } catch (error) {
                 console.error('Failed to move item:', error);
-                await this.queueOfflineAction({
-                    type: 'move_item',
-                    url: `/items/${itemId}/move`,
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `section_id=${sectionId}`
-                });
-                this.refreshList();
             }
         },
 
@@ -1046,38 +1370,35 @@ function shoppingList() {
             if (!confirmed) return;
 
             const itemId = this.mobileActionItem.id;
-
-            // Optimistic UI - update section counter and remove item from DOM
-            const itemEl = document.getElementById(`item-${itemId}`);
-            if (itemEl) {
-                window.updateSectionAfterDelete(itemEl);
-                itemEl.classList.add('item-exit');
-                setTimeout(() => itemEl.remove(), 200);
-            }
-
+            const sectionId = this.mobileActionItem.section_id;
             this.mobileActionItem = null;
+
+            await this.deleteItemDirect(itemId, sectionId);
+        },
+
+        // Delete item via fetch + DOM removal (used by both desktop and mobile)
+        async deleteItemDirect(itemId, sectionId) {
             this.markLocalAction('item_deleted');
-
             try {
-                const response = await this.offlineFetch(
-                    `/items/${itemId}`,
-                    { method: 'DELETE' },
-                    'delete_item'
-                );
+                const response = await fetch(`/items/${itemId}`, { method: 'DELETE' });
+                if (!response.ok) return;
 
-                if (response.ok) {
-                    this.refreshStats();
+                const item = document.getElementById(`item-${itemId}`);
+                if (item) {
+                    Alpine.destroyTree(item);
+                    item.remove();
                 }
-            } catch (error) {
-                console.error('Failed to delete item:', error);
-                await this.queueOfflineAction({
-                    type: 'delete_item',
-                    url: `/items/${itemId}`,
-                    method: 'DELETE'
-                });
-            }
 
-            this.refreshStats();
+                const section = document.getElementById(`section-${sectionId}`);
+                if (section) {
+                    this.updateSectionCounter(section);
+                    this.updateCompletedVisibility(section);
+                }
+
+                this.refreshStats();
+            } catch (error) {
+                console.error('[Delete] Failed:', error);
+            }
         },
 
         // Delete all completed items
@@ -1096,11 +1417,13 @@ function shoppingList() {
                     const result = await response.json();
                     console.log('[App] Deleted', result.deleted, 'completed items');
 
+                    this.markLocalAction('completed_items_deleted');
+
                     // Close settings modal
                     this.showSettings = false;
 
-                    // Refresh the list and stats
-                    this.refreshList();
+                    // Remove completed items from DOM instead of full refresh
+                    this.removeAllCompletedItemsFromDOM();
                     this.refreshStats();
 
                     // Show success toast
@@ -1113,6 +1436,114 @@ function shoppingList() {
             } catch (error) {
                 console.error('[App] Failed to delete completed items:', error);
                 window.Toast.show(t('error.delete_items'), 'warning');
+            }
+        },
+
+        // Remove all completed items from DOM (no server fetch)
+        removeAllCompletedItemsFromDOM() {
+            document.querySelectorAll('.completed-items').forEach(container => {
+                const items = container.querySelectorAll('[id^="item-"]');
+                items.forEach(item => {
+                    try { Alpine.destroyTree(item); } catch (_) {}
+                    item.remove();
+                });
+                // Update section counters and visibility
+                const section = container.closest('[id^="section-"]');
+                if (section) {
+                    this.updateSectionCounter(section);
+                    this.updateCompletedVisibility(section);
+                }
+            });
+        },
+
+        // ===== REMOTE ITEM HELPERS (for WS events on other browsers) =====
+
+        // Insert a new item fetched from server into the correct section
+        async insertRemoteItem(itemId, sectionId) {
+            try {
+                const resp = await fetch(`/items/${itemId}/html`);
+                if (!resp.ok) { this.refreshSection(sectionId); return; }
+                const html = await resp.text();
+                const section = document.getElementById(`section-${sectionId}`);
+                if (!section) return;
+                const container = section.querySelector('.active-items');
+                if (container) {
+                    container.insertAdjacentHTML('beforeend', html.trim());
+                }
+                section.classList.remove('hidden');
+                this.updateSectionCounter(section);
+            } catch (e) {
+                console.error('[App] insertRemoteItem failed:', e);
+                this.refreshSection(sectionId);
+            }
+        },
+
+        // Remove a deleted item from DOM (no fetch needed)
+        removeRemoteItem(itemId, sectionId) {
+            const el = document.getElementById(`item-${itemId}`);
+            if (el) {
+                try { Alpine.destroyTree(el); } catch (_) {}
+                el.remove();
+            }
+            const section = document.getElementById(`section-${sectionId}`);
+            if (section) {
+                this.updateSectionCounter(section);
+                this.updateCompletedVisibility(section);
+            }
+        },
+
+        // Replace an updated item in-place with fresh HTML from server
+        async replaceRemoteItem(itemId) {
+            const existing = document.getElementById(`item-${itemId}`);
+            if (!existing) return;
+            try {
+                const resp = await fetch(`/items/${itemId}/html`);
+                if (!resp.ok) {
+                    const sectionId = existing.dataset.sectionId;
+                    if (sectionId) this.refreshSection(parseInt(sectionId));
+                    return;
+                }
+                const html = await resp.text();
+                existing.insertAdjacentHTML('afterend', html.trim());
+                try { Alpine.destroyTree(existing); } catch (_) {}
+                existing.remove();
+            } catch (e) {
+                console.error('[App] replaceRemoteItem failed:', e);
+                const sectionId = existing.dataset?.sectionId;
+                if (sectionId) this.refreshSection(parseInt(sectionId));
+            }
+        },
+
+        // Toggle an item on remote browser: remove from old container, fetch new HTML, insert into correct container
+        async toggleRemoteItem(itemId, sectionId, isCompleted) {
+            const existing = document.getElementById(`item-${itemId}`);
+            const section = document.getElementById(`section-${sectionId}`);
+            if (!section) { this.refreshSection(sectionId); return; }
+
+            try {
+                const resp = await fetch(`/items/${itemId}/html`);
+                if (!resp.ok) { this.refreshSection(sectionId); return; }
+                const html = await resp.text();
+
+                // Remove old element
+                if (existing) {
+                    try { Alpine.destroyTree(existing); } catch (_) {}
+                    existing.remove();
+                }
+
+                // Insert into the correct container
+                const targetContainer = isCompleted
+                    ? section.querySelector('.completed-items')
+                    : section.querySelector('.active-items');
+                if (targetContainer) {
+                    targetContainer.insertAdjacentHTML('beforeend', html.trim());
+                }
+
+                this.updateSectionCounter(section);
+                this.updateCompletedVisibility(section);
+            } catch (e) {
+                console.error('[App] toggleRemoteItem failed:', e);
+                this.refreshSection(sectionId);
             }
         },
 
@@ -1449,6 +1880,8 @@ function shoppingList() {
             if (!this.editItemName.trim() || !this.editingItem) return;
 
             const itemId = this.editingItem.id;
+            const itemEl = document.getElementById(`item-${itemId}`);
+            const sectionId = itemEl?.closest('div[id^="section-"]')?.dataset?.sectionId;
             const name = this.editItemName.trim();
             const description = this.editItemDescription.trim();
             const quantity = parseInt(this.editItemQuantity) || 0;
@@ -1537,6 +1970,8 @@ function shoppingList() {
                 return;
             }
 
+            this.markLocalAction('item_updated');
+
             try {
                 const response = await this.offlineFetch(
                     `/items/${itemId}`,
@@ -1549,7 +1984,13 @@ function shoppingList() {
                 );
 
                 if (response.ok) {
-                    this.refreshList();
+                    const html = await response.text();
+                    const itemEl = document.getElementById(`item-${itemId}`);
+                    if (itemEl && html) {
+                        Alpine.destroyTree(itemEl);
+                        itemEl.outerHTML = html.trim();
+                    }
+                    this.refreshStats();
                 }
             } catch (error) {
                 console.error('Failed to save edit:', error);
@@ -1560,81 +2001,9 @@ function shoppingList() {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body
                 });
-                this.refreshList();
             }
         },
 
-        // Toggle uncertain status with animation (no page refresh)
-        async toggleUncertainAnimated(itemId) {
-            const item = document.getElementById(`item-${itemId}`);
-            if (!item) return;
-
-            // Check current state from DOM (has amber background = uncertain)
-            const currentlyUncertain = item.classList.contains('bg-amber-50/50');
-            const newState = !currentlyUncertain;
-
-            // Update item background
-            if (newState) {
-                item.classList.add('bg-amber-50/50');
-            } else {
-                item.classList.remove('bg-amber-50/50');
-            }
-
-            // Update ? icon in content
-            const contentDiv = item.querySelector('.flex-1.min-w-0');
-            if (contentDiv) {
-                const innerDiv = contentDiv.querySelector('.flex.items-center.gap-2');
-                if (innerDiv) {
-                    const questionMark = innerDiv.querySelector('.text-amber-500.text-xs');
-                    if (newState && !questionMark) {
-                        const span = document.createElement('span');
-                        span.className = 'text-amber-500 text-xs';
-                        span.textContent = '?';
-                        innerDiv.insertBefore(span, innerDiv.firstChild);
-                    } else if (!newState && questionMark) {
-                        questionMark.remove();
-                    }
-                }
-            }
-
-            // Update button color and icon fill
-            const btn = item.querySelector('.uncertain-btn');
-            if (btn) {
-                if (newState) {
-                    btn.classList.remove('text-stone-400');
-                    btn.classList.add('text-amber-500');
-                } else {
-                    btn.classList.remove('text-amber-500');
-                    btn.classList.add('text-stone-400');
-                }
-
-                const svg = btn.querySelector('.uncertain-icon');
-                if (svg) {
-                    svg.setAttribute('fill', newState ? 'currentColor' : 'none');
-                }
-            }
-
-            // Send request to server in background
-            this.markLocalAction('item_updated');
-            try {
-                const response = await this.offlineFetch(
-                    `/items/${itemId}/uncertain`,
-                    { method: 'POST' },
-                    'toggle_uncertain'
-                );
-
-                if (response.ok) {
-                    this.refreshStats();
-                }
-            } catch (error) {
-                console.error('Failed to toggle uncertain:', error);
-                await this.queueOfflineAction({
-                    type: 'toggle_uncertain',
-                    url: `/items/${itemId}/uncertain`,
-                    method: 'POST'
-                });
-            }
-        },
 
         // Quick add inline - opens inline input in section
         openQuickAdd(sectionId) {
@@ -1722,11 +2091,12 @@ function shoppingList() {
                 return;
             }
 
-            // Online: original behavior
+            // Online: append item partial directly
             try {
                 const formData = new URLSearchParams();
                 formData.append('name', name);
                 formData.append('section_id', sectionId);
+                formData.append('quick_add', 'true');
 
                 const response = await this.offlineFetch('/items', {
                     method: 'POST',
@@ -1735,15 +2105,112 @@ function shoppingList() {
                 }, 'create_item');
 
                 if (response.ok) {
-                    // Close quick add after successful submit
+                    const html = await response.text();
+                    const section = document.getElementById(`section-${sectionId}`);
+                    if (section && html) {
+                        const activeContainer = section.querySelector('.active-items');
+                        if (activeContainer) {
+                            // Alpine's mutation observer auto-initializes new elements
+                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                        }
+                        section.classList.remove('hidden');
+                        this.updateSectionCounter(section);
+                    }
                     this.closeQuickAdd();
-
-                    // Refresh list and stats
-                    this.refreshList();
                     this.refreshStats();
+                    this.$nextTick(() => this.initMobileSortable());
                 }
             } catch (error) {
                 console.error('[QuickAdd] Failed to add item:', error);
+            }
+        },
+
+        // Desktop add item form (full form with section select)
+        async submitAddItemForm(form) {
+            const formData = new FormData(form);
+            const sectionId = formData.get('section_id');
+            const name = formData.get('name')?.trim();
+            if (!name) return;
+
+            this.markLocalAction('item_created');
+
+            try {
+                const response = await fetch('/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(formData).toString()
+                });
+
+                if (response.ok) {
+                    const html = await response.text();
+                    const section = document.getElementById(`section-${sectionId}`);
+                    if (section && html) {
+                        const activeContainer = section.querySelector('.active-items');
+                        if (activeContainer) {
+                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                        }
+                        section.classList.remove('hidden');
+                        this.updateSectionCounter(section);
+                    }
+                    // Clear form but keep section selected
+                    const sectionValue = form.querySelector('select[name="section_id"]').value;
+                    form.querySelector('input[name="name"]').value = '';
+                    const descInput = form.querySelector('input[name="description"]');
+                    if (descInput) descInput.value = '';
+                    form.querySelector('select[name="section_id"]').value = sectionValue;
+                    setTimeout(() => form.querySelector('input[name="name"]')?.focus(), 50);
+
+                    this.refreshStats();
+                    this.$nextTick(() => this.initMobileSortable());
+                }
+            } catch (error) {
+                console.error('[AddItem] Failed:', error);
+            }
+        },
+
+        // Mobile add item form (modal with add-more toggle)
+        async submitAddItemFormMobile(form) {
+            const formData = new FormData(form);
+            const sectionId = formData.get('section_id');
+            const name = formData.get('name')?.trim();
+            if (!name) return;
+
+            this.markLocalAction('item_created');
+
+            try {
+                const response = await fetch('/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(formData).toString()
+                });
+
+                if (response.ok) {
+                    const html = await response.text();
+                    const section = document.getElementById(`section-${sectionId}`);
+                    if (section && html) {
+                        const activeContainer = section.querySelector('.active-items');
+                        if (activeContainer) {
+                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                        }
+                        section.classList.remove('hidden');
+                        this.updateSectionCounter(section);
+                    }
+
+                    if (!this.addMore) {
+                        form.reset();
+                        this.showAddItem = false;
+                    } else {
+                        form.querySelector('[name=name]').value = '';
+                        const descInput = form.querySelector('[name=description]');
+                        if (descInput) descInput.value = '';
+                        setTimeout(() => form.querySelector('[name=name]')?.focus(), 150);
+                    }
+
+                    this.refreshStats();
+                    this.$nextTick(() => this.initMobileSortable());
+                }
+            } catch (error) {
+                console.error('[AddItemMobile] Failed:', error);
             }
         },
 
@@ -1901,90 +2368,97 @@ function shoppingList() {
             });
         },
 
+        showEmptyDropTargets() {
+            const sectionsList = document.getElementById('sections-list');
+            if (!sectionsList) return;
+            const emptySections = sectionsList.querySelectorAll('div[id^="section-"].hidden');
+            emptySections.forEach(section => {
+                section.classList.remove('hidden');
+                section.classList.add('drag-drop-target');
+                sectionsList.appendChild(section);
+                const sortableContainer = section.querySelector('.items-sortable');
+                if (sortableContainer) {
+                    sortableContainer.dataset.dropHint = '↓';
+                    if (!sortableContainer._sortableInstance) {
+                        this.initSortableForContainer(sortableContainer);
+                    }
+                }
+            });
+        },
+
+        hideEmptyDropTargets() {
+            const targets = document.querySelectorAll('.drag-drop-target');
+            targets.forEach(section => {
+                section.classList.remove('drag-drop-target');
+                this.updateSectionCounter(section);
+            });
+        },
+
         // Drag-and-drop for item reordering
+        initSortableForContainer(container) {
+            if (typeof Sortable === 'undefined') return;
+            if (container._sortableInstance) {
+                container._sortableInstance.destroy();
+            }
+            const sectionId = container.dataset.sectionId;
+            container._sortableInstance = new Sortable(container, {
+                animation: 200,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                handle: '.drag-handle',
+                draggable: '[data-item-id]',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                group: 'items',
+                delay: 150,
+                delayOnTouchOnly: true,
+                touchStartThreshold: 5,
+                scroll: true,
+                scrollSensitivity: 150,
+                scrollSpeed: 15,
+                bubbleScroll: true,
+                forceFallback: true,
+                fallbackOnBody: true,
+                fallbackTolerance: 3,
+                onStart: (evt) => {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    document.body.classList.add('is-dragging');
+                    this.showEmptyDropTargets();
+                },
+                onEnd: async (evt) => {
+                    document.body.classList.remove('is-dragging');
+                    this.hideEmptyDropTargets();
+                    const itemId = evt.item.dataset.itemId;
+                    const fromSectionId = evt.from.dataset.sectionId;
+                    const toSectionId = evt.to.dataset.sectionId;
+                    const newIndex = evt.newIndex;
+                    const oldIndex = evt.oldIndex;
+                    if (fromSectionId !== toSectionId) {
+                        await this.moveItemToSection(itemId, fromSectionId, toSectionId, newIndex);
+                        return;
+                    }
+                    if (newIndex !== oldIndex) {
+                        await this.syncItemPosition(itemId, toSectionId, newIndex);
+                    }
+                }
+            });
+        },
+
         initMobileSortable() {
-            // Check if SortableJS is available
             if (typeof Sortable === 'undefined') {
                 console.warn('[App] SortableJS not loaded');
                 return;
             }
-
-            // Find all sortable containers (works on both mobile and desktop)
             const containers = document.querySelectorAll('.items-sortable');
-
-            containers.forEach(container => {
-                // Skip if already initialized
-                if (container._sortableInstance) {
-                    container._sortableInstance.destroy();
-                }
-
-                const sectionId = container.dataset.sectionId;
-
-                container._sortableInstance = new Sortable(container, {
-                    animation: 200,
-                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                    handle: '.drag-handle',
-                    draggable: '[data-item-id]',
-                    ghostClass: 'sortable-ghost',
-                    chosenClass: 'sortable-chosen',
-                    dragClass: 'sortable-drag',
-
-                    // Allow dragging between sections
-                    group: 'items',
-
-                    // Threshold before starting drag (prevents accidental drags)
-                    delay: 150,
-                    delayOnTouchOnly: true,
-                    touchStartThreshold: 5,
-
-                    // Scroll behavior - scroll window when near edges
-                    scroll: true,
-                    scrollSensitivity: 150,
-                    scrollSpeed: 15,
-                    bubbleScroll: true,
-                    forceFallback: true,
-                    fallbackOnBody: true,
-                    fallbackTolerance: 3,
-
-                    // Callbacks
-                    onStart: (evt) => {
-                        // Haptic feedback if available
-                        if (navigator.vibrate) {
-                            navigator.vibrate(10);
-                        }
-                        // Prevent body scroll during drag
-                        document.body.classList.add('is-dragging');
-                    },
-
-                    onEnd: async (evt) => {
-                        document.body.classList.remove('is-dragging');
-
-                        const itemId = evt.item.dataset.itemId;
-                        const fromSectionId = evt.from.dataset.sectionId;
-                        const toSectionId = evt.to.dataset.sectionId;
-                        const newIndex = evt.newIndex;
-                        const oldIndex = evt.oldIndex;
-
-                        // Moving to different section
-                        if (fromSectionId !== toSectionId) {
-                            // Pass target position directly - server handles positioning among active items
-                            await this.moveItemToSection(itemId, toSectionId, newIndex);
-                            return;
-                        }
-
-                        // Same section - reorder
-                        if (newIndex !== oldIndex) {
-                            await this.syncItemPosition(itemId, toSectionId, newIndex);
-                        }
-                    }
-                });
-            });
+            containers.forEach(container => this.initSortableForContainer(container));
         },
 
         // Sync item position with server - single request (supports offline)
         async syncItemPosition(itemId, sectionId, newIndex) {
             // Mark as local action to prevent WebSocket race condition
+            // Server broadcasts 'item_moved' for /items/:id/move endpoint
             this.markLocalAction('items_reordered');
+            this.markLocalAction('item_moved');
 
             try {
                 const url = `/items/${itemId}/move`;
@@ -1997,7 +2471,6 @@ function shoppingList() {
                 const response = await this.offlineFetch(url, options, 'reorder_item');
 
                 if (response.offline) {
-                    // Queued for later - silent sync, just haptic feedback
                     if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                     return;
                 }
@@ -2005,7 +2478,7 @@ function shoppingList() {
                 if (!response.ok) {
                     console.error('Failed to reorder item');
                     window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
-                    if (navigator.onLine) this.refreshList();
+                    if (navigator.onLine) this.refreshSection(parseInt(sectionId));
                     return;
                 }
 
@@ -2016,12 +2489,12 @@ function shoppingList() {
             } catch (error) {
                 console.error('Failed to sync item position:', error);
                 window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
-                if (navigator.onLine) this.refreshList();
+                if (navigator.onLine) this.refreshSection(parseInt(sectionId));
             }
         },
 
         // Move item to different section via drag-and-drop (supports offline)
-        async moveItemToSection(itemId, sectionId, targetIndex) {
+        async moveItemToSection(itemId, fromSectionId, toSectionId, targetIndex) {
             this.markLocalAction('item_moved');
 
             try {
@@ -2029,13 +2502,12 @@ function shoppingList() {
                 const options = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `section_id=${encodeURIComponent(sectionId)}&position=${encodeURIComponent(targetIndex)}`
+                    body: `section_id=${encodeURIComponent(toSectionId)}&position=${encodeURIComponent(targetIndex)}`
                 };
 
                 const response = await this.offlineFetch(url, options, 'move_item');
 
                 if (response.offline) {
-                    // Queued for later - silent sync, just haptic feedback
                     if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                     return;
                 }
@@ -2052,8 +2524,23 @@ function shoppingList() {
                     navigator.vibrate([10, 50, 10]);
                 }
 
-                // Refresh to ensure sync
-                if (navigator.onLine) this.refreshList();
+                // Replace item with server-rendered HTML (updated dropdown) and update counters
+                const html = await response.text();
+                const itemEl2 = document.getElementById(`item-${itemId}`);
+                if (itemEl2 && html) {
+                    Alpine.destroyTree(itemEl2);
+                    itemEl2.outerHTML = html.trim();
+                }
+                if (fromSectionId) {
+                    const fromSection = document.getElementById(`section-${fromSectionId}`);
+                    if (fromSection) this.updateSectionCounter(fromSection);
+                }
+                const toSection = document.getElementById(`section-${toSectionId}`);
+                if (toSection) {
+                    toSection.classList.remove('hidden');
+                    this.updateSectionCounter(toSection);
+                }
+                this.refreshStats();
             } catch (error) {
                 console.error('Failed to move item to section:', error);
                 window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
@@ -2139,8 +2626,15 @@ function shoppingList() {
                     if (window.Toast) {
                         window.Toast.show(t('import.success'), 'success');
                     }
-                    // Reload to show imported data
-                    window.location.reload();
+                    // Refresh list and stats without full page reload
+                    const appEl = document.querySelector('[x-data="shoppingList()"]');
+                    if (appEl && window.Alpine) {
+                        const data = Alpine.$data(appEl);
+                        if (data) {
+                            data.refreshList();
+                            data.refreshStats();
+                        }
+                    }
                 } else {
                     if (window.Toast) {
                         window.Toast.show(result.error || t('import.error'), 'warning');
@@ -2376,59 +2870,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const itemEl = document.getElementById(`item-${itemId}`);
 
             if (itemEl) {
-                // Check current state
-                const currentlyUncertain = itemEl.classList.contains('bg-amber-50/50');
-                const newState = !currentlyUncertain;
-
                 // Toggle uncertain styling
-                if (newState) {
-                    itemEl.classList.add('bg-amber-50/50');
-                } else {
-                    itemEl.classList.remove('bg-amber-50/50');
-                }
+                const currentlyUncertain = itemEl.classList.contains('bg-amber-50/50');
+                itemEl.classList.toggle('bg-amber-50/50');
 
                 // Update ? icon
-                const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
-                if (contentDiv) {
-                    const innerDiv = contentDiv.querySelector('.flex.items-center.gap-2');
-                    if (innerDiv) {
-                        const questionMark = innerDiv.querySelector('.text-amber-500.text-xs:not(.offline-sync-badge)');
-                        if (newState && !questionMark) {
-                            const span = document.createElement('span');
-                            span.className = 'text-amber-500 text-xs';
-                            span.textContent = '?';
-                            innerDiv.insertBefore(span, innerDiv.firstChild);
-                        } else if (!newState && questionMark) {
-                            questionMark.remove();
-                        }
-                    }
-                }
-
-                // Update button styling
-                const btn = itemEl.querySelector('.uncertain-btn');
-                if (btn) {
-                    if (newState) {
-                        btn.classList.remove('text-stone-400');
-                        btn.classList.add('text-amber-500');
-                    } else {
-                        btn.classList.remove('text-amber-500');
-                        btn.classList.add('text-stone-400');
-                    }
-                    const svg = btn.querySelector('.uncertain-icon');
-                    if (svg) {
-                        svg.setAttribute('fill', newState ? 'currentColor' : 'none');
+                const innerDiv = itemEl.querySelector('.flex.items-center.gap-2');
+                if (innerDiv) {
+                    const questionMark = innerDiv.querySelector('.text-amber-500.text-xs:not(.offline-sync-badge)');
+                    if (!currentlyUncertain && !questionMark) {
+                        const span = document.createElement('span');
+                        span.className = 'text-amber-500 text-xs';
+                        span.textContent = '?';
+                        innerDiv.insertBefore(span, innerDiv.firstChild);
+                    } else if (currentlyUncertain && questionMark) {
+                        questionMark.remove();
                     }
                 }
 
                 // Add sync indicator
                 itemEl.classList.add('border-l-2', 'border-rose-400');
                 if (!itemEl.querySelector('.offline-sync-badge')) {
+                    const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
                     const badge = document.createElement('span');
                     badge.className = 'offline-sync-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-600 ml-2';
                     badge.innerHTML = `<svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>${t('status.syncing')}`;
-                    if (contentDiv) {
-                        contentDiv.after(badge);
-                    }
+                    if (contentDiv) contentDiv.after(badge);
                 }
             }
 
@@ -2472,6 +2939,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Mark local actions for HTMX-initiated requests (forms, buttons)
+    // so WebSocket doesn't trigger redundant refreshes
+    document.body.addEventListener('htmx:beforeRequest', function(event) {
+        const verb = (event.detail.requestConfig?.verb || '').toLowerCase();
+        const path = event.detail.requestConfig?.path || '';
+        const appEl = document.querySelector('[x-data]');
+        const data = appEl ? Alpine.$data(appEl) : null;
+        if (!data?.markLocalAction) return;
+
+        if (verb === 'post' && path === '/items') {
+            data.markLocalAction('item_created');
+        } else if (verb === 'put' && path.match(/^\/items\/\d+$/)) {
+            data.markLocalAction('item_updated');
+        } else if (verb === 'delete' && path.match(/^\/items\/\d+$/)) {
+            data.markLocalAction('item_deleted');
+        } else if (verb === 'post' && path.match(/^\/items\/\d+\/toggle$/)) {
+            data.markLocalAction('item_toggled');
+        } else if (verb === 'post' && path.match(/^\/items\/\d+\/uncertain$/)) {
+            data.markLocalAction('item_updated');
+        } else if (verb === 'post' && path === '/sections') {
+            data.markLocalAction('section_created');
+        }
+    });
+
     document.body.addEventListener('htmx:beforeSwap', function(event) {
         const redirectUrl = event.detail.xhr.getResponseHeader('HX-Redirect');
         if (redirectUrl) {
@@ -2479,10 +2970,12 @@ document.addEventListener('DOMContentLoaded', function() {
             event.detail.shouldSwap = false;
         }
 
-        // Capture existing item IDs before swap
-        if (event.detail.target?.id === 'sections-list') {
+        // Capture existing item IDs before swap (for section or full list swaps)
+        const targetId = event.detail.target?.id || '';
+        if (targetId === 'sections-list' || targetId.startsWith('section-')) {
+            const scope = targetId === 'sections-list' ? document : event.detail.target;
             existingItemIds = new Set(
-                [...document.querySelectorAll('[id^="item-"]')].map(el => el.id)
+                [...scope.querySelectorAll('[id^="item-"]')].map(el => el.id)
             );
         }
     });
@@ -2491,12 +2984,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Restore correct page title after swap (prevents HTMX from resetting to hardcoded title)
         document.title = window.translations[window.currentLang]?.list?.title || 'Koffan Shopping List';
 
-        // Animate only new items after swap
-        if (event.detail.target?.id === 'sections-list') {
-            document.querySelectorAll('[id^="item-"]').forEach(el => {
+        // Animate only new items after swap (works for both full list and section swaps)
+        const targetId = event.detail.target?.id || '';
+        if (targetId === 'sections-list' || targetId.startsWith('section-')) {
+            // For outerHTML swaps, event.detail.target may be detached from DOM
+            // so look up the fresh element by ID
+            const scope = targetId === 'sections-list'
+                ? document
+                : (document.getElementById(targetId) || event.detail.target);
+            scope.querySelectorAll('[id^="item-"]').forEach(el => {
                 if (!existingItemIds.has(el.id)) {
                     el.classList.add('item-enter');
-                    // Remove animation class after it completes
                     setTimeout(() => el.classList.remove('item-enter'), 300);
                 }
             });
@@ -2545,34 +3043,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Update section counter and visibility after item deletion
-window.updateSectionAfterDelete = function(itemElement) {
-    // Find parent section
-    const section = itemElement.closest('[data-section-id]');
-    if (!section) return;
-
-    // Count remaining items (active + completed)
-    const activeItems = section.querySelectorAll('.active-items > [id^="item-"]').length;
-    const completedContainer = section.querySelector('.completed-items');
-    const completedItems = completedContainer ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
-
-    // Subtract 1 for the item being deleted (it's still in DOM at this point)
-    const isActiveItem = itemElement.closest('.active-items') !== null;
-    const newActiveCount = isActiveItem ? activeItems - 1 : activeItems;
-    const newCompletedCount = isActiveItem ? completedItems : completedItems - 1;
-    const newTotal = newActiveCount + newCompletedCount;
-
-    // Update counter
-    const counter = section.querySelector('.section-counter');
-    if (counter) {
-        counter.textContent = `${newCompletedCount}/${newTotal}`;
-    }
-
-    // Hide section if empty
-    if (newTotal === 0) {
-        section.classList.add('hidden');
-    }
-};
 
 // Get completed section state from localStorage (safe for iOS Safari)
 window.getCompletedSectionState = function(sectionId) {
@@ -2586,88 +3056,6 @@ window.getCompletedSectionState = function(sectionId) {
     }
 };
 
-// Global function for uncertain toggle (called from onclick)
-window.toggleUncertain = async function(itemId) {
-    const item = document.getElementById(`item-${itemId}`);
-    if (!item) return;
-
-    // Check current state from DOM
-    const currentlyUncertain = item.classList.contains('bg-amber-50/50');
-    const newState = !currentlyUncertain;
-
-    // Animate the button
-    const btn = item.querySelector('.uncertain-btn');
-    if (btn) {
-        btn.classList.add('checkbox-pulse');
-        setTimeout(() => btn.classList.remove('checkbox-pulse'), 300);
-    }
-
-    // Update item background with smooth transition
-    if (newState) {
-        item.classList.add('bg-amber-50/50');
-    } else {
-        item.classList.remove('bg-amber-50/50');
-    }
-
-    // Update ? icon in content
-    const contentDiv = item.querySelector('.flex-1.min-w-0');
-    if (contentDiv) {
-        const innerDiv = contentDiv.querySelector('.flex.items-center.gap-2');
-        if (innerDiv) {
-            const questionMark = innerDiv.querySelector('.text-amber-500.text-xs');
-            if (newState && !questionMark) {
-                const span = document.createElement('span');
-                span.className = 'text-amber-500 text-xs';
-                span.textContent = '?';
-                innerDiv.insertBefore(span, innerDiv.firstChild);
-            } else if (!newState && questionMark) {
-                questionMark.remove();
-            }
-        }
-    }
-
-    // Update button color and icon fill
-    if (btn) {
-        if (newState) {
-            btn.classList.remove('text-stone-400');
-            btn.classList.add('text-amber-500');
-        } else {
-            btn.classList.remove('text-amber-500');
-            btn.classList.add('text-stone-400');
-        }
-
-        const svg = btn.querySelector('.uncertain-icon');
-        if (svg) {
-            svg.setAttribute('fill', newState ? 'currentColor' : 'none');
-        }
-    }
-
-    // Send request to server in background
-    try {
-        if (navigator.onLine) {
-            await fetch(`/items/${itemId}/uncertain`, { method: 'POST' });
-        } else {
-            // Queue for offline sync
-            await window.offlineStorage.queueAction({
-                type: 'toggle_uncertain',
-                url: `/items/${itemId}/uncertain`,
-                method: 'POST'
-            });
-        }
-    } catch (error) {
-        console.error('Failed to toggle uncertain:', error);
-        // Queue for offline sync on error
-        try {
-            await window.offlineStorage.queueAction({
-                type: 'toggle_uncertain',
-                url: `/items/${itemId}/uncertain`,
-                method: 'POST'
-            });
-        } catch (e) {
-            console.error('Failed to queue action:', e);
-        }
-    }
-};
 
 // Pull to refresh
 (function() {

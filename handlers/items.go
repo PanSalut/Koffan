@@ -63,7 +63,17 @@ func CreateItem(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_created", item)
 
-	// Return the new item partial for HTMX
+	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
+
+	// Quick add returns just the item partial for DOM append
+	if c.FormValue("quick_add") == "true" {
+		return c.Render("partials/item", fiber.Map{
+			"Item":     item,
+			"Sections": getSectionsForDropdown(),
+		}, "")
+	}
+
+	// Regular form also returns per-item partial (client handles DOM insertion)
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
 		"Sections": getSectionsForDropdown(),
@@ -106,7 +116,14 @@ func UpdateItem(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
 
-	// Return updated item partial
+	// Return individual item partial for smooth per-item swap
+	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
+	if item.Completed {
+		return c.Render("partials/item_completed", fiber.Map{
+			"Item":     item,
+			"Sections": getSectionsForDropdown(),
+		}, "")
+	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
 		"Sections": getSectionsForDropdown(),
@@ -120,16 +137,19 @@ func DeleteItem(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Invalid ID")
 	}
 
+	item, err := db.GetItemByID(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to get item")
+	}
+
 	err = db.DeleteItem(id)
 	if err != nil {
 		return c.Status(500).SendString("Failed to delete item")
 	}
 
-	// Broadcast to WebSocket clients
-	BroadcastUpdate("item_deleted", map[string]int64{"id": id})
+	BroadcastUpdate("item_deleted", map[string]int64{"id": id, "section_id": item.SectionID})
 
-	// Return empty string (HTMX will remove the element)
-	return c.SendString("")
+	return c.SendStatus(200)
 }
 
 // DeleteCompletedItems deletes all completed items
@@ -142,6 +162,7 @@ func DeleteCompletedItems(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("completed_items_deleted", map[string]int64{"count": count})
 
+	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 	return c.JSON(fiber.Map{"deleted": count})
 }
 
@@ -160,7 +181,7 @@ func ToggleItem(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_toggled", item)
 
-	// Return the appropriate item partial based on completed status
+	// Return per-item partial (no section swap - client handles DOM move)
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
@@ -188,7 +209,7 @@ func ToggleUncertain(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
 
-	// Return the appropriate item partial based on completed status
+	// Return individual item partial for smooth per-item swap
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
@@ -214,6 +235,13 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Invalid section ID")
 	}
 
+	// Get old section_id BEFORE moving
+	oldItem, err := db.GetItemByID(id)
+	if err != nil {
+		return c.Status(404).SendString("Item not found")
+	}
+	fromSectionID := oldItem.SectionID
+
 	var item *db.Item
 
 	// Check if position parameter is provided (for cross-section drag-and-drop)
@@ -238,12 +266,19 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		}
 	}
 
-	// Broadcast to WebSocket clients
-	BroadcastUpdate("item_moved", item)
+	// Broadcast to WebSocket clients with both section IDs
+	BroadcastUpdate("item_moved", map[string]interface{}{
+		"id":              item.ID,
+		"section_id":      item.SectionID,
+		"from_section_id": fromSectionID,
+	})
 
-	// Trigger full refresh for simplicity (item moved between sections)
-	c.Set("HX-Trigger", "refreshList")
-	return c.SendString("")
+	// Return updated item partial so client can replace stale dropdown
+	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
+	return c.Render("partials/item", fiber.Map{
+		"Item":     item,
+		"Sections": getSectionsForDropdown(),
+	}, "")
 }
 
 // MoveItemUp moves an item up in its section
@@ -258,14 +293,12 @@ func MoveItemUp(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move item")
 	}
 
-	// Get the item's section and return all items in that section
 	item, _ := db.GetItemByID(id)
 	if item != nil {
 		BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
-		return returnSectionItems(c, item.SectionID)
 	}
 
-	return c.SendString("")
+	return c.SendStatus(200)
 }
 
 // MoveItemDown moves an item down in its section
@@ -280,14 +313,12 @@ func MoveItemDown(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move item")
 	}
 
-	// Get the item's section and return all items in that section
 	item, _ := db.GetItemByID(id)
 	if item != nil {
 		BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
-		return returnSectionItems(c, item.SectionID)
 	}
 
-	return c.SendString("")
+	return c.SendStatus(200)
 }
 
 // Helper to return all items in a section
@@ -299,6 +330,29 @@ func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 
 	return c.Render("partials/section", fiber.Map{
 		"Section":  section,
+		"Sections": getSectionsForDropdown(),
+	}, "")
+}
+
+// GetItemHTML returns a single item rendered as HTML partial
+func GetItemHTML(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+
+	item, err := db.GetItemByID(id)
+	if err != nil {
+		return c.Status(404).SendString("Item not found")
+	}
+
+	tmpl := "partials/item"
+	if item.Completed {
+		tmpl = "partials/item_completed"
+	}
+
+	return c.Render(tmpl, fiber.Map{
+		"Item":     item,
 		"Sections": getSectionsForDropdown(),
 	}, "")
 }

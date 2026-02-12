@@ -8,6 +8,24 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// GetSectionHTML returns a single section rendered as HTML partial
+func GetSectionHTML(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+
+	section, err := db.GetSectionByID(id)
+	if err != nil {
+		return c.Status(404).SendString("Section not found")
+	}
+
+	return c.Render("partials/section", fiber.Map{
+		"Section":  section,
+		"Sections": getSectionsForDropdown(),
+	}, "")
+}
+
 // GetSections returns all sections with items (for full page render)
 func GetSections(c *fiber.Ctx) error {
 	sections, err := db.GetAllSections()
@@ -129,9 +147,13 @@ func MoveSectionUp(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move section")
 	}
 
-	// Broadcast and return full sections list
 	BroadcastUpdate("sections_reordered", nil)
-	return returnAllSections(c)
+
+	// Modal expects full list, main page handles reorder via WS
+	if c.Get("HX-Target") == "manage-sections-list" {
+		return returnSectionsForModal(c)
+	}
+	return c.SendStatus(200)
 }
 
 // MoveSectionDown moves a section down in order
@@ -146,21 +168,12 @@ func MoveSectionDown(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move section")
 	}
 
-	// Broadcast and return full sections list
 	BroadcastUpdate("sections_reordered", nil)
-	return returnAllSections(c)
-}
 
-// Helper to return all sections as HTML partials
-func returnAllSections(c *fiber.Ctx) error {
-	sections, err := db.GetAllSections()
-	if err != nil {
-		return c.Status(500).SendString("Failed to fetch sections")
+	if c.Get("HX-Target") == "manage-sections-list" {
+		return returnSectionsForModal(c)
 	}
-
-	return c.Render("partials/sections_list", fiber.Map{
-		"Sections": sections,
-	}, "")
+	return c.SendStatus(200)
 }
 
 // Helper to get sections for dropdown

@@ -4,7 +4,7 @@
     class="p-3 bg-stone-50 dark:bg-stone-700 rounded-lg border border-stone-100 dark:border-stone-600 flex items-center gap-3"
     :class="{'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800': selectMode && selectedSections.includes({{.Section.ID}})}"
     @click="if(selectMode) toggleSection({{.Section.ID}})"
-    x-data="{ editing: false, editName: '{{.Section.Name}}' }"
+    x-data="{ editing: false, editName: '{{.Section.Name | js}}' }"
 >
     <!-- Select checkbox -->
     <template x-if="selectMode">
@@ -19,7 +19,7 @@
     <!-- Section name (view mode) -->
     <span
         x-show="!editing"
-        @dblclick="if(!selectMode) { editing = true; editName = '{{.Section.Name}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus()) }"
+        @dblclick="if(!selectMode) { editing = true; editName = '{{.Section.Name | js}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus()) }"
         class="flex-1 font-medium text-stone-700 dark:text-stone-200 text-sm cursor-default"
     >{{.Section.Name}}</span>
 
@@ -27,14 +27,14 @@
     <form
         x-show="editing"
         x-cloak
-        @submit.prevent="htmx.ajax('PUT', '/sections/{{.Section.ID}}', {values: {name: editName}, target: '#manage-sections-list', swap: 'innerHTML'}).then(() => { editing = false; $data.refreshSectionsAndSelects() })"
+        @submit.prevent="$data.markLocalAction('section_updated'); fetch('/sections/{{.Section.ID}}', {method: 'PUT', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'name=' + encodeURIComponent(editName)}).then(() => { editing = false; $data.refreshManageSectionsModal(); $data.refreshSection({{.Section.ID}}); $data.refreshSectionSelectsFromServer() })"
         class="flex-1"
     >
         <input
             x-ref="editInput{{.Section.ID}}"
             x-model="editName"
-            @keydown.escape="editing = false; editName = '{{.Section.Name}}'"
-            @blur="if(editName.trim() && editName !== '{{.Section.Name}}') { htmx.ajax('PUT', '/sections/{{.Section.ID}}', {values: {name: editName}, target: '#manage-sections-list', swap: 'innerHTML'}).then(() => { editing = false; $data.refreshSectionsAndSelects() }) } else { editing = false; editName = '{{.Section.Name}}' }"
+            @keydown.escape="editing = false; editName = '{{.Section.Name | js}}'"
+            @blur="if(editName.trim() && editName !== '{{.Section.Name | js}}') { $data.markLocalAction('section_updated'); fetch('/sections/{{.Section.ID}}', {method: 'PUT', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'name=' + encodeURIComponent(editName)}).then(() => { editing = false; $data.refreshManageSectionsModal(); $data.refreshSection({{.Section.ID}}); $data.refreshSectionSelectsFromServer() }) } else { editing = false; editName = '{{.Section.Name | js}}' }"
             @click.stop
             maxlength="100"
             class="w-full border border-pink-300 dark:border-pink-500 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent bg-white dark:bg-stone-600 text-stone-800 dark:text-stone-100"
@@ -46,7 +46,7 @@
         <div class="flex items-center gap-1">
             <!-- Edit -->
             <button
-                @click.stop="editing = true; editName = '{{.Section.Name}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus())"
+                @click.stop="editing = true; editName = '{{.Section.Name | js}}'; $nextTick(() => $refs.editInput{{.Section.ID}}.focus())"
                 x-show="!editing"
                 class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
                 :title="t('common.edit')"
@@ -58,9 +58,7 @@
 
             <!-- Move up -->
             <button
-                hx-post="/sections/{{.Section.ID}}/move-up"
-                hx-target="#manage-sections-list"
-                hx-swap="innerHTML"
+                @click.stop="$data.markLocalAction('sections_reordered'); fetch('/sections/{{.Section.ID}}/move-up', {method: 'POST'}).then(() => { $data.refreshManageSectionsModal(); $data.reorderSections() })"
                 class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 disabled:opacity-30"
                 {{if eq .Index 0}}disabled{{end}}
             >
@@ -71,9 +69,7 @@
 
             <!-- Move down -->
             <button
-                hx-post="/sections/{{.Section.ID}}/move-down"
-                hx-target="#manage-sections-list"
-                hx-swap="innerHTML"
+                @click.stop="$data.markLocalAction('sections_reordered'); fetch('/sections/{{.Section.ID}}/move-down', {method: 'POST'}).then(() => { $data.refreshManageSectionsModal(); $data.reorderSections() })"
                 class="p-1.5 rounded-md hover:bg-stone-200 dark:hover:bg-stone-600 text-stone-400 dark:text-stone-500 disabled:opacity-30"
                 {{if eq (add .Index 1) .Total}}disabled{{end}}
             >
@@ -84,7 +80,7 @@
 
             <!-- Delete -->
             <button
-                @click="if(confirm(t('confirm.delete_section', {name: '{{.Section.Name}}'}))) { htmx.ajax('DELETE', '/sections/{{.Section.ID}}', {target: '#manage-section-{{.Section.ID}}', swap: 'outerHTML'}).then(() => $data.refreshSectionsAndSelects()) }"
+                @click.stop="if(confirm(t('confirm.delete_section', {name: '{{.Section.Name | js}}'}))) { $data.markLocalAction('section_deleted'); fetch('/sections/{{.Section.ID}}', {method: 'DELETE'}).then(() => { const el = document.getElementById('section-{{.Section.ID}}'); if (el) { Alpine.destroyTree(el); el.remove(); } $data.refreshManageSectionsModal(); $data.refreshSectionSelectsFromServer(); $data.refreshStats() }) }"
                 class="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400"
             >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

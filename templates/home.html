@@ -32,11 +32,11 @@
 
             <!-- Lists grid -->
             <div class="flex flex-wrap gap-3" id="lists-container">
-                {{$totalLists := len .Lists}}
-                {{range $index, $list := .Lists}}
+                {{range $list := .Lists}}
                 <div
+                    id="home-list-{{$list.ID}}"
                     class="relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group w-full"
-                    x-data="{ showActions: false }"
+                    x-data="{ showActions: false, canMoveUp: true, canMoveDown: true }"
                 >
                     <!-- Icon -->
                     <a href="/lists/{{$list.ID}}" class="w-12 h-12 rounded-xl bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/50 transition-colors text-2xl">
@@ -53,7 +53,7 @@
                     <div class="flex items-center gap-3">
                         {{if gt $list.Stats.TotalItems 0}}
                         <div class="w-16 h-2 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden hidden sm:block">
-                            <div class="h-full bg-pink-400 rounded-full transition-all" style="width: {{$list.Stats.Percentage}}%"></div>
+                            <div class="h-full bg-pink-400 rounded-full transition-[width]" style="width: {{$list.Stats.Percentage}}%"></div>
                         </div>
                         <span class="text-sm text-stone-400 dark:text-stone-500 w-10 text-right hidden sm:block">{{$list.Stats.Percentage}}%</span>
                         {{end}}
@@ -61,7 +61,7 @@
                         <!-- Actions button with dropdown -->
                         <div class="relative">
                             <button
-                                @click.stop="showActions = !showActions"
+                                @click.stop="const card = $el.closest('[id^=&quot;home-list-&quot;]'); canMoveUp = !!card.previousElementSibling; canMoveDown = !!card.nextElementSibling; showActions = !showActions"
                                 class="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg transition-colors"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,8 +77,8 @@
                                 @click.outside="showActions = false"
                                 class="absolute right-0 top-full mt-1 bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 shadow-lg py-2 z-10 min-w-40"
                             >
-                                {{if gt $index 0}}
                                 <button
+                                    x-show="canMoveUp"
                                     @click="showActions = false; moveList({{$list.ID}}, 'up')"
                                     class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3"
                                 >
@@ -87,9 +87,8 @@
                                     </svg>
                                     <span x-text="t('actions.move_up')"></span>
                                 </button>
-                                {{end}}
-                                {{if lt (add $index 1) $totalLists}}
                                 <button
+                                    x-show="canMoveDown"
                                     @click="showActions = false; moveList({{$list.ID}}, 'down')"
                                     class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3"
                                 >
@@ -98,7 +97,6 @@
                                     </svg>
                                     <span x-text="t('actions.move_down')"></span>
                                 </button>
-                                {{end}}
                                 <button
                                     @click="showActions = false; editList({{$list.ID}}, '{{$list.Name | js}}', '{{$list.Icon | js}}')"
                                     class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3"
@@ -269,7 +267,7 @@
                         :class="listNameError ? 'border-rose-400 dark:border-rose-500' : 'border-stone-200 dark:border-stone-600'"
                         class="w-full border dark:bg-stone-700 dark:text-stone-100 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                     >
-                    <p x-show="listNameError" x-text="listNameError" class="mt-1.5 text-sm text-rose-500 dark:text-rose-400"></p>
+                    <p x-show="listNameError" x-cloak x-text="listNameError" class="mt-1.5 text-sm text-rose-500 dark:text-rose-400"></p>
                 </div>
 
                 <div class="flex gap-3 pt-2">
@@ -327,7 +325,10 @@
             </div>
 
             <!-- Tab: Account -->
-            <div x-show="settingsTab === 'account'" x-cloak x-transition>
+            <div x-show="settingsTab === 'account'" x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
                 <!-- Theme Selection -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.theme')"></label>
@@ -406,7 +407,7 @@
                         Koffan <span x-text="currentVersion"></span>
                     </div>
                     <!-- Update notification -->
-                    <a x-show="updateAvailable"
+                    <a x-show="updateAvailable" x-cloak
                        :href="releaseUrl"
                        target="_blank"
                        rel="noopener"
@@ -417,7 +418,10 @@
             </div>
 
             <!-- Tab: Data (Import/Export) -->
-            <div x-show="settingsTab === 'data'" x-cloak x-transition>
+            <div x-show="settingsTab === 'data'" x-cloak
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
                 <!-- Export Section -->
                 <div class="mb-6">
                     <h4 class="text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('export.title')"></h4>
@@ -772,12 +776,36 @@ function homePage() {
                 }
                 return;
             }
+            const el = document.getElementById(`home-list-${id}`);
+            if (!el) return;
+            const isUp = direction === 'up';
+            const sibling = isUp ? el.previousElementSibling : el.nextElementSibling;
+            if (!sibling) return;
+
+            // Optimistic DOM swap
+            if (isUp) {
+                el.parentNode.insertBefore(el, sibling);
+            } else {
+                el.parentNode.insertBefore(sibling, el);
+            }
+
             try {
                 const response = await fetch(`/lists/${id}/move-${direction}`, { method: 'POST' });
-                if (response.ok) {
-                    window.location.reload();
+                if (!response.ok) {
+                    // Revert on failure
+                    if (isUp) {
+                        el.parentNode.insertBefore(sibling, el);
+                    } else {
+                        el.parentNode.insertBefore(el, sibling);
+                    }
                 }
             } catch (error) {
+                // Revert on error
+                if (isUp) {
+                    el.parentNode.insertBefore(sibling, el);
+                } else {
+                    el.parentNode.insertBefore(el, sibling);
+                }
                 console.error('Failed to move list:', error);
             }
         },
@@ -798,10 +826,21 @@ function homePage() {
             try {
                 const response = await fetch(`/lists/${id}`, { method: 'DELETE' });
                 if (response.ok) {
-                    window.location.reload();
+                    const el = document.getElementById(`home-list-${id}`);
+                    if (el) {
+                        Alpine.destroyTree(el);
+                        el.remove();
+                    }
+                    // If no lists remain, reload to show onboarding
+                    const container = document.getElementById('lists-container');
+                    if (container && !container.children.length) {
+                        window.location.reload();
+                    }
                 } else {
                     const error = await response.text();
-                    alert(error);
+                    if (window.Toast) {
+                        window.Toast.show(error, 'warning');
+                    }
                 }
             } catch (error) {
                 console.error('Failed to delete list:', error);
@@ -877,12 +916,30 @@ function homePage() {
                 }
 
                 if (response.ok) {
+                    if (this.editingList) {
+                        // Update existing card in-place
+                        const el = document.getElementById(`home-list-${this.editingList.id}`);
+                        if (el) {
+                            const nameEl = el.querySelector('.font-medium');
+                            if (nameEl) nameEl.textContent = name;
+                            const iconEl = el.querySelector('.text-2xl span');
+                            if (iconEl) iconEl.textContent = icon;
+                        }
+                    } else {
+                        // New list - parse response to get ID, then build card
+                        const html = await response.text();
+                        const match = html.match(/id="list-(\d+)"/);
+                        const newId = match ? match[1] : Date.now();
+                        const container = document.getElementById('lists-container');
+                        if (container) {
+                            container.insertAdjacentHTML('beforeend', this.buildListCardHtml(newId, name, icon));
+                        }
+                    }
                     this.showNewListModal = false;
                     this.editingList = null;
                     this.listName = '';
                     this.listNameError = '';
                     this.selectedIcon = '🛒';
-                    window.location.reload();
                 } else {
                     const errorText = await response.text();
                     if (errorText === 'list_name_exists') {
@@ -921,6 +978,57 @@ function homePage() {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        },
+
+        buildListCardHtml(id, name, icon) {
+            const eName = this.escapeHtml(name);
+            const eIcon = this.escapeHtml(icon);
+            const completedText = this.t('list.completed');
+            return `
+            <div id="home-list-${id}"
+                class="relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 p-4 flex items-center gap-4 hover:border-pink-200 dark:hover:border-pink-700 hover:shadow-md transition-all group w-full"
+                x-data="{ showActions: false }">
+                <a href="/lists/${id}" class="w-12 h-12 rounded-xl bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/50 transition-colors text-2xl">
+                    <span style="filter: grayscale(100%) sepia(50%) hue-rotate(-30deg) saturate(300%);">${eIcon}</span>
+                </a>
+                <a href="/lists/${id}" class="flex-1 min-w-0">
+                    <p class="font-medium text-stone-800 dark:text-stone-100 truncate">${eName}</p>
+                    <p class="text-sm text-stone-400 dark:text-stone-500">0/0 ${completedText}</p>
+                </a>
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <button @click.stop="showActions = !showActions" class="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                            </svg>
+                        </button>
+                        <div x-show="showActions" x-cloak x-transition @click.outside="showActions = false"
+                            class="absolute right-0 top-full mt-1 bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 shadow-lg py-2 z-10 min-w-40">
+                            <button @click="showActions = false; moveList(${id}, 'up')" class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                                <span>${this.t('actions.move_up')}</span>
+                            </button>
+                            <button @click="showActions = false; moveList(${id}, 'down')" class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <span>${this.t('actions.move_down')}</span>
+                            </button>
+                            <button @click="showActions = false; editList(${id}, '${eName.replace(/'/g, "\\'")}', '${eIcon}')" class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <span>${this.t('common.edit')}</span>
+                            </button>
+                            <button @click="showActions = false; deleteList(${id}, '${eName.replace(/'/g, "\\'")}')" class="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span>${this.t('common.delete')}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <a href="/lists/${id}" class="p-1">
+                        <svg class="w-5 h-5 text-stone-300 dark:text-stone-600 group-hover:text-pink-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>`;
         },
 
         async applyTemplate(templateId) {

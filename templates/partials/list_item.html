@@ -6,9 +6,7 @@
 >
     <!-- Active indicator / Activate button -->
     <button
-        hx-post="/lists/{{.List.ID}}/activate"
-        hx-target="#lists-container"
-        hx-swap="innerHTML"
+        @click="$dispatch('list-activate', { id: {{.List.ID}} })"
         class="flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors {{if .List.IsActive}}bg-pink-400 border-pink-400{{else}}border-stone-300 hover:border-pink-300{{end}}"
         {{if .List.IsActive}}disabled{{end}}
     >
@@ -29,11 +27,11 @@
 
         <!-- Edit mode -->
         <form
-            x-show="editing"
-            hx-put="/lists/{{.List.ID}}"
-            hx-target="#list-{{.List.ID}}"
-            hx-swap="outerHTML"
-            @submit="editing = false"
+            x-show="editing" x-cloak
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            @submit.prevent="$dispatch('list-rename', { id: {{.List.ID}}, name: editName.trim() }); editing = false"
             class="flex items-center gap-2"
         >
             <input
@@ -71,9 +69,7 @@
 
         <!-- Move up -->
         <button
-            hx-post="/lists/{{.List.ID}}/move-up"
-            hx-target="#lists-container"
-            hx-swap="innerHTML"
+            @click="$dispatch('list-move', { id: {{.List.ID}}, direction: 'up' })"
             class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,9 +79,7 @@
 
         <!-- Move down -->
         <button
-            hx-post="/lists/{{.List.ID}}/move-down"
-            hx-target="#lists-container"
-            hx-swap="innerHTML"
+            @click="$dispatch('list-move', { id: {{.List.ID}}, direction: 'down' })"
             class="p-1.5 text-stone-400 hover:text-stone-600 rounded-lg transition-colors"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,10 +90,7 @@
         <!-- Delete (only if not active and not the only list) -->
         {{if not .List.IsActive}}
         <button
-            hx-delete="/lists/{{.List.ID}}"
-            hx-target="#list-{{.List.ID}}"
-            hx-swap="outerHTML"
-            hx-confirm="Usunąć listę '{{.List.Name}}'? Wszystkie produkty zostaną utracone."
+            @click="$dispatch('list-delete', { id: {{.List.ID}}, name: '{{.List.Name}}' })"
             class="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg transition-colors"
         >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

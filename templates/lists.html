@@ -1,5 +1,10 @@
 {{define "lists"}}
-<div x-data="listsPage()" x-init="init()" class="min-h-screen pb-24 bg-stone-50">
+<div x-data="listsPage()" x-init="init()"
+     @list-rename.window="renameList($event.detail)"
+     @list-delete.window="deleteList($event.detail)"
+     @list-activate.window="activateList($event.detail)"
+     @list-move.window="moveList($event.detail)"
+     class="min-h-screen pb-24 bg-stone-50">
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-stone-50 pt-3">
         <div class="container mx-auto max-w-4xl px-4">
@@ -18,11 +23,7 @@
         <!-- Add new list form -->
         <div class="bg-white rounded-2xl border border-stone-200 p-5 mb-6">
             <form
-                hx-post="/lists"
-                hx-target="#lists-container"
-                hx-swap="beforeend"
-                hx-on::after-request="if(event.detail.successful) { this.reset(); this.querySelector('.error-msg')?.remove(); }"
-                hx-on::response-error="handleListFormError(this, event.detail.xhr)"
+                @submit.prevent="createList($el)"
                 class="flex flex-col gap-3"
             >
                 <div class="flex items-center gap-3">
@@ -210,38 +211,15 @@
 </div>
 
 <script>
-function handleListFormError(form, xhr) {
-    // Remove any existing error message
-    form.querySelector('.error-msg')?.remove();
-
-    // Get error text from response
-    let errorText = xhr.responseText || 'Error';
-
-    // Translate known error codes
-    if (errorText === 'list_name_exists') {
-        errorText = window.getTranslation?.('lists.name_exists') || 'Lista o tej nazwie już istnieje';
-    } else if (errorText === 'This name is reserved for system use') {
-        errorText = window.getTranslation?.('common.reserved_name') || 'Ta nazwa jest zarezerwowana dla systemu';
-    }
-
-    // Create and insert error message
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-msg text-sm text-red-500 mt-2';
-    errorDiv.textContent = errorText;
-    form.appendChild(errorDiv);
-}
-
 function listsPage() {
     return {
         showCreateTemplate: false,
         showCreateFromList: false,
 
         t(key) {
-            // Use the global translation function from app.js
             if (typeof window.getTranslation === 'function') {
                 return window.getTranslation(key);
             }
-            // Fallback
             const translations = {{toJSON .Translations}};
             const lang = localStorage.getItem('koffan-lang') || '{{.DefaultLang}}';
             const keys = key.split('.');
@@ -252,8 +230,142 @@ function listsPage() {
             return result || key;
         },
 
-        init() {
-            // Initialize any needed state
+        init() {},
+
+        showFormError(form, errorText) {
+            form.querySelector('.error-msg')?.remove();
+            if (errorText === 'list_name_exists') {
+                errorText = this.t('lists.name_exists');
+            } else if (errorText === 'This name is reserved for system use') {
+                errorText = this.t('common.reserved_name');
+            }
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-msg text-sm text-red-500 mt-2';
+            errorDiv.textContent = errorText;
+            form.appendChild(errorDiv);
+        },
+
+        async createList(form) {
+            form.querySelector('.error-msg')?.remove();
+            const name = form.querySelector('input[name="name"]').value.trim();
+            if (!name) return;
+            try {
+                const resp = await fetch('/lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `name=${encodeURIComponent(name)}`
+                });
+                if (resp.ok) {
+                    const html = await resp.text();
+                    const container = document.getElementById('lists-container');
+                    container.insertAdjacentHTML('beforeend', html.trim());
+                    form.reset();
+                } else {
+                    const errorText = await resp.text();
+                    this.showFormError(form, errorText);
+                }
+            } catch (e) {
+                console.error('[Lists] createList failed:', e);
+            }
+        },
+
+        async renameList(detail) {
+            if (!detail.name) return;
+            try {
+                const resp = await fetch(`/lists/${detail.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `name=${encodeURIComponent(detail.name)}`
+                });
+                if (resp.ok) {
+                    const html = await resp.text();
+                    const el = document.getElementById(`list-${detail.id}`);
+                    if (el) {
+                        el.insertAdjacentHTML('afterend', html.trim());
+                        Alpine.destroyTree(el);
+                        el.remove();
+                    }
+                }
+            } catch (e) {
+                console.error('[Lists] renameList failed:', e);
+            }
+        },
+
+        async deleteList(detail) {
+            const msg = this.t('lists.delete_confirm').replace('{{ "{{" }}name{{ "}}" }}', detail.name);
+            if (!confirm(msg)) return;
+            try {
+                const resp = await fetch(`/lists/${detail.id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    const el = document.getElementById(`list-${detail.id}`);
+                    if (el) {
+                        Alpine.destroyTree(el);
+                        el.remove();
+                    }
+                }
+            } catch (e) {
+                console.error('[Lists] deleteList failed:', e);
+            }
+        },
+
+        async activateList(detail) {
+            try {
+                const resp = await fetch(`/lists/${detail.id}/activate`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!resp.ok) return;
+                const html = await resp.text();
+                // Parse response into individual list items and replace each one
+                const temp = document.createElement('div');
+                temp.innerHTML = html.trim();
+                const newItems = temp.querySelectorAll('[id^="list-"]');
+                newItems.forEach(newItem => {
+                    const oldItem = document.getElementById(newItem.id);
+                    if (oldItem) {
+                        oldItem.insertAdjacentHTML('afterend', newItem.outerHTML);
+                        Alpine.destroyTree(oldItem);
+                        oldItem.remove();
+                    }
+                });
+            } catch (e) {
+                console.error('[Lists] activateList failed:', e);
+            }
+        },
+
+        async moveList(detail) {
+            const el = document.getElementById(`list-${detail.id}`);
+            if (!el) return;
+            const isUp = detail.direction === 'up';
+            const sibling = isUp ? el.previousElementSibling : el.nextElementSibling;
+            if (!sibling) return;
+
+            // Optimistic DOM swap
+            if (isUp) {
+                el.parentNode.insertBefore(el, sibling);
+            } else {
+                el.parentNode.insertBefore(sibling, el);
+            }
+
+            try {
+                const resp = await fetch(`/lists/${detail.id}/move-${detail.direction}`, { method: 'POST' });
+                if (!resp.ok) {
+                    // Revert on failure
+                    if (isUp) {
+                        el.parentNode.insertBefore(sibling, el);
+                    } else {
+                        el.parentNode.insertBefore(el, sibling);
+                    }
+                }
+            } catch (e) {
+                // Revert on error
+                if (isUp) {
+                    el.parentNode.insertBefore(sibling, el);
+                } else {
+                    el.parentNode.insertBefore(el, sibling);
+                }
+                console.error('[Lists] moveList failed:', e);
+            }
         }
     };
 }

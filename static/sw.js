@@ -1,5 +1,5 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v9';
+const CACHE_VERSION = 'koffan-v16';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 

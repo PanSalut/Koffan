@@ -30,7 +30,10 @@
 
             <!-- Edit mode -->
             <form
-                x-show="editing"
+                x-show="editing" x-cloak
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
                 hx-put="/templates/{{.Template.ID}}"
                 hx-target="#template-{{.Template.ID}}"
                 hx-swap="outerHTML"
@@ -105,7 +108,7 @@
 
     <!-- Items (expanded) -->
     <div
-        x-show="expanded"
+        x-show="expanded" x-cloak
         x-transition:enter="transition ease-out duration-150"
         x-transition:enter-start="opacity-0 -translate-y-2"
         x-transition:enter-end="opacity-100 translate-y-0"

@@ -212,8 +212,8 @@ func ApplyTemplate(c *fiber.Ctx) error {
 		"list_id":     activeList.ID,
 	})
 
-	// Trigger a full refresh
-	c.Set("HX-Trigger", "refreshList, refresh")
+	// Trigger full refresh - template adds items to multiple sections
+	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true","refreshList":"true"}`)
 	return c.SendString("")
 }
 

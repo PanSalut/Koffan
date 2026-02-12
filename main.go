@@ -176,6 +176,7 @@ func main() {
 
 	// Sections API
 	app.Get("/sections/list", handlers.GetSectionsListForModal)
+	app.Get("/sections/:id/html", handlers.GetSectionHTML)
 	app.Post("/sections", handlers.CreateSection)
 	app.Put("/sections/:id", handlers.UpdateSection)
 	app.Delete("/sections/:id", handlers.DeleteSection)
@@ -205,6 +206,7 @@ func main() {
 	app.Post("/templates/from-list", handlers.CreateTemplateFromList)
 
 	// Items API
+	app.Get("/items/:id/html", handlers.GetItemHTML)
 	app.Post("/items", handlers.CreateItem)
 	app.Post("/items/delete-completed", handlers.DeleteCompletedItems)
 	app.Put("/items/:id", handlers.UpdateItem)

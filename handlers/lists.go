@@ -218,14 +218,19 @@ func SetActiveList(c *fiber.Ctx) error {
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("list_activated", map[string]int64{"id": id})
 
-	// For regular GET requests (not HTMX), redirect to selected list
-	if c.Get("HX-Request") == "" {
+	// Check if this is an AJAX request (HTMX or fetch)
+	isAjax := c.Get("HX-Request") != "" || c.Get("X-Requested-With") != ""
+	if !isAjax {
 		return c.Redirect(fmt.Sprintf("/lists/%d", id))
 	}
 
-	// Check if this is from the main page (needs redirect) or lists page
-	if c.Get("HX-Current-URL") != "" && !contains(c.Get("HX-Current-URL"), "/lists") {
-		c.Set("HX-Redirect", "/")
+	// Check if this is from the lists management page or main page
+	currentURL := c.Get("HX-Current-URL")
+	referer := c.Get("Referer")
+	isListsPage := contains(currentURL, "/lists") || contains(referer, "/lists")
+
+	if !isListsPage {
+		c.Set("HX-Redirect", fmt.Sprintf("/lists/%d", id))
 		return c.SendString("")
 	}
 
@@ -245,9 +250,8 @@ func MoveListUp(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move list")
 	}
 
-	// Broadcast and return full lists
 	BroadcastUpdate("lists_reordered", nil)
-	return returnAllLists(c)
+	return c.SendStatus(200)
 }
 
 // MoveListDown moves a list down in order
@@ -262,9 +266,8 @@ func MoveListDown(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Failed to move list")
 	}
 
-	// Broadcast and return full lists
 	BroadcastUpdate("lists_reordered", nil)
-	return returnAllLists(c)
+	return c.SendStatus(200)
 }
 
 // Helper to return all lists as HTML partials
