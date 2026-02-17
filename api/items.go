@@ -93,6 +93,47 @@ func CreateItem(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check if item with same name already exists in this section
+	existing, findErr := db.FindItemByNameInSection(req.SectionID, req.Name)
+	if findErr != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to check existing items",
+		})
+	}
+
+	if existing != nil {
+		if existing.Completed {
+			// Reactivate: uncheck and update description/quantity if provided
+			desc := req.Description
+			if desc == "" {
+				desc = existing.Description
+			}
+			qty := req.Quantity
+			if qty == 0 {
+				qty = existing.Quantity
+			}
+			item, err := db.ReactivateItem(existing.ID, desc, qty)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+					Error:   "reactivate_failed",
+					Message: "Failed to reactivate item",
+				})
+			}
+			db.SaveItemHistory(req.Name, req.SectionID)
+			handlers.BroadcastUpdate("item_toggled", item)
+			return c.JSON(fiber.Map{
+				"item":        item,
+				"reactivated": true,
+			})
+		}
+		// Item already active
+		return c.JSON(fiber.Map{
+			"item":           existing,
+			"already_active": true,
+		})
+	}
+
 	item, err := db.CreateItem(req.SectionID, req.Name, req.Description, req.Quantity)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{

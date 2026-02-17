@@ -176,6 +176,31 @@ func MoveSectionDown(c *fiber.Ctx) error {
 	return c.SendStatus(200)
 }
 
+// UpdateSectionSortMode updates the sort mode of a section
+func UpdateSectionSortMode(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+
+	sortMode := c.FormValue("sort_mode")
+	if sortMode == "" {
+		return c.Status(400).SendString("sort_mode is required")
+	}
+
+	section, err := db.UpdateSectionSortMode(id, sortMode)
+	if err != nil {
+		return c.Status(500).SendString("Failed to update sort mode")
+	}
+
+	BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode})
+
+	return c.Render("partials/section", fiber.Map{
+		"Section":  section,
+		"Sections": getSectionsForDropdown(),
+	}, "")
+}
+
 // Helper to get sections for dropdown
 func getSectionsForDropdown() []db.Section {
 	sections, _ := db.GetAllSections()

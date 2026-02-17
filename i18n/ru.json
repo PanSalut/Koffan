@@ -41,7 +41,13 @@
     "no_items": "Список пуст",
     "add_first_item": "Добавьте ваш первый товар",
     "quick_add": "Быстро добавить товар в этот раздел",
-    "more_options": "Детали"
+    "more_options": "Детали",
+    "check_all": "Отметить все",
+    "uncheck_all": "Снять отметки",
+    "sort_mode": "Сортировка",
+    "sort_manual": "Вручную",
+    "sort_alphabetical": "А до Я",
+    "sort_alphabetical_desc": "Я до А"
   },
   "sections": {
     "title": "Разделы",

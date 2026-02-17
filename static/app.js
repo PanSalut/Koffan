@@ -931,6 +931,23 @@ function shoppingList() {
                         this.refreshList();
                         this.refreshStats();
                         break;
+                    case 'section_sort_changed':
+                        if (!this.isLocalAction('section_sort_changed')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
+                        break;
+                    case 'section_items_checked':
+                        if (!this.isLocalAction('section_items_checked')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
+                        this.refreshStats();
+                        break;
+                    case 'section_items_unchecked':
+                        if (!this.isLocalAction('section_items_unchecked')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
+                        this.refreshStats();
+                        break;
                     case 'completed_items_deleted':
                         if (!this.isLocalAction('completed_items_deleted')) {
                             this.removeAllCompletedItemsFromDOM();
@@ -1008,6 +1025,47 @@ function shoppingList() {
 
                 this._isRefreshing = false;
             }, 100); // 100ms debounce
+        },
+
+        async cycleSortMode(sectionId, currentMode) {
+            const modes = ['manual', 'alphabetical', 'alphabetical_desc'];
+            const currentIndex = modes.indexOf(currentMode);
+            const nextMode = modes[(currentIndex + 1) % modes.length];
+
+            this.markLocalAction('section_sort_changed');
+
+            try {
+                const response = await fetch(`/sections/${sectionId}/sort-mode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `sort_mode=${encodeURIComponent(nextMode)}`
+                });
+                if (response.ok) {
+                    await this.refreshSection(sectionId);
+                }
+            } catch (error) {
+                console.error('[SortMode] Failed:', error);
+            }
+        },
+
+        async toggleAllItems(sectionId) {
+            const section = document.getElementById(`section-${sectionId}`);
+            if (!section) return;
+
+            const hasActive = section.querySelector('.active-items [data-item-id]') !== null;
+            const action = hasActive ? 'check-all' : 'uncheck-all';
+
+            this.markLocalAction(action === 'check-all' ? 'section_items_checked' : 'section_items_unchecked');
+
+            try {
+                const response = await fetch(`/sections/${sectionId}/${action}`, { method: 'POST' });
+                if (response.ok) {
+                    await this.refreshSection(sectionId);
+                    this.refreshStats();
+                }
+            } catch (error) {
+                console.error('[ToggleAll] Failed:', error);
+            }
         },
 
         async refreshSection(sectionId) {
@@ -2113,21 +2171,53 @@ function shoppingList() {
             if (!this.isOnline) {
                 const tempId = 'offline-' + Date.now();
 
+                // Check if item already exists in completed items - reactivate instead of duplicate
+                const sectionEl = document.getElementById(`section-${sectionId}`);
+                if (sectionEl) {
+                    const completedItems = sectionEl.querySelectorAll('.completed-items [id^="item-"]');
+                    for (const el of completedItems) {
+                        const nameEl = el.querySelector('.item-name, [data-item-name]');
+                        const itemName = nameEl?.textContent?.trim() || nameEl?.dataset?.itemName || '';
+                        if (itemName.toLowerCase() === name.toLowerCase()) {
+                            // Move from completed to active optimistically
+                            const activeContainer = sectionEl.querySelector('.active-items');
+                            if (activeContainer) {
+                                el.remove();
+                                // Fetch fresh HTML for this item as active
+                                this.markLocalAction('item_toggled');
+                            }
+                            // Queue toggle for sync
+                            const itemId = el.id.replace('item-', '');
+                            await window.offlineStorage.queueAction({
+                                type: 'create_item',
+                                url: '/items',
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`,
+                                tempId: tempId
+                            });
+                            this.closeQuickAdd();
+                            window.Toast?.show(t('offline.queued'), 'info', 2000);
+                            return;
+                        }
+                    }
+                }
+
                 // Create optimistic item HTML
                 const itemHtml = createOfflineItemHtml(tempId, name, '', sectionId);
 
                 // Find section and add item
                 document.getElementById('empty-no-products')?.remove();
-                const sectionEl = document.getElementById(`section-${sectionId}`);
-                if (sectionEl) {
-                    sectionEl.classList.remove('hidden');
-                    const itemsContainer = sectionEl.querySelector('.active-items');
+                const offlineSectionEl = document.getElementById(`section-${sectionId}`);
+                if (offlineSectionEl) {
+                    offlineSectionEl.classList.remove('hidden');
+                    const itemsContainer = offlineSectionEl.querySelector('.active-items');
                     if (itemsContainer) {
                         itemsContainer.insertAdjacentHTML('afterbegin', itemHtml);
                     }
 
                     // Update section counter
-                    const counter = sectionEl.querySelector('.section-counter');
+                    const counter = offlineSectionEl.querySelector('.section-counter');
                     if (counter) {
                         const parts = counter.textContent.split('/');
                         const completed = parseInt(parts[0]) || 0;
@@ -2169,21 +2259,47 @@ function shoppingList() {
                 }, 'create_item');
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            // Alpine's mutation observer auto-initializes new elements
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    // Check if item was reactivated (moved from completed to active)
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        // Item was unchecked - refresh section to move it from completed to active
+                        await this.refreshSection(sectionId);
+                        this.closeQuickAdd();
+                        this.refreshStats();
+                        this.$nextTick(() => this.initMobileSortable());
+                    } else if (alreadyActive) {
+                        // Item already exists and is active - flash it
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        document.getElementById('empty-no-products')?.remove();
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                        this.closeQuickAdd();
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                // Alpine's mutation observer auto-initializes new elements
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
+                        this.closeQuickAdd();
+                        this.refreshStats();
+                        this.$nextTick(() => this.initMobileSortable());
                     }
-                    this.closeQuickAdd();
-                    this.refreshStats();
-                    this.$nextTick(() => this.initMobileSortable());
                 }
             } catch (error) {
                 console.error('[QuickAdd] Failed to add item:', error);
@@ -2207,16 +2323,35 @@ function shoppingList() {
                 });
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        await this.refreshSection(sectionId);
+                    } else if (alreadyActive) {
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        document.getElementById('empty-no-products')?.remove();
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
                     }
                     // Clear form but keep section selected
                     const sectionValue = form.querySelector('select[name="section_id"]').value;
@@ -2251,16 +2386,35 @@ function shoppingList() {
                 });
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        await this.refreshSection(sectionId);
+                    } else if (alreadyActive) {
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        document.getElementById('empty-no-products')?.remove();
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
                     }
 
                     if (!this.addMore) {
@@ -2468,7 +2622,16 @@ function shoppingList() {
                 container._sortableInstance.destroy();
             }
             const sectionId = container.dataset.sectionId;
+            // Disable drag when section uses alphabetical sorting
+            const sectionEl = container.closest('[data-sort-mode]');
+            const sortMode = sectionEl?.dataset?.sortMode || 'manual';
+            const isDragDisabled = sortMode !== 'manual';
+            // Hide/show drag handles based on sort mode
+            const dragHandles = container.querySelectorAll('.drag-handle');
+            dragHandles.forEach(h => h.style.display = isDragDisabled ? 'none' : '');
+
             container._sortableInstance = new Sortable(container, {
+                disabled: isDragDisabled,
                 animation: 200,
                 easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 handle: '.drag-handle',

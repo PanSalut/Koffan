@@ -9,7 +9,7 @@
 {{if gt $totalItems 0}}{{$percentage = div (mul $completedItems 100) $totalItems}}{{end}}
 
 <!-- Always render section for offline support - hidden when empty via CSS -->
-<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}" x-show="isSectionVisible({{.Section.ID}})" x-transition>
+<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}" data-sort-mode="{{.Section.SortMode}}" x-show="isSectionVisible({{.Section.ID}})" x-transition>
     <!-- Section Header -->
     <div class="px-4 py-3 border-b border-stone-100 dark:border-stone-700 flex items-center justify-between"
          x-data="{ editingSection: false, editSectionName: '{{.Section.Name | js}}' }">
@@ -43,6 +43,25 @@
                 </svg>
             </span>
             {{end}}
+            <!-- Check/Uncheck all button -->
+            {{if gt $totalItems 0}}
+            <button
+                @click="toggleAllItems({{.Section.ID}})"
+                x-show="!editingSection"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-colors"
+                :title="{{if gt $activeItems 0}}t('items.check_all'){{else}}t('items.uncheck_all'){{end}}"
+            >
+                {{if gt $activeItems 0}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{else}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                {{end}}
+            </button>
+            {{end}}
             <!-- Edit section name button -->
             <button
                 @click="editingSection = true; editSectionName = '{{.Section.Name | js}}'; $nextTick(() => $refs.sectionInput{{.Section.ID}}.focus())"
@@ -53,6 +72,27 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
+            </button>
+            <!-- Sort mode button -->
+            <button
+                @click="cycleSortMode({{.Section.ID}}, '{{.Section.SortMode}}')"
+                x-show="!editingSection"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-colors {{if ne .Section.SortMode "manual"}}text-pink-500{{end}}"
+                :title="t('items.sort_mode')"
+            >
+                {{if eq .Section.SortMode "alphabetical"}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4-4m-4 4V4"></path>
+                </svg>
+                {{else if eq .Section.SortMode "alphabetical_desc"}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"></path>
+                </svg>
+                {{else}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                {{end}}
             </button>
             <!-- Quick add toggle button -->
             <button

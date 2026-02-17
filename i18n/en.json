@@ -41,7 +41,13 @@
     "no_items": "No products",
     "add_first_item": "Add your first product",
     "quick_add": "Quick add to section",
-    "more_options": "More options"
+    "more_options": "More options",
+    "check_all": "Check all",
+    "uncheck_all": "Uncheck all",
+    "sort_mode": "Sort order",
+    "sort_manual": "Manual",
+    "sort_alphabetical": "A to Z",
+    "sort_alphabetical_desc": "Z to A"
   },
   "sections": {
     "title": "Sections",

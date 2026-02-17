@@ -40,7 +40,13 @@
     "no_items": "Немає продуктів",
     "add_first_item": "Додай перший продукт",
     "quick_add": "Швидко додати до секції",
-    "more_options": "Більше опцій"
+    "more_options": "Більше опцій",
+    "check_all": "Позначити все",
+    "uncheck_all": "Зняти позначки",
+    "sort_mode": "Сортування",
+    "sort_manual": "Вручну",
+    "sort_alphabetical": "А до Я",
+    "sort_alphabetical_desc": "Я до А"
   },
   "sections": {
     "title": "Секції",

@@ -40,7 +40,13 @@
     "no_items": "Inga varor",
     "add_first_item": "Lägg till första varan",
     "quick_add": "Snabbinläggning till avdelning",
-    "more_options": "Fler alternativ"
+    "more_options": "Fler alternativ",
+    "check_all": "Markera alla",
+    "uncheck_all": "Avmarkera alla",
+    "sort_mode": "Sortering",
+    "sort_manual": "Manuell",
+    "sort_alphabetical": "A till Ö",
+    "sort_alphabetical_desc": "Ö till A"
   },
   "sections": {
     "title": "Avdelning",

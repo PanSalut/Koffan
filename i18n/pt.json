@@ -40,7 +40,13 @@
     "no_items": "Sem produtos",
     "add_first_item": "Adicione seu primeiro produto",
     "quick_add": "Adicionar rápido à secção",
-    "more_options": "Mais opções"
+    "more_options": "Mais opções",
+    "check_all": "Marcar tudo",
+    "uncheck_all": "Desmarcar tudo",
+    "sort_mode": "Ordenação",
+    "sort_manual": "Manual",
+    "sort_alphabetical": "A a Z",
+    "sort_alphabetical_desc": "Z a A"
   },
   "sections": {
     "title": "Secções",

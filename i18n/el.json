@@ -40,7 +40,13 @@
     "no_items": "Δεν υπάρχουν προϊόντα",
     "add_first_item": "Προσθέστε το πρώτο σας προϊόν",
     "quick_add": "Γρήγορη προσθήκη σε ενότητα",
-    "more_options": "Περισσότερες επιλογές"
+    "more_options": "Περισσότερες επιλογές",
+    "check_all": "Επιλογή όλων",
+    "uncheck_all": "Αποεπιλογή όλων",
+    "sort_mode": "Ταξινόμηση",
+    "sort_manual": "Χειροκίνητη",
+    "sort_alphabetical": "Α έως Ω",
+    "sort_alphabetical_desc": "Ω έως Α"
   },
   "sections": {
     "title": "Ενότητες",

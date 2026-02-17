@@ -14,6 +14,7 @@ type Section struct {
 	ListID    int64     `json:"list_id"`
 	Name      string    `json:"name"`
 	SortOrder int       `json:"sort_order"`
+	SortMode  string    `json:"sort_mode"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt int64     `json:"updated_at"`
 	Items     []Item    `json:"items"`
@@ -315,7 +316,7 @@ func GetAllSections() ([]Section, error) {
 // GetSectionsByList returns all sections for a specific list
 func GetSectionsByList(listID int64) ([]Section, error) {
 	rows, err := DB.Query(`
-		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
 		FROM sections
 		WHERE list_id = ?
 		ORDER BY sort_order ASC
@@ -328,7 +329,7 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 	var sections []Section
 	for rows.Next() {
 		var s Section
-		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -344,7 +345,7 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 // getAllSectionsGlobal returns all sections (fallback, used during migration)
 func getAllSectionsGlobal() ([]Section, error) {
 	rows, err := DB.Query(`
-		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
 		FROM sections
 		ORDER BY sort_order ASC
 	`)
@@ -356,7 +357,7 @@ func getAllSectionsGlobal() ([]Section, error) {
 	var sections []Section
 	for rows.Next() {
 		var s Section
-		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -372,9 +373,9 @@ func getAllSectionsGlobal() ([]Section, error) {
 func GetSectionByID(id int64) (*Section, error) {
 	var s Section
 	err := DB.QueryRow(`
-		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
 		FROM sections WHERE id = ?
-	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -412,6 +413,19 @@ func CreateSectionForList(listID int64, name string) (*Section, error) {
 
 func UpdateSection(id int64, name string) (*Section, error) {
 	_, err := DB.Exec(`UPDATE sections SET name = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, name, id)
+	if err != nil {
+		return nil, err
+	}
+	return GetSectionByID(id)
+}
+
+// UpdateSectionSortMode updates the sort mode for a section
+func UpdateSectionSortMode(id int64, sortMode string) (*Section, error) {
+	// Validate sort mode
+	if sortMode != "manual" && sortMode != "alphabetical" && sortMode != "alphabetical_desc" {
+		return nil, fmt.Errorf("invalid sort mode: %s", sortMode)
+	}
+	_, err := DB.Exec(`UPDATE sections SET sort_mode = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, sortMode, id)
 	if err != nil {
 		return nil, err
 	}
@@ -505,13 +519,54 @@ func MoveSectionDown(id int64) error {
 
 // ==================== ITEMS ====================
 
+// FindItemByNameInSection finds an existing item by name in a section (case-insensitive)
+func FindItemByNameInSection(sectionID int64, name string) (*Item, error) {
+	var i Item
+	err := DB.QueryRow(`
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
+		FROM items
+		WHERE section_id = ? AND LOWER(name) = LOWER(?)
+		LIMIT 1
+	`, sectionID, name).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &i, nil
+}
+
+// ReactivateItem unchecks a completed item and optionally updates description/quantity
+func ReactivateItem(id int64, description string, quantity int) (*Item, error) {
+	_, err := DB.Exec(`
+		UPDATE items SET completed = FALSE, description = ?, quantity = ?, updated_at = strftime('%s', 'now')
+		WHERE id = ?
+	`, description, quantity, id)
+	if err != nil {
+		return nil, err
+	}
+	return GetItemByID(id)
+}
+
 func GetItemsBySection(sectionID int64) ([]Item, error) {
-	rows, err := DB.Query(`
+	// Check section sort mode
+	var sortMode string
+	DB.QueryRow("SELECT COALESCE(sort_mode, 'manual') FROM sections WHERE id = ?", sectionID).Scan(&sortMode)
+
+	orderClause := "completed ASC, sort_order ASC"
+	if sortMode == "alphabetical" {
+		orderClause = "completed ASC, name COLLATE NOCASE ASC"
+	} else if sortMode == "alphabetical_desc" {
+		orderClause = "completed ASC, name COLLATE NOCASE DESC"
+	}
+
+	rows, err := DB.Query(fmt.Sprintf(`
 		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 		FROM items
 		WHERE section_id = ?
-		ORDER BY completed ASC, sort_order ASC
-	`, sectionID)
+		ORDER BY %s
+	`, orderClause), sectionID)
 	if err != nil {
 		return nil, err
 	}
@@ -527,6 +582,30 @@ func GetItemsBySection(sectionID int64) ([]Item, error) {
 		items = append(items, i)
 	}
 	return items, nil
+}
+
+// CheckAllItems marks all active items in a section as completed
+func CheckAllItems(sectionID int64) (int64, error) {
+	result, err := DB.Exec(`
+		UPDATE items SET completed = TRUE, updated_at = strftime('%s', 'now')
+		WHERE section_id = ? AND completed = FALSE
+	`, sectionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+// UncheckAllItems marks all completed items in a section as active
+func UncheckAllItems(sectionID int64) (int64, error) {
+	result, err := DB.Exec(`
+		UPDATE items SET completed = FALSE, updated_at = strftime('%s', 'now')
+		WHERE section_id = ? AND completed = TRUE
+	`, sectionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 func GetItemByID(id int64) (*Item, error) {
@@ -1573,9 +1652,9 @@ func CreateSectionForListTx(tx *sql.Tx, listID int64, name string, sortOrder int
 
 	var s Section
 	err = tx.QueryRow(`
-		SELECT id, list_id, name, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
 		FROM sections WHERE id = ?
-	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.CreatedAt, &s.UpdatedAt)
+	`, id).Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
