@@ -1171,6 +1171,11 @@ function shoppingList() {
 
             this.refreshStats();
             this.$nextTick(() => this.initMobileSortable());
+
+            const toSortMode = toSection?.dataset?.sortMode || 'manual';
+            if (toSortMode !== 'manual') {
+                this.$nextTick(() => this.refreshSection(parseInt(toSectionId)));
+            }
         },
 
         async refreshSectionsAndSelects() {
@@ -2631,7 +2636,7 @@ function shoppingList() {
             dragHandles.forEach(h => h.style.display = isDragDisabled ? 'none' : '');
 
             container._sortableInstance = new Sortable(container, {
-                disabled: isDragDisabled,
+                sort: !isDragDisabled,
                 animation: 200,
                 easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 handle: '.drag-handle',
@@ -2771,6 +2776,12 @@ function shoppingList() {
                     this.updateSectionCounter(toSection);
                 }
                 this.refreshStats();
+
+                const toSectionEl = document.getElementById(`section-${toSectionId}`);
+                const toSortMode = toSectionEl?.dataset?.sortMode || 'manual';
+                if (toSortMode !== 'manual') {
+                    this.$nextTick(() => this.refreshSection(parseInt(toSectionId)));
+                }
             } catch (error) {
                 console.error('Failed to move item to section:', error);
                 window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
