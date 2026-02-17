@@ -69,6 +69,61 @@ window.handleSectionFormError = function(form, xhr) {
     form.appendChild(errorDiv);
 };
 
+// Check and update all empty states (no sections / no products) and add form visibility
+window.checkEmptyStates = function() {
+    const sl = document.getElementById('sections-list');
+    if (!sl) return;
+    const hasSections = sl.querySelector('[data-section-id]') !== null;
+    const hasItems = sl.querySelector('[id^="item-"]') !== null;
+    const daf = document.getElementById('desktop-add-form');
+    const mab = document.getElementById('mobile-add-item-btn');
+
+    if (!hasSections) {
+        // No sections: show "No sections", hide "No products", hide add form
+        document.getElementById('empty-no-products')?.remove();
+        if (!document.getElementById('empty-no-sections')) {
+            sl.insertAdjacentHTML('beforeend',
+                '<div id="empty-no-sections" class="text-center py-20">' +
+                '<div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">' +
+                '<svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>' +
+                '</svg></div>' +
+                '<p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t(\'sections.no_sections\')"></p>' +
+                '<p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t(\'sections.add_first_section\')"></p>' +
+                '<button @click="showManageSections = true" class="mt-4 bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors" x-text="t(\'sections.add_section_btn\')"></button>' +
+                '</div>'
+            );
+            Alpine.initTree(document.getElementById('empty-no-sections'));
+        }
+        if (daf) daf.style.display = 'none';
+        if (mab) mab.style.display = 'none';
+    } else if (!hasItems) {
+        // Sections exist but no items: show "No products", hide "No sections", show add form
+        document.getElementById('empty-no-sections')?.remove();
+        if (!document.getElementById('empty-no-products')) {
+            sl.insertAdjacentHTML('beforeend',
+                '<div id="empty-no-products" class="text-center py-20">' +
+                '<div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">' +
+                '<svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' +
+                '</svg></div>' +
+                '<p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t(\'items.no_items\')"></p>' +
+                '<p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t(\'items.add_first_item\')"></p>' +
+                '</div>'
+            );
+            Alpine.initTree(document.getElementById('empty-no-products'));
+        }
+        if (daf) daf.style.removeProperty('display');
+        if (mab) mab.style.removeProperty('display');
+    } else {
+        // Has sections and items: remove all empty states, show add form
+        document.getElementById('empty-no-sections')?.remove();
+        document.getElementById('empty-no-products')?.remove();
+        if (daf) daf.style.removeProperty('display');
+        if (mab) mab.style.removeProperty('display');
+    }
+};
+
 // Fuzzy Search Utilities
 function normalizePolish(str) {
     const map = {
@@ -744,6 +799,7 @@ function shoppingList() {
                                         // Re-check to avoid race condition with concurrent fetches
                                         if (html && sectionsList && !document.getElementById(`section-${message.data.id}`)) {
                                             sectionsList.insertAdjacentHTML('beforeend', html.trim());
+                                            window.checkEmptyStates();
                                             this.$nextTick(() => {
                                                 const newEl = document.getElementById(`section-${message.data.id}`);
                                                 if (newEl) {
@@ -780,6 +836,7 @@ function shoppingList() {
                                     delEl.remove();
                                 }
                             }
+                            window.checkEmptyStates();
                             this.refreshSectionSelectsFromServer();
                             this.refreshManageSectionsModal();
                             this.refreshStats();
@@ -797,6 +854,7 @@ function shoppingList() {
                                     }
                                 }
                             }
+                            window.checkEmptyStates();
                             this.refreshSectionSelectsFromServer();
                             this.refreshManageSectionsModal();
                             this.refreshStats();
@@ -1199,6 +1257,7 @@ function shoppingList() {
                     }
                     this.selectMode = false;
                     this.selectedSections = [];
+                    window.checkEmptyStates();
                     this.refreshSectionSelectsFromServer();
                     this.refreshManageSectionsModal();
                     this.refreshStats();
@@ -1395,6 +1454,7 @@ function shoppingList() {
                     this.updateCompletedVisibility(section);
                 }
 
+                window.checkEmptyStates();
                 this.refreshStats();
             } catch (error) {
                 console.error('[Delete] Failed:', error);
@@ -1454,6 +1514,7 @@ function shoppingList() {
                     this.updateCompletedVisibility(section);
                 }
             });
+            window.checkEmptyStates();
         },
 
         // ===== REMOTE ITEM HELPERS (for WS events on other browsers) =====
@@ -1470,6 +1531,7 @@ function shoppingList() {
                 if (container) {
                     container.insertAdjacentHTML('beforeend', html.trim());
                 }
+                document.getElementById('empty-no-products')?.remove();
                 section.classList.remove('hidden');
                 this.updateSectionCounter(section);
             } catch (e) {
@@ -1490,6 +1552,7 @@ function shoppingList() {
                 this.updateSectionCounter(section);
                 this.updateCompletedVisibility(section);
             }
+            window.checkEmptyStates();
         },
 
         // Replace an updated item in-place with fresh HTML from server
@@ -2054,6 +2117,7 @@ function shoppingList() {
                 const itemHtml = createOfflineItemHtml(tempId, name, '', sectionId);
 
                 // Find section and add item
+                document.getElementById('empty-no-products')?.remove();
                 const sectionEl = document.getElementById(`section-${sectionId}`);
                 if (sectionEl) {
                     sectionEl.classList.remove('hidden');
@@ -2113,6 +2177,7 @@ function shoppingList() {
                             // Alpine's mutation observer auto-initializes new elements
                             activeContainer.insertAdjacentHTML('beforeend', html.trim());
                         }
+                        document.getElementById('empty-no-products')?.remove();
                         section.classList.remove('hidden');
                         this.updateSectionCounter(section);
                     }
@@ -2149,6 +2214,7 @@ function shoppingList() {
                         if (activeContainer) {
                             activeContainer.insertAdjacentHTML('beforeend', html.trim());
                         }
+                        document.getElementById('empty-no-products')?.remove();
                         section.classList.remove('hidden');
                         this.updateSectionCounter(section);
                     }
@@ -2192,6 +2258,7 @@ function shoppingList() {
                         if (activeContainer) {
                             activeContainer.insertAdjacentHTML('beforeend', html.trim());
                         }
+                        document.getElementById('empty-no-products')?.remove();
                         section.classList.remove('hidden');
                         this.updateSectionCounter(section);
                     }
