@@ -1,5 +1,5 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v16';
+const CACHE_VERSION = 'koffan-v17';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 
@@ -63,6 +63,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - handle requests
 self.addEventListener('fetch', (event) => {
+    // Skip non-http(s) requests (chrome-extension, etc.)
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
     const url = new URL(event.request.url);
 
     // Skip WebSocket connections
