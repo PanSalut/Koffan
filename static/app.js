@@ -2309,17 +2309,23 @@ function shoppingList() {
                         }
                         this.closeQuickAdd();
                     } else {
-                        const html = await response.text();
                         const section = document.getElementById(`section-${sectionId}`);
-                        if (section && html) {
-                            const activeContainer = section.querySelector('.active-items');
-                            if (activeContainer) {
-                                // Alpine's mutation observer auto-initializes new elements
-                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                        const sortMode = section?.dataset?.sortMode;
+                        if (sortMode === 'alphabetical' || sortMode === 'alphabetical_desc') {
+                            // Sorted section - refresh to insert at correct alphabetical position
+                            await this.refreshSection(sectionId);
+                        } else {
+                            const html = await response.text();
+                            if (section && html) {
+                                const activeContainer = section.querySelector('.active-items');
+                                if (activeContainer) {
+                                    // Alpine's mutation observer auto-initializes new elements
+                                    activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                                }
+                                document.getElementById('empty-no-products')?.remove();
+                                section.classList.remove('hidden');
+                                this.updateSectionCounter(section);
                             }
-                            document.getElementById('empty-no-products')?.remove();
-                            section.classList.remove('hidden');
-                            this.updateSectionCounter(section);
                         }
                         this.closeQuickAdd();
                         this.refreshStats();
@@ -2366,16 +2372,22 @@ function shoppingList() {
                             }
                         }
                     } else {
-                        const html = await response.text();
                         const section = document.getElementById(`section-${sectionId}`);
-                        if (section && html) {
-                            const activeContainer = section.querySelector('.active-items');
-                            if (activeContainer) {
-                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                        const sortMode = section?.dataset?.sortMode;
+                        if (sortMode === 'alphabetical' || sortMode === 'alphabetical_desc') {
+                            // Sorted section - refresh to insert at correct alphabetical position
+                            await this.refreshSection(sectionId);
+                        } else {
+                            const html = await response.text();
+                            if (section && html) {
+                                const activeContainer = section.querySelector('.active-items');
+                                if (activeContainer) {
+                                    activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                                }
+                                document.getElementById('empty-no-products')?.remove();
+                                section.classList.remove('hidden');
+                                this.updateSectionCounter(section);
                             }
-                            document.getElementById('empty-no-products')?.remove();
-                            section.classList.remove('hidden');
-                            this.updateSectionCounter(section);
                         }
                     }
                     // Clear form but keep section selected
