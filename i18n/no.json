@@ -40,7 +40,13 @@
     "no_items": "Ingen produkter",
     "add_first_item": "Legg til ditt første produkt",
     "quick_add": "Legg til i seksjon",
-    "more_options": "Flere alternativer"
+    "more_options": "Flere alternativer",
+    "check_all": "Merk alle",
+    "uncheck_all": "Fjern alle merker",
+    "sort_mode": "Sortering",
+    "sort_manual": "Manuell",
+    "sort_alphabetical": "A til Å",
+    "sort_alphabetical_desc": "Å til A"
   },
   "sections": {
     "title": "Seksjoner",

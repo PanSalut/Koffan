@@ -40,7 +40,13 @@
     "no_items": "Keine Produkte",
     "add_first_item": "Füge dein erstes Produkt hinzu",
     "quick_add": "Schnell zur Kategorie hinzufügen",
-    "more_options": "Mehr Optionen"
+    "more_options": "Mehr Optionen",
+    "check_all": "Alle markieren",
+    "uncheck_all": "Alle abwählen",
+    "sort_mode": "Sortierung",
+    "sort_manual": "Manuell",
+    "sort_alphabetical": "A bis Z",
+    "sort_alphabetical_desc": "Z bis A"
   },
   "sections": {
     "title": "Kategorien",

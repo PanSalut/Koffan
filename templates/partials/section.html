@@ -9,7 +9,7 @@
 {{if gt $totalItems 0}}{{$percentage = div (mul $completedItems 100) $totalItems}}{{end}}
 
 <!-- Always render section for offline support - hidden when empty via CSS -->
-<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}" x-show="isSectionVisible({{.Section.ID}})" x-transition>
+<div id="section-{{.Section.ID}}" class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 mb-4 {{if eq $totalItems 0}}hidden{{end}}" data-section-id="{{.Section.ID}}" data-sort-mode="{{.Section.SortMode}}" x-show="isSectionVisible({{.Section.ID}})" x-transition>
     <!-- Section Header -->
     <div class="px-4 py-3 border-b border-stone-100 dark:border-stone-700 flex items-center justify-between"
          x-data="{ editingSection: false, editSectionName: '{{.Section.Name | js}}' }">
@@ -36,13 +36,50 @@
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
             {{if eq $percentage 100}}
-            <!-- Completed checkmark icon -->
-            <span class="w-5 h-5 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center" :title="t('list.completed')">
+            <!-- Completed checkmark icon - clickable to uncheck all -->
+            <button @click="toggleAllItems({{.Section.ID}})"
+                x-show="!editingSection"
+                class="w-5 h-5 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center hover:bg-pink-200 dark:hover:bg-pink-800/50 transition-colors cursor-pointer"
+                :title="t('items.uncheck_all')">
                 <svg class="w-3 h-3 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                 </svg>
-            </span>
+            </button>
             {{end}}
+            <!-- Check all button - only when there are active items -->
+            {{if gt $activeItems 0}}
+            <button
+                @click="toggleAllItems({{.Section.ID}})"
+                x-show="!editingSection"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-colors"
+                :title="t('items.check_all')"
+            >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </button>
+            {{end}}
+            <!-- Sort mode button -->
+            <button
+                @click="cycleSortMode({{.Section.ID}}, '{{.Section.SortMode}}')"
+                x-show="!editingSection"
+                class="w-6 h-6 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-full transition-colors {{if ne .Section.SortMode "manual"}}text-pink-500{{end}}"
+                :title="t('items.sort_mode')"
+            >
+                {{if eq .Section.SortMode "alphabetical"}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                {{else if eq .Section.SortMode "alphabetical_desc"}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>
+                {{else}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                {{end}}
+            </button>
             <!-- Edit section name button -->
             <button
                 @click="editingSection = true; editSectionName = '{{.Section.Name | js}}'; $nextTick(() => $refs.sectionInput{{.Section.ID}}.focus())"

@@ -280,6 +280,123 @@ func MoveSectionUp(c *fiber.Ctx) error {
 	return c.JSON(section)
 }
 
+// UpdateSectionSortMode updates the sort mode of a section
+func UpdateSectionSortMode(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_id",
+			Message: "Invalid section ID",
+		})
+	}
+
+	// Check if section exists
+	_, err = db.GetSectionByID(int64(id))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+				Error:   "not_found",
+				Message: "Section not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to fetch section",
+		})
+	}
+
+	var req UpdateSectionSortModeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_json",
+			Message: "Failed to parse request body",
+		})
+	}
+
+	section, err := db.UpdateSectionSortMode(int64(id), req.SortMode)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "update_failed",
+			Message: "Invalid sort mode",
+		})
+	}
+
+	handlers.BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": int64(id), "sort_mode": req.SortMode})
+	return c.JSON(section)
+}
+
+// CheckAllItems marks all active items in a section as completed
+func CheckAllItems(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_id",
+			Message: "Invalid section ID",
+		})
+	}
+
+	_, err = db.GetSectionByID(int64(id))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+				Error:   "not_found",
+				Message: "Section not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to fetch section",
+		})
+	}
+
+	count, err := db.CheckAllItems(int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "check_all_failed",
+			Message: "Failed to check all items",
+		})
+	}
+
+	handlers.BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": int64(id), "count": count})
+	return c.JSON(fiber.Map{"count": count, "section_id": id})
+}
+
+// UncheckAllItems marks all completed items in a section as active
+func UncheckAllItems(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_id",
+			Message: "Invalid section ID",
+		})
+	}
+
+	_, err = db.GetSectionByID(int64(id))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+				Error:   "not_found",
+				Message: "Section not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to fetch section",
+		})
+	}
+
+	count, err := db.UncheckAllItems(int64(id))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "uncheck_all_failed",
+			Message: "Failed to uncheck all items",
+		})
+	}
+
+	handlers.BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": int64(id), "count": count})
+	return c.JSON(fiber.Map{"count": count, "section_id": id})
+}
+
 // MoveSectionDown moves a section down in sort order
 func MoveSectionDown(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")

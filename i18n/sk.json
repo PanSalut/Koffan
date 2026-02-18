@@ -40,7 +40,13 @@
     "no_items": "Žiadne produkty",
     "add_first_item": "Pridaj svoj prvý produkt",
     "quick_add": "Rýchle pridanie do sekcie",
-    "more_options": "Viac možností"
+    "more_options": "Viac možností",
+    "check_all": "Označiť všetko",
+    "uncheck_all": "Odznačiť všetko",
+    "sort_mode": "Zoradenie",
+    "sort_manual": "Ručne",
+    "sort_alphabetical": "A po Z",
+    "sort_alphabetical_desc": "Z po A"
   },
   "sections": {
     "title": "Sekcie",

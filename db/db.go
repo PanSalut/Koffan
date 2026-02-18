@@ -165,6 +165,9 @@ func runMigrations() {
 
 	// Migration: Add quantity to items
 	migrateItemQuantity()
+
+	// Migration: Add sort_mode to sections
+	migrateSectionSortMode()
 }
 
 func migrateToMultipleLists() {
@@ -316,6 +319,29 @@ func migrateItemQuantity() {
 	}
 
 	log.Println("Migration completed: Item quantity added")
+}
+
+func migrateSectionSortMode() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sections') WHERE name='sort_mode'").Scan(&count)
+	if err != nil {
+		log.Println("Migration check failed:", err)
+		return
+	}
+
+	if count > 0 {
+		return // Already migrated
+	}
+
+	log.Println("Running migration: Adding sort_mode to sections...")
+
+	_, err = DB.Exec("ALTER TABLE sections ADD COLUMN sort_mode TEXT DEFAULT 'manual'")
+	if err != nil {
+		log.Println("Migration failed - adding sort_mode to sections:", err)
+		return
+	}
+
+	log.Println("Migration completed: Section sort_mode added")
 }
 
 func Close() {

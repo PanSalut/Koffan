@@ -40,7 +40,13 @@
 		"no_items": "Nėra produktų",
 		"add_first_item": "Pridėkite pirmą produktą",
 		"quick_add": "Greitai pridėti į skyrių",
-		"more_options": "Daugiau parinkčių"
+		"more_options": "Daugiau parinkčių",
+		"check_all": "Pažymėti viską",
+		"uncheck_all": "Atžymėti viską",
+		"sort_mode": "Rūšiavimas",
+		"sort_manual": "Rankinis",
+		"sort_alphabetical": "A iki Z",
+		"sort_alphabetical_desc": "Z iki A"
 	},
 	"sections": {
 		"title": "Skyriai",

@@ -43,6 +43,9 @@ func Register(app *fiber.App) {
 	v1.Get("/sections/:id/items", GetSectionItems)
 	v1.Post("/sections/:id/move-up", MoveSectionUp)
 	v1.Post("/sections/:id/move-down", MoveSectionDown)
+	v1.Post("/sections/:id/check-all", CheckAllItems)
+	v1.Post("/sections/:id/uncheck-all", UncheckAllItems)
+	v1.Post("/sections/:id/sort-mode", UpdateSectionSortMode)
 
 	// Items endpoints
 	v1.Get("/items/:id", GetItem)

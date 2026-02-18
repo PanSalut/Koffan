@@ -90,6 +90,11 @@ type UpdateSectionRequest struct {
 	Name string `json:"name"`
 }
 
+// UpdateSectionSortModeRequest for changing sort mode
+type UpdateSectionSortModeRequest struct {
+	SortMode string `json:"sort_mode"`
+}
+
 // CreateItemRequest for creating a new item
 type CreateItemRequest struct {
 	SectionID   int64  `json:"section_id"`

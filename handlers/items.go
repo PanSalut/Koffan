@@ -52,6 +52,42 @@ func CreateItem(c *fiber.Ctx) error {
 		}
 	}
 
+	// Check if item with same name already exists in this section
+	existing, findErr := db.FindItemByNameInSection(sectionID, name)
+	if findErr != nil {
+		return c.Status(500).SendString("Failed to check existing items")
+	}
+
+	if existing != nil {
+		if existing.Completed {
+			// Reactivate: uncheck and update description/quantity if provided
+			desc := description
+			if desc == "" {
+				desc = existing.Description
+			}
+			qty := quantity
+			if qty == 0 {
+				qty = existing.Quantity
+			}
+			item, err := db.ReactivateItem(existing.ID, desc, qty)
+			if err != nil {
+				return c.Status(500).SendString("Failed to reactivate item")
+			}
+			db.SaveItemHistory(name, sectionID)
+			c.Set("X-Item-Reactivated", "true")
+			BroadcastUpdate("item_toggled", item)
+			c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
+			return c.Render("partials/item", fiber.Map{
+				"Item":     item,
+				"Sections": getSectionsForDropdown(),
+			}, "")
+		}
+		// Item already active - signal to client
+		c.Set("X-Item-Already-Active", "true")
+		c.Set("X-Item-Existing-ID", strconv.FormatInt(existing.ID, 10))
+		return c.SendStatus(200)
+	}
+
 	item, err := db.CreateItem(sectionID, name, description, quantity)
 	if err != nil {
 		return c.Status(500).SendString("Failed to create item")
@@ -355,6 +391,40 @@ func GetItemHTML(c *fiber.Ctx) error {
 		"Item":     item,
 		"Sections": getSectionsForDropdown(),
 	}, "")
+}
+
+// CheckAllItems marks all active items in a section as completed
+func CheckAllItems(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid section ID")
+	}
+
+	count, err := db.CheckAllItems(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to check all items")
+	}
+
+	BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": id, "count": count})
+
+	return c.JSON(fiber.Map{"count": count, "section_id": id})
+}
+
+// UncheckAllItems marks all completed items in a section as active
+func UncheckAllItems(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid section ID")
+	}
+
+	count, err := db.UncheckAllItems(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to uncheck all items")
+	}
+
+	BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": id, "count": count})
+
+	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 
 // GetStats returns current stats as JSON (for Alpine.js updates)

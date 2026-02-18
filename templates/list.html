@@ -136,7 +136,7 @@
 
     <div class="container mx-auto px-4 max-w-4xl">
         <!-- Desktop controls -->
-        <div class="hidden md:block mb-6">
+        <div id="desktop-add-form" class="hidden md:block mb-6" {{if not .Sections}}style="display:none"{{end}}>
             <div class="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 p-5">
                 <form
                     id="add-item-form"
@@ -205,7 +205,7 @@
 
             <!-- Empty State - sections exist but no products -->
             {{if and .Sections (eq .Stats.TotalItems 0)}}
-            <div class="text-center py-20">
+            <div id="empty-no-products" class="text-center py-20">
                 <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
@@ -218,7 +218,7 @@
 
             <!-- Empty State - no sections -->
             {{if not .Sections}}
-            <div class="text-center py-20">
+            <div id="empty-no-sections" class="text-center py-20">
                 <div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">
                     <svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -262,8 +262,10 @@
 
                 <!-- Add product FAB -->
                 <button
+                    id="mobile-add-item-btn"
                     @click="showAddItem = true"
                     class="w-12 h-12 bg-pink-400 hover:bg-pink-500 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                    {{if not .Sections}}style="display:none"{{end}}
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -358,7 +360,7 @@
             <form
                 hx-post="/sections"
                 hx-swap="none"
-                hx-on::after-request="if(event.detail.successful) { this.reset(); this.querySelector('.error-msg')?.remove(); const html = event.detail.xhr.responseText; const sl = document.getElementById('sections-list'); const _d = Alpine.$data(document.querySelector('[x-data]')); if (html && sl) { sl.insertAdjacentHTML('beforeend', html.trim()); Alpine.nextTick(() => _d.initMobileSortable()); } _d.refreshManageSectionsModal(); _d.refreshSectionSelectsFromServer(); }"
+                hx-on::after-request="if(event.detail.successful) { this.reset(); this.querySelector('.error-msg')?.remove(); const html = event.detail.xhr.responseText; const sl = document.getElementById('sections-list'); const _d = Alpine.$data(document.querySelector('[x-data]')); if (html && sl) { sl.insertAdjacentHTML('beforeend', html.trim()); window.checkEmptyStates(); Alpine.nextTick(() => _d.initMobileSortable()); } _d.refreshManageSectionsModal(); _d.refreshSectionSelectsFromServer(); }"
                 hx-on::response-error="handleSectionFormError(this, event.detail.xhr)"
                 class="flex flex-col gap-2 mb-6"
             >

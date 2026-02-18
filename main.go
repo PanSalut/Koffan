@@ -182,6 +182,9 @@ func main() {
 	app.Delete("/sections/:id", handlers.DeleteSection)
 	app.Post("/sections/:id/move-up", handlers.MoveSectionUp)
 	app.Post("/sections/:id/move-down", handlers.MoveSectionDown)
+	app.Post("/sections/:id/check-all", handlers.CheckAllItems)
+	app.Post("/sections/:id/uncheck-all", handlers.UncheckAllItems)
+	app.Post("/sections/:id/sort-mode", handlers.UpdateSectionSortMode)
 
 	// Lists API
 	app.Get("/lists", handlers.GetLists)

@@ -40,7 +40,13 @@
     "no_items": "Aucun produit",
     "add_first_item": "Ajoutez votre premier produit",
     "quick_add": "Ajout rapide au rayon",
-    "more_options": "Plus d'options"
+    "more_options": "Plus d'options",
+    "check_all": "Tout cocher",
+    "uncheck_all": "Tout décocher",
+    "sort_mode": "Tri",
+    "sort_manual": "Manuel",
+    "sort_alphabetical": "A à Z",
+    "sort_alphabetical_desc": "Z à A"
   },
   "sections": {
     "title": "Rayons",

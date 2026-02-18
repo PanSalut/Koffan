@@ -69,6 +69,61 @@ window.handleSectionFormError = function(form, xhr) {
     form.appendChild(errorDiv);
 };
 
+// Check and update all empty states (no sections / no products) and add form visibility
+window.checkEmptyStates = function() {
+    const sl = document.getElementById('sections-list');
+    if (!sl) return;
+    const hasSections = sl.querySelector('[data-section-id]') !== null;
+    const hasItems = sl.querySelector('[id^="item-"]') !== null;
+    const daf = document.getElementById('desktop-add-form');
+    const mab = document.getElementById('mobile-add-item-btn');
+
+    if (!hasSections) {
+        // No sections: show "No sections", hide "No products", hide add form
+        document.getElementById('empty-no-products')?.remove();
+        if (!document.getElementById('empty-no-sections')) {
+            sl.insertAdjacentHTML('beforeend',
+                '<div id="empty-no-sections" class="text-center py-20">' +
+                '<div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">' +
+                '<svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>' +
+                '</svg></div>' +
+                '<p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t(\'sections.no_sections\')"></p>' +
+                '<p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t(\'sections.add_first_section\')"></p>' +
+                '<button @click="showManageSections = true" class="mt-4 bg-pink-400 hover:bg-pink-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors" x-text="t(\'sections.add_section_btn\')"></button>' +
+                '</div>'
+            );
+            Alpine.initTree(document.getElementById('empty-no-sections'));
+        }
+        if (daf) daf.style.display = 'none';
+        if (mab) mab.style.display = 'none';
+    } else if (!hasItems) {
+        // Sections exist but no items: show "No products", hide "No sections", show add form
+        document.getElementById('empty-no-sections')?.remove();
+        if (!document.getElementById('empty-no-products')) {
+            sl.insertAdjacentHTML('beforeend',
+                '<div id="empty-no-products" class="text-center py-20">' +
+                '<div class="w-16 h-16 mx-auto mb-4 bg-stone-100 dark:bg-stone-800 rounded-2xl flex items-center justify-center">' +
+                '<svg class="w-8 h-8 text-stone-400 dark:text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>' +
+                '</svg></div>' +
+                '<p class="text-stone-600 dark:text-stone-300 font-medium" x-text="t(\'items.no_items\')"></p>' +
+                '<p class="text-sm text-stone-400 dark:text-stone-500 mt-1" x-text="t(\'items.add_first_item\')"></p>' +
+                '</div>'
+            );
+            Alpine.initTree(document.getElementById('empty-no-products'));
+        }
+        if (daf) daf.style.removeProperty('display');
+        if (mab) mab.style.removeProperty('display');
+    } else {
+        // Has sections and items: remove all empty states, show add form
+        document.getElementById('empty-no-sections')?.remove();
+        document.getElementById('empty-no-products')?.remove();
+        if (daf) daf.style.removeProperty('display');
+        if (mab) mab.style.removeProperty('display');
+    }
+};
+
 // Fuzzy Search Utilities
 function normalizePolish(str) {
     const map = {
@@ -744,6 +799,7 @@ function shoppingList() {
                                         // Re-check to avoid race condition with concurrent fetches
                                         if (html && sectionsList && !document.getElementById(`section-${message.data.id}`)) {
                                             sectionsList.insertAdjacentHTML('beforeend', html.trim());
+                                            window.checkEmptyStates();
                                             this.$nextTick(() => {
                                                 const newEl = document.getElementById(`section-${message.data.id}`);
                                                 if (newEl) {
@@ -780,6 +836,7 @@ function shoppingList() {
                                     delEl.remove();
                                 }
                             }
+                            window.checkEmptyStates();
                             this.refreshSectionSelectsFromServer();
                             this.refreshManageSectionsModal();
                             this.refreshStats();
@@ -797,6 +854,7 @@ function shoppingList() {
                                     }
                                 }
                             }
+                            window.checkEmptyStates();
                             this.refreshSectionSelectsFromServer();
                             this.refreshManageSectionsModal();
                             this.refreshStats();
@@ -871,6 +929,23 @@ function shoppingList() {
                     case 'template_applied':
                         // Template adds items to multiple sections - full refresh needed
                         this.refreshList();
+                        this.refreshStats();
+                        break;
+                    case 'section_sort_changed':
+                        if (!this.isLocalAction('section_sort_changed')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
+                        break;
+                    case 'section_items_checked':
+                        if (!this.isLocalAction('section_items_checked')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
+                        this.refreshStats();
+                        break;
+                    case 'section_items_unchecked':
+                        if (!this.isLocalAction('section_items_unchecked')) {
+                            sectionId ? this.refreshSection(sectionId) : this.refreshList();
+                        }
                         this.refreshStats();
                         break;
                     case 'completed_items_deleted':
@@ -950,6 +1025,47 @@ function shoppingList() {
 
                 this._isRefreshing = false;
             }, 100); // 100ms debounce
+        },
+
+        async cycleSortMode(sectionId, currentMode) {
+            const modes = ['manual', 'alphabetical', 'alphabetical_desc'];
+            const currentIndex = modes.indexOf(currentMode);
+            const nextMode = modes[(currentIndex + 1) % modes.length];
+
+            this.markLocalAction('section_sort_changed');
+
+            try {
+                const response = await fetch(`/sections/${sectionId}/sort-mode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `sort_mode=${encodeURIComponent(nextMode)}`
+                });
+                if (response.ok) {
+                    await this.refreshSection(sectionId);
+                }
+            } catch (error) {
+                console.error('[SortMode] Failed:', error);
+            }
+        },
+
+        async toggleAllItems(sectionId) {
+            const section = document.getElementById(`section-${sectionId}`);
+            if (!section) return;
+
+            const hasActive = section.querySelector('.active-items [data-item-id]') !== null;
+            const action = hasActive ? 'check-all' : 'uncheck-all';
+
+            this.markLocalAction(action === 'check-all' ? 'section_items_checked' : 'section_items_unchecked');
+
+            try {
+                const response = await fetch(`/sections/${sectionId}/${action}`, { method: 'POST' });
+                if (response.ok) {
+                    await this.refreshSection(sectionId);
+                    this.refreshStats();
+                }
+            } catch (error) {
+                console.error('[ToggleAll] Failed:', error);
+            }
         },
 
         async refreshSection(sectionId) {
@@ -1055,6 +1171,11 @@ function shoppingList() {
 
             this.refreshStats();
             this.$nextTick(() => this.initMobileSortable());
+
+            const toSortMode = toSection?.dataset?.sortMode || 'manual';
+            if (toSortMode !== 'manual') {
+                this.$nextTick(() => this.refreshSection(parseInt(toSectionId)));
+            }
         },
 
         async refreshSectionsAndSelects() {
@@ -1199,6 +1320,7 @@ function shoppingList() {
                     }
                     this.selectMode = false;
                     this.selectedSections = [];
+                    window.checkEmptyStates();
                     this.refreshSectionSelectsFromServer();
                     this.refreshManageSectionsModal();
                     this.refreshStats();
@@ -1395,6 +1517,7 @@ function shoppingList() {
                     this.updateCompletedVisibility(section);
                 }
 
+                window.checkEmptyStates();
                 this.refreshStats();
             } catch (error) {
                 console.error('[Delete] Failed:', error);
@@ -1454,6 +1577,7 @@ function shoppingList() {
                     this.updateCompletedVisibility(section);
                 }
             });
+            window.checkEmptyStates();
         },
 
         // ===== REMOTE ITEM HELPERS (for WS events on other browsers) =====
@@ -1470,6 +1594,7 @@ function shoppingList() {
                 if (container) {
                     container.insertAdjacentHTML('beforeend', html.trim());
                 }
+                document.getElementById('empty-no-products')?.remove();
                 section.classList.remove('hidden');
                 this.updateSectionCounter(section);
             } catch (e) {
@@ -1490,6 +1615,7 @@ function shoppingList() {
                 this.updateSectionCounter(section);
                 this.updateCompletedVisibility(section);
             }
+            window.checkEmptyStates();
         },
 
         // Replace an updated item in-place with fresh HTML from server
@@ -2050,20 +2176,73 @@ function shoppingList() {
             if (!this.isOnline) {
                 const tempId = 'offline-' + Date.now();
 
+                // Check if item already exists in completed items - reactivate instead of duplicate
+                const sectionEl = document.getElementById(`section-${sectionId}`);
+                if (sectionEl) {
+                    const completedItems = sectionEl.querySelectorAll('.completed-items [id^="item-"]');
+                    for (const el of completedItems) {
+                        const nameEl = el.querySelector('.item-name, [data-item-name]');
+                        const itemName = nameEl?.textContent?.trim() || nameEl?.dataset?.itemName || '';
+                        if (itemName.toLowerCase() === name.toLowerCase()) {
+                            // Move from completed to active optimistically
+                            const activeContainer = sectionEl.querySelector('.active-items');
+                            if (activeContainer) {
+                                el.remove();
+                                const html = createOfflineItemHtml(tempId, name, '', sectionId);
+                                activeContainer.insertAdjacentHTML('afterbegin', html);
+                                this.markLocalAction('item_toggled');
+
+                                // Update section counter (completed - 1, total stays the same)
+                                const counter = sectionEl.querySelector('.section-counter');
+                                if (counter) {
+                                    const parts = counter.textContent.split('/');
+                                    const completed = Math.max(0, (parseInt(parts[0]) || 0) - 1);
+                                    const total = parseInt(parts[1]) || 0;
+                                    counter.textContent = `${completed}/${total}`;
+                                }
+
+                                // Update completed count and hide wrapper if empty
+                                const completedContainer = sectionEl.querySelector('.completed-items');
+                                const newCompletedCount = completedContainer
+                                    ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
+                                const countSpan = sectionEl.querySelector('.completed-count');
+                                if (countSpan) countSpan.textContent = newCompletedCount;
+                                const completedWrapper = sectionEl.querySelector('.completed-wrapper');
+                                if (completedWrapper) {
+                                    completedWrapper.style.display = newCompletedCount === 0 ? 'none' : '';
+                                }
+                            }
+                            // Queue toggle for sync
+                            await window.offlineStorage.queueAction({
+                                type: 'create_item',
+                                url: '/items',
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`,
+                                tempId: tempId
+                            });
+                            this.closeQuickAdd();
+                            window.Toast?.show(t('offline.queued'), 'info', 2000);
+                            return;
+                        }
+                    }
+                }
+
                 // Create optimistic item HTML
                 const itemHtml = createOfflineItemHtml(tempId, name, '', sectionId);
 
                 // Find section and add item
-                const sectionEl = document.getElementById(`section-${sectionId}`);
-                if (sectionEl) {
-                    sectionEl.classList.remove('hidden');
-                    const itemsContainer = sectionEl.querySelector('.active-items');
+                document.getElementById('empty-no-products')?.remove();
+                const offlineSectionEl = document.getElementById(`section-${sectionId}`);
+                if (offlineSectionEl) {
+                    offlineSectionEl.classList.remove('hidden');
+                    const itemsContainer = offlineSectionEl.querySelector('.active-items');
                     if (itemsContainer) {
                         itemsContainer.insertAdjacentHTML('afterbegin', itemHtml);
                     }
 
                     // Update section counter
-                    const counter = sectionEl.querySelector('.section-counter');
+                    const counter = offlineSectionEl.querySelector('.section-counter');
                     if (counter) {
                         const parts = counter.textContent.split('/');
                         const completed = parseInt(parts[0]) || 0;
@@ -2105,20 +2284,47 @@ function shoppingList() {
                 }, 'create_item');
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            // Alpine's mutation observer auto-initializes new elements
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    // Check if item was reactivated (moved from completed to active)
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        // Item was unchecked - refresh section to move it from completed to active
+                        await this.refreshSection(sectionId);
+                        this.closeQuickAdd();
+                        this.refreshStats();
+                        this.$nextTick(() => this.initMobileSortable());
+                    } else if (alreadyActive) {
+                        // Item already exists and is active - flash it
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                        this.closeQuickAdd();
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                // Alpine's mutation observer auto-initializes new elements
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
+                        this.closeQuickAdd();
+                        this.refreshStats();
+                        this.$nextTick(() => this.initMobileSortable());
                     }
-                    this.closeQuickAdd();
-                    this.refreshStats();
-                    this.$nextTick(() => this.initMobileSortable());
                 }
             } catch (error) {
                 console.error('[QuickAdd] Failed to add item:', error);
@@ -2142,15 +2348,35 @@ function shoppingList() {
                 });
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        await this.refreshSection(sectionId);
+                    } else if (alreadyActive) {
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
                     }
                     // Clear form but keep section selected
                     const sectionValue = form.querySelector('select[name="section_id"]').value;
@@ -2185,15 +2411,35 @@ function shoppingList() {
                 });
 
                 if (response.ok) {
-                    const html = await response.text();
-                    const section = document.getElementById(`section-${sectionId}`);
-                    if (section && html) {
-                        const activeContainer = section.querySelector('.active-items');
-                        if (activeContainer) {
-                            activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                    const reactivated = response.headers.get('X-Item-Reactivated') === 'true';
+                    const alreadyActive = response.headers.get('X-Item-Already-Active') === 'true';
+
+                    if (reactivated) {
+                        await this.refreshSection(sectionId);
+                    } else if (alreadyActive) {
+                        const existingId = response.headers.get('X-Item-Existing-ID');
+                        if (existingId) {
+                            const existingEl = document.getElementById(`item-${existingId}`);
+                            if (existingEl) {
+                                existingEl.classList.add('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                setTimeout(() => {
+                                    existingEl.classList.remove('ring-2', 'ring-pink-400', 'bg-pink-50', 'dark:bg-pink-900/20');
+                                }, 1500);
+                                existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
                         }
-                        section.classList.remove('hidden');
-                        this.updateSectionCounter(section);
+                    } else {
+                        const html = await response.text();
+                        const section = document.getElementById(`section-${sectionId}`);
+                        if (section && html) {
+                            const activeContainer = section.querySelector('.active-items');
+                            if (activeContainer) {
+                                activeContainer.insertAdjacentHTML('beforeend', html.trim());
+                            }
+                            document.getElementById('empty-no-products')?.remove();
+                            section.classList.remove('hidden');
+                            this.updateSectionCounter(section);
+                        }
                     }
 
                     if (!this.addMore) {
@@ -2401,7 +2647,16 @@ function shoppingList() {
                 container._sortableInstance.destroy();
             }
             const sectionId = container.dataset.sectionId;
+            // Disable drag when section uses alphabetical sorting
+            const sectionEl = container.closest('[data-sort-mode]');
+            const sortMode = sectionEl?.dataset?.sortMode || 'manual';
+            const isDragDisabled = sortMode !== 'manual';
+            // Hide/show drag handles based on sort mode
+            const dragHandles = container.querySelectorAll('.drag-handle');
+            dragHandles.forEach(h => h.style.display = isDragDisabled ? 'none' : '');
+
             container._sortableInstance = new Sortable(container, {
+                sort: !isDragDisabled,
                 animation: 200,
                 easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 handle: '.drag-handle',
@@ -2541,6 +2796,12 @@ function shoppingList() {
                     this.updateSectionCounter(toSection);
                 }
                 this.refreshStats();
+
+                const toSectionEl = document.getElementById(`section-${toSectionId}`);
+                const toSortMode = toSectionEl?.dataset?.sortMode || 'manual';
+                if (toSortMode !== 'manual') {
+                    this.$nextTick(() => this.refreshSection(parseInt(toSectionId)));
+                }
             } catch (error) {
                 console.error('Failed to move item to section:', error);
                 window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
