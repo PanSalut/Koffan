@@ -634,12 +634,14 @@ function shoppingList() {
             console.log('[App] Full refresh triggered');
 
             // Suppress individual section refreshes during full refresh to prevent race conditions
-            this._fullRefreshUntil = Date.now() + 3000;
+	        this._fullRefreshUntil = Date.now() + 3000;
 
             // Reconnect WebSocket if needed
-            if (!this.connected && this.isOnline) {
-                this.reconnectAttempts = 0;
-                this.connect();
+            const wsOpen = this.ws && this.ws.readyState === WebSocket.OPEN;
+            if (!wsOpen && this.isOnline) {
+            console.log('[App] Reconnecting');
+            this.reconnectAttempts = 0;
+            this.connect();
             }
 
             if (this.isOnline) {
@@ -1001,7 +1003,7 @@ function shoppingList() {
                     for (const section of sections) {
                         const el = document.getElementById(`section-${section.id}`);
                         if (el) {
-                            await this.refreshSection(section.id);
+                            await this.refreshSection(section.id, { force: true });
                         } else {
                             const r = await fetch(`/sections/${section.id}/html`);
                             if (r.ok) {
@@ -1068,9 +1070,9 @@ function shoppingList() {
             }
         },
 
-        async refreshSection(sectionId) {
+        async refreshSection(sectionId, opts = {}) {
             // Skip if a full refresh is in progress (prevents race conditions)
-            if (Date.now() < this._fullRefreshUntil) {
+            if (!opts.force && Date.now() < this._fullRefreshUntil) {
                 console.log(`[App] Skipping refreshSection(${sectionId}) - full refresh in progress`);
                 return;
             }
