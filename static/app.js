@@ -1191,6 +1191,7 @@ function shoppingList() {
                 if (r.ok) {
                     const sections = await r.json();
                     this.updateSectionSelects(sections);
+                    this.refreshAllMoveMenus(sections);
                 }
             } catch (e) {
                 console.error('[App] refreshSectionSelectsFromServer failed:', e);
@@ -1224,6 +1225,7 @@ function shoppingList() {
                     }
                 }
                 this.updateSectionSelects(sections);
+                this.refreshAllMoveMenus(sections);
             } catch (e) {
                 console.error('[App] reorderSections failed:', e);
             }
@@ -1257,6 +1259,52 @@ function shoppingList() {
                     select.value = currentValue;
                 }
             });
+        },
+
+        refreshAllMoveMenus(sections) {
+            // Update desktop move menus in each item
+            document.querySelectorAll('[id^="item-"]').forEach(itemEl => {
+                const itemId = parseInt(itemEl.dataset.itemId);
+                const sectionId = parseInt(itemEl.dataset.sectionId);
+                if (!itemId || !sectionId) return;
+
+                // Find the move dropdown container (the div with x-show="open" inside desktop actions)
+                const desktopActions = itemEl.querySelector('.md\\:flex');
+                if (!desktopActions) return;
+                const moveDropdown = desktopActions.querySelector('[x-show="open"]');
+                if (!moveDropdown) return;
+
+                moveDropdown.innerHTML = '';
+                sections.forEach(section => {
+                    if (section.id === sectionId) return;
+                    const btn = document.createElement('button');
+                    btn.className = 'block w-full text-left px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700';
+                    btn.textContent = section.name;
+                    btn.addEventListener('click', () => {
+                        // Close the dropdown via Alpine
+                        const alpineData = Alpine.$data(moveDropdown.closest('[x-data]'));
+                        if (alpineData) alpineData.open = false;
+                        this.moveItemDesktop(itemId, sectionId, section.id);
+                    });
+                    moveDropdown.appendChild(btn);
+                });
+            });
+
+            // Update mobile action sheet move buttons
+            const mobileMoveContainer = document.querySelector('[x-show="showSections"]');
+            if (mobileMoveContainer) {
+                mobileMoveContainer.innerHTML = '';
+                sections.forEach(section => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-2 rounded-lg text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700';
+                    btn.textContent = section.name;
+                    btn.setAttribute('x-show', `mobileActionItem?.section_id != ${section.id}`);
+                    btn.addEventListener('click', () => {
+                        this.moveToSection(section.id);
+                    });
+                    mobileMoveContainer.appendChild(btn);
+                });
+            }
         },
 
         refreshStats() {
