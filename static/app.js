@@ -634,14 +634,14 @@ function shoppingList() {
             console.log('[App] Full refresh triggered');
 
             // Suppress individual section refreshes during full refresh to prevent race conditions
-	        this._fullRefreshUntil = Date.now() + 3000;
+            this._fullRefreshUntil = Date.now() + 3000;
 
             // Reconnect WebSocket if needed
             const wsOpen = this.ws && this.ws.readyState === WebSocket.OPEN;
             if (!wsOpen && this.isOnline) {
-            console.log('[App] Reconnecting');
-            this.reconnectAttempts = 0;
-            this.connect();
+                console.log('[App] Reconnecting');
+                this.reconnectAttempts = 0;
+                this.connect();
             }
 
             if (this.isOnline) {
