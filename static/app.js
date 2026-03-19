@@ -1416,7 +1416,17 @@ function shoppingList() {
             this.markLocalAction('item_toggled');
 
             try {
-                const response = await fetch(`/items/${itemId}/toggle`, { method: 'POST' });
+                const response = await this.offlineFetch(
+                    `/items/${itemId}/toggle`,
+                    { method: 'POST' },
+                    'toggle_item'
+                );
+
+                if (response.offline) {
+                    await this._applyOfflineToggle(itemId, sectionId);
+                    return;
+                }
+
                 if (!response.ok) {
                     console.error('[Toggle] Server error:', response.status);
                     return;
@@ -1426,10 +1436,113 @@ function shoppingList() {
                 await this.refreshSection(sectionId);
                 this.refreshStats();
             } catch (error) {
-                console.error('[Toggle] Failed:', error);
+                // Intermittent signal: isOnline=true but fetch fails
+                console.error('[Toggle] Failed, falling back to offline queue:', error);
+                await this.queueOfflineAction({
+                    type: 'toggle_item',
+                    url: `/items/${itemId}/toggle`,
+                    method: 'POST'
+                });
+                await this._applyOfflineToggle(itemId, sectionId);
             } finally {
                 delete this._toggleInFlight[itemId];
             }
+        },
+
+        async _applyOfflineToggle(itemId, sectionId) {
+            const itemEl = document.getElementById(`item-${itemId}`);
+            if (!itemEl) return;
+
+            const section = document.getElementById(`section-${sectionId}`);
+            const checkboxSpan = itemEl.querySelector('button > span');
+            const isCompleted = checkboxSpan && checkboxSpan.classList.contains('bg-pink-400');
+
+            // Toggle visual checkbox state
+            if (isCompleted) {
+                // Uncomplete: pink checkbox -> empty border
+                if (checkboxSpan) {
+                    checkboxSpan.classList.remove('bg-pink-400', 'flex', 'items-center', 'justify-center');
+                    checkboxSpan.classList.add('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
+                    checkboxSpan.innerHTML = '';
+                }
+                // Remove strikethrough from text
+                const textEl = itemEl.querySelector('.line-through');
+                if (textEl) {
+                    textEl.classList.remove('line-through', 'text-stone-400', 'text-stone-300');
+                    textEl.classList.add('text-stone-700');
+                }
+                // Move to active items container
+                if (section) {
+                    const activeContainer = section.querySelector('.active-items');
+                    if (activeContainer) activeContainer.appendChild(itemEl);
+                }
+                // Update stats
+                this.stats.completed = Math.max(0, this.stats.completed - 1);
+            } else {
+                // Complete: empty border -> pink checkbox
+                if (checkboxSpan) {
+                    checkboxSpan.classList.remove('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
+                    checkboxSpan.classList.add('bg-pink-400', 'flex', 'items-center', 'justify-center');
+                    checkboxSpan.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                }
+                // Add strikethrough to text
+                const textEl = itemEl.querySelector('.text-stone-700');
+                if (textEl) {
+                    textEl.classList.remove('text-stone-700');
+                    textEl.classList.add('line-through', 'text-stone-400');
+                }
+                // Move to completed items container
+                if (section) {
+                    const completedContainer = section.querySelector('.completed-items');
+                    if (completedContainer) completedContainer.appendChild(itemEl);
+                }
+                // Update stats
+                this.stats.completed++;
+            }
+
+            // Update stats percentage
+            this.stats.percentage = Math.round((this.stats.completed / this.stats.total) * 100) || 0;
+
+            // Add pending sync styling
+            itemEl.classList.add('pending-sync', 'bg-rose-50/40', 'border-l-2', 'border-rose-400');
+            itemEl.dataset.pendingSync = 'true';
+
+            // Add sync badge
+            if (!itemEl.querySelector('.offline-sync-badge')) {
+                const badge = document.createElement('span');
+                badge.className = 'offline-sync-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-600 ml-2';
+                badge.innerHTML = `
+                    <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    sync
+                `;
+                const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
+                if (contentDiv) contentDiv.after(badge);
+            }
+
+            // Animate checkbox
+            if (checkboxSpan) {
+                checkboxSpan.classList.add('checkbox-pulse');
+                setTimeout(() => checkboxSpan.classList.remove('checkbox-pulse'), 300);
+            }
+
+            // Update section counters
+            if (section) {
+                this.updateSectionCounter(section);
+                this.updateCompletedCount(section);
+                this.updateCompletedVisibility(section);
+            }
+
+            // Update IndexedDB cache
+            if (this.offlineStorageReady) {
+                await window.offlineStorage.updateItemInCache(
+                    parseInt(itemId),
+                    { completed: !isCompleted }
+                );
+            }
+
+            console.log('[Toggle] Offline toggle applied:', itemId, isCompleted ? '-> active' : '-> completed');
         },
 
         async moveItemDesktop(itemId, fromSectionId, toSectionId) {
@@ -3041,82 +3154,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const itemId = path.match(/\/items\/(\d+)\/toggle/)[1];
             const itemEl = document.getElementById(`item-${itemId}`);
+            const sectionId = itemEl ? itemEl.dataset.sectionId : null;
 
-            if (itemEl) {
-                // Check if item is currently completed (has pink checkbox bg)
-                const checkboxSpan = itemEl.querySelector('button > span');
-                const isCompleted = checkboxSpan && checkboxSpan.classList.contains('bg-pink-400');
-
-                // Add pending sync styling
-                itemEl.classList.add('pending-sync');
-                itemEl.dataset.pendingSync = 'true';
-
-                // Toggle visual state
-                if (isCompleted) {
-                    // Uncomplete: change from pink checkbox to empty border
-                    if (checkboxSpan) {
-                        checkboxSpan.classList.remove('bg-pink-400', 'flex', 'items-center', 'justify-center');
-                        checkboxSpan.classList.add('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
-                        checkboxSpan.innerHTML = '';
-                    }
-                    // Change text style
-                    const textEl = itemEl.querySelector('.line-through');
-                    if (textEl) {
-                        textEl.classList.remove('line-through', 'text-stone-400', 'text-stone-300');
-                        textEl.classList.add('text-stone-700');
-                    }
-                    // Update stats
-                    const alpineData = Alpine.$data(document.querySelector('[x-data="shoppingList()"]'));
-                    if (alpineData) {
-                        alpineData.stats.completed = Math.max(0, alpineData.stats.completed - 1);
-                        alpineData.stats.percentage = Math.round((alpineData.stats.completed / alpineData.stats.total) * 100) || 0;
-                    }
-                } else {
-                    // Complete: change from empty border to pink checkbox
-                    if (checkboxSpan) {
-                        checkboxSpan.classList.remove('border-2', 'border-stone-300', 'hover:border-pink-400', 'hover:scale-110');
-                        checkboxSpan.classList.add('bg-pink-400', 'flex', 'items-center', 'justify-center');
-                        checkboxSpan.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-                    }
-                    // Change text style
-                    const textEl = itemEl.querySelector('.text-stone-700');
-                    if (textEl) {
-                        textEl.classList.remove('text-stone-700');
-                        textEl.classList.add('line-through', 'text-stone-400');
-                    }
-                    // Update stats
-                    const alpineData = Alpine.$data(document.querySelector('[x-data="shoppingList()"]'));
-                    if (alpineData) {
-                        alpineData.stats.completed++;
-                        alpineData.stats.percentage = Math.round((alpineData.stats.completed / alpineData.stats.total) * 100) || 0;
-                    }
-                }
-
-                // Add visual pending sync indicator (rose border + badge)
-                itemEl.classList.add('bg-rose-50/40', 'border-l-2', 'border-rose-400');
-
-                // Add sync badge if not already present
-                if (!itemEl.querySelector('.offline-sync-badge')) {
-                    const badge = document.createElement('span');
-                    badge.className = 'offline-sync-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-600 ml-2';
-                    badge.innerHTML = `
-                        <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        sync
-                    `;
-                    // Insert badge after content div
-                    const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
-                    if (contentDiv) {
-                        contentDiv.after(badge);
-                    }
-                }
-
-                // Animate checkbox
-                if (checkboxSpan) {
-                    checkboxSpan.classList.add('checkbox-pulse');
-                    setTimeout(() => checkboxSpan.classList.remove('checkbox-pulse'), 300);
-                }
+            // Reuse shared offline toggle logic
+            const alpineData = Alpine.$data(document.querySelector('[x-data="shoppingList()"]'));
+            if (alpineData && sectionId) {
+                alpineData._applyOfflineToggle(itemId, sectionId);
             }
 
             // Queue for sync
