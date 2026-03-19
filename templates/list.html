@@ -1,5 +1,5 @@
 {{define "list"}}
-<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors">
+<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors" data-default-section-id="{{if .Sections}}{{(index .Sections 0).ID}}{{else}}0{{end}}">
     <!-- Hidden input for iOS keyboard trick -->
     <input type="text" id="ios-keyboard-trigger" class="absolute opacity-0 pointer-events-none" style="position: absolute; top: -9999px; left: -9999px;" tabindex="-1" aria-hidden="true">
     <!-- Header -->
@@ -197,6 +197,73 @@
         <!-- Stats container for HTMX refresh -->
         <div id="stats-container" class="hidden" hx-get="/stats" hx-trigger="refresh" hx-swap="none"></div>
 
+        <!-- Global Quick Add Bar (mobile) -->
+        <div id="global-quick-add"
+             x-show="showGlobalQuickAdd" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="md:hidden mb-4" {{if not .Sections}}style="display:none"{{end}}>
+            <div class="bg-white dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700 px-4 py-3 shadow-sm">
+                <form @submit.prevent="submitQuickAdd({{if .Sections}}{{(index .Sections 0).ID}}{{else}}0{{end}})" class="relative">
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 relative">
+                            <input
+                                type="text"
+                                id="global-quick-add-input"
+                                x-model="quickAddName"
+                                @input.debounce.150ms="fetchQuickAddSuggestions($event.target.value)"
+                                @keydown="handleGlobalQuickAddKeydown($event, {{if .Sections}}{{(index .Sections 0).ID}}{{else}}0{{end}})"
+                                @blur="hideQuickAddSuggestionsDelayed()"
+                                @focus="quickAddName.length >= 2 && fetchQuickAddSuggestions(quickAddName)"
+                                autocomplete="off"
+                                :placeholder="t('items.what_to_buy')"
+                                class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent placeholder:text-stone-400 dark:placeholder:text-stone-500 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100"
+                            >
+                            <!-- Suggestions dropdown -->
+                            <div x-show="showQuickAddSuggestions && quickAddSuggestions.length > 0" x-cloak
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                <template x-for="(suggestion, index) in quickAddSuggestions" :key="suggestion.name">
+                                    <button type="button"
+                                        @mousedown.prevent="selectQuickAddSuggestion(suggestion)"
+                                        :class="index === selectedQuickAddSuggestionIndex ? 'bg-pink-50 dark:bg-pink-900/30' : 'hover:bg-stone-50 dark:hover:bg-stone-700'"
+                                        class="w-full text-left px-3 py-2 text-sm flex items-center justify-between border-b border-stone-100 dark:border-stone-700 last:border-b-0">
+                                        <span x-text="suggestion.name" class="text-stone-700 dark:text-stone-200"></span>
+                                        <span class="text-xs text-stone-400 dark:text-stone-500" x-text="suggestion.usage_count + 'x'"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        <!-- Submit button -->
+                        <button type="submit"
+                            class="w-8 h-8 flex items-center justify-center bg-pink-400 hover:bg-pink-500 text-white rounded-lg transition-colors flex-shrink-0"
+                            :title="t('common.add')"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                        <!-- Expand to full modal -->
+                        <button type="button"
+                            @click="expandToFullModal({{if .Sections}}{{(index .Sections 0).ID}}{{else}}0{{end}})"
+                            class="w-8 h-8 flex items-center justify-center text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors flex-shrink-0"
+                            :title="t('items.more_options')"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Sections List -->
         <div id="sections-list">
             {{range .Sections}}
@@ -263,8 +330,9 @@
                 <!-- Add product FAB -->
                 <button
                     id="mobile-add-item-btn"
-                    @click="showAddItem = true"
-                    class="w-12 h-12 bg-pink-400 hover:bg-pink-500 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                    @click="showGlobalQuickAdd ? closeGlobalQuickAdd() : openGlobalQuickAdd()"
+                    class="w-12 h-12 bg-pink-400 hover:bg-pink-500 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-[transform,background-color]"
+                    :class="showGlobalQuickAdd && 'rotate-45'"
                     {{if not .Sections}}style="display:none"{{end}}
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

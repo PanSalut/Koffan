@@ -279,6 +279,7 @@ function shoppingList() {
         showQuickAddSuggestions: false,
         selectedQuickAddSuggestionIndex: -1,
         _quickAddSuggestionTimer: null,
+        showGlobalQuickAdd: false,
 
         // Search
         searchQuery: '',
@@ -299,6 +300,10 @@ function shoppingList() {
         _isAddFormActive() {
             // Check if mobile add-item modal is open
             if (this.showAddItem) {
+                return true;
+            }
+            // Check if global quick add bar is open
+            if (this.showGlobalQuickAdd) {
                 return true;
             }
             // Check if desktop form has focus (name input or section select)
@@ -2302,6 +2307,9 @@ function shoppingList() {
                 iosTrigger.focus();
             }
 
+            // Close global quick add if open
+            this.showGlobalQuickAdd = false;
+
             // Close any other open quick add
             this.quickAddSectionId = sectionId;
             this.quickAddName = '';
@@ -2326,11 +2334,94 @@ function shoppingList() {
             this.quickAddSuggestions = [];
             this.showQuickAddSuggestions = false;
             this.selectedQuickAddSuggestionIndex = -1;
+            this.showGlobalQuickAdd = false;
+        },
+
+        // Global quick add - opens inline input at top of list (no section selection needed)
+        openGlobalQuickAdd() {
+            // iOS keyboard trick: focus hidden input SYNCHRONOUSLY to trigger keyboard
+            const iosTrigger = document.getElementById('ios-keyboard-trigger');
+            if (iosTrigger) {
+                iosTrigger.focus();
+            }
+
+            // Close any section-level quick add
+            this.quickAddSectionId = null;
+            this.quickAddName = '';
+            this.quickAddSuggestions = [];
+            this.showQuickAddSuggestions = false;
+            this.selectedQuickAddSuggestionIndex = -1;
+
+            this.showGlobalQuickAdd = true;
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    const input = document.getElementById('global-quick-add-input');
+                    if (input) {
+                        input.focus();
+                        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 10);
+            });
+        },
+
+        closeGlobalQuickAdd() {
+            this.showGlobalQuickAdd = false;
+            this.quickAddName = '';
+            this.quickAddSuggestions = [];
+            this.showQuickAddSuggestions = false;
+            this.selectedQuickAddSuggestionIndex = -1;
+        },
+
+        handleGlobalQuickAddKeydown(event, defaultSectionId) {
+            if (!defaultSectionId) return;
+            // Handle suggestions navigation
+            if (this.showQuickAddSuggestions && this.quickAddSuggestions.length > 0) {
+                switch (event.key) {
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.min(
+                            this.selectedQuickAddSuggestionIndex + 1,
+                            this.quickAddSuggestions.length - 1
+                        );
+                        return;
+                    case 'ArrowUp':
+                        event.preventDefault();
+                        this.selectedQuickAddSuggestionIndex = Math.max(this.selectedQuickAddSuggestionIndex - 1, -1);
+                        return;
+                    case 'Enter':
+                        if (this.selectedQuickAddSuggestionIndex >= 0) {
+                            event.preventDefault();
+                            this.selectQuickAddSuggestion(this.quickAddSuggestions[this.selectedQuickAddSuggestionIndex]);
+                            return;
+                        }
+                        break;
+                }
+            }
+
+            // Handle Enter to submit
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                this.submitQuickAdd(defaultSectionId);
+                return;
+            }
+
+            // Handle Escape to close
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (this.showQuickAddSuggestions) {
+                    this.showQuickAddSuggestions = false;
+                    this.selectedQuickAddSuggestionIndex = -1;
+                } else {
+                    this.closeGlobalQuickAdd();
+                }
+            }
         },
 
         async submitQuickAdd(sectionId) {
             const name = this.quickAddName.trim();
             if (!name) return;
+            if (!sectionId) return;
 
             // Mark as local action to prevent double refresh from WebSocket
             this.markLocalAction('item_created');
