@@ -1,0 +1,229 @@
+{
+  "meta": {
+    "code": "fa",
+    "name": "فارسی",
+    "flag": "IR"
+  },
+  "common": {
+    "add": "افزودن",
+    "cancel": "لغو",
+    "save": "ذخیره",
+    "delete": "حذف",
+    "edit": "ویرایش",
+    "close": "بستن",
+    "create": "ایجاد",
+    "name": "نام",
+    "description": "توضیحات",
+    "reserved_name": "این نام برای استفاده در سیستم محفوظ است."
+  },
+  "nav": {
+    "settings": "تنظیمات",
+    "logout": "خروج"
+  },
+  "list": {
+    "title": "لیست خرید کوفان",
+    "empty_list": "لیست خالی",
+    "shopping_list": "لیست خرید",
+    "completed": "تمام",
+    "bought": "خریده شده",
+    "name_exists": "لیستی با این نام وجود دارد."
+  },
+  "items": {
+    "what_to_buy": "چی یم؟",
+    "note": "یادداشت ...",
+    "note_optional": "یادداشت (اختیاری)",
+    "name": "نام ...",
+    "quantity": "تعداد (مثلا 2(",
+    "new_product": "محصول جدید",
+    "select_section": "انتخاب بخش ...",
+    "section": "بخش ...",
+    "add_more": "بیشتر اضافه کن",
+    "no_items": "هیچ محصولی یافت نشد",
+    "add_first_item": "اولین محصول خود را اضافه کنید",
+    "quick_add": "افزودن سریع به بخش",
+    "more_options": "انتخاب بیشتر",
+    "check_all": "انتخاب همه",
+    "uncheck_all": "عدم انتخاب همه",
+    "sort_mode": "ترتیب مرتب سازی",
+    "sort_manual": "دستی",
+    "sort_alphabetical": "الف تا ی",
+    "sort_alphabetical_desc": "ی تا الف"
+  },
+  "sections": {
+    "title": "بخش ها",
+    "new_section": "بخش جدید ...",
+    "section_list": "لیست بخش ها",
+    "manage": "مدیریت بخش ها",
+    "select": "انتخاب",
+    "no_sections": "هیچ بخشی یافت نشد",
+    "add_first_section": "برای شروع، اولین بخش خود را اضافه کنید",
+    "add_section_btn": "اولین بخش را اضافه کنید",
+    "default": "عمومی"
+  },
+  "actions": {
+    "move_up": "برو بالا",
+    "move_down": "برو پایین",
+    "move": "برو",
+    "uncertain": "نا مشخص",
+    "certain": "مشخص",
+    "remove_mark": "حذف علامت",
+    "mark_uncertain": "به عنوان نامشخص علامت بزن"
+  },
+  "settings": {
+    "title": "تنظیمات",
+    "theme": "تم",
+    "theme_light": "روشن",
+    "theme_dark": "تیره",
+    "theme_system": "سیستم",
+    "language": "زبان",
+    "coming_soon": "به زودی",
+    "sponsor": "آیا میخواهید از برنامه حمایت کنید؟ به سبد اضافه کنید!",
+    "report_bug": "باگ پیدا کردید؟ به من بگید!",
+    "tab_account": "اکانت",
+    "tab_shopping_list": "لیست خرید",
+    "tab_data": "داده",
+    "delete_completed": "همه موارد خریده شده را حذف کن",
+    "delete_completed_description": "همه مواردی که علامت خریده شده دارند حذف کن.",
+    "history_section_mode": "بخش پیشینه برای پیشنهاد",
+    "use_first_section": "از بخش اول استفاده کن",
+    "use_first_section_desc": "اگر بخش وجود ندارد آن را به اولین بخش موجود اضافه کن",
+    "auto_create_section": "ایجاد خودکار بخش",
+    "auto_create_section_desc": "اگر بخش وجود ندارد آن را همان نام ایجاد کن",
+    "update_available": "نسخه جدید موجود است"
+  },
+  "login": {
+    "title": "ورود - کوفان",
+    "subtitle": "برای ادامه وارد شوید.",
+    "password": "رمزعبور",
+    "password_placeholder": "رمزعبور را وراد کنید...",
+    "submit": "ورود",
+    "error_invalid": "رمزعبور اشتباه است",
+    "error_rate_limited": "تعداد درخواست اشتباد زیاد است. لطفا بعدا امتحان کنید."
+  },
+  "confirm": {
+    "delete_item": "آیا \"{{name}}\" حذف شود؟",
+    "delete_sections": "آیا {{count}} بخش حذف شود؟",
+    "delete_section": "آیا بخش'{{name}}' حذف شود؟",
+    "delete_completed_items": "آیا همه موارد خریده شده حذف شود؟"
+  },
+  "stats": {
+    "progress": "در حال پردازش"
+  },
+  "status": {
+    "syncing": "در حال بروزرسانی"
+  },
+  "error": {
+    "generic": "خطا",
+    "delete_items": "خطا در حذف مورد"
+  },
+  "offline": {
+    "title": "حالت آفلاین",
+    "message": "شما آفلاین هستید. همه تغییرات هنگام اتصال مجدد بروزرسانی خواهند شد.",
+    "hint": "تغییرات به طورخودکار بروزرسانی خواهند شد.",
+    "action_blocked": "این کار نیاز به اتصال به اینترنت دارد.",
+    "available_actions": "قابل دسترس در حالت آفلاین:",
+    "can_add": "اضافه کردن محصولات",
+    "can_toggle": "علامت زدن و برداشتن علامت موارد",
+    "can_edit": "ویرایش محصولات",
+    "can_uncertain": "به عنوان نامشخص علامت بزن.",
+    "back_online": "شما دوباره آنلاین هستید. همه چیز بروزرسانی شد!",
+    "queued": "برای بروزرسانی ذخیره شد"
+  },
+  "history": {
+    "title": "پیشینه محصول",
+    "description": "محصولات برای پیشنهاد خودکار ذخیره شده اند. در صورت وجود اشتلاه تایپی یا عدم نیاز حذف کنید.",
+    "manage": "مدیریت پیشینه",
+    "search_placeholder": "جستوجوی پیشینه...",
+    "empty": "هیچ محصولی ذخیرهنشده است.",
+    "delete_selected": "حذف موارد انتخابی",
+    "confirm_delete": "آیا \"{{name}}\" از پیشینه حذف شود؟",
+    "confirm_delete_batch": "آیا {{count}} محصول از پیشینه حذف شوند؟",
+    "deleted": "تعداد {{count}} محصول حذف شد."
+  },
+  "lists": {
+    "title": "لیست های شما",
+    "manage": "مدیریت لیست ها",
+    "new_list": "افزودن لیست جدید...",
+    "no_lists": "هیچ لیستی یافت نشد",
+    "add_first_list": "اولین لیست خرید خود را اضافه کنید",
+    "switch": "تغییر به",
+    "active": "فعال",
+    "icon": "آیکن",
+    "delete_confirm": "آیا لیست \"{{name}}\" حذف شود؟ همه موارد از بین خواهند رفت."
+  },
+  "templates": {
+    "title": "قالب ها",
+    "new_template": "قالب جدید",
+    "apply": "اعمال",
+    "applied": "قالب اعمال شد",
+    "confirm_apply": "آیا موارد از قالب به لیست فعال منتقل شوند؟",
+    "create_from_list": "از لیست قالب درست کن",
+    "from_list_hint": "قالب از موارد خرید نشده لیست فعال ایجاد خواهد شد.",
+    "edit": "ویرایش قالب",
+    "items": "موارد",
+    "section": "بخش",
+    "add_item": "افزودن مورد",
+    "empty": "قالب خالی است"
+  },
+  "onboarding": {
+    "welcome": "به کوفان خوش آمدید!",
+    "description": "منشی شخصی خرید شما. برای شروع اولین لیست خریدتان را ایجاد کنید.",
+    "list_name": "نام لیست",
+    "list_placeholder": "برای مثال خرید هفتگی",
+    "create_list": "ایجاد لیست خرید",
+    "feature_sections": "بخش ها",
+    "feature_templates": "زمان واقعی",
+    "feature_offline": "آفلاین"
+  },
+  "export": {
+    "title": "استخراج داده",
+    "download_json": "دانلود JSON",
+    "download_csv": "دانلود CSV",
+    "include_templates": "قالب ها هم شامل شوند."
+  },
+  "import": {
+    "title": "وارد کردن داده",
+    "select_file": "فایل را برای وارد کردن انتخاب کنید",
+    "preview_title": "پیش نمایش وارد کردن",
+    "confirm": "وارد کن",
+    "success": "داده ها با موفقت وارد شدند.",
+    "error": "وارد کردن داده ها با خطا مواجه شد.",
+    "error_preview": "پیش نمایش فایل با خطا مواجه شد",
+    "error_file_too_large": "فایل خیلی بزگ است (حداکثر 5 مگابایت)",
+    "error_invalid_format": "فایل انتخابی صحیح نیست. لطفا JSON یا CSV انتخاب کنید.",
+    "error_invalid_file": "فایل نامعتبر",
+    "lists": "لیست ها",
+    "items": "موارد",
+    "templates": "قالب ها",
+    "history": "پیشینه پیشنهادها",
+    "conflict_warning": "این لیست ها از قبل موجود هستند:",
+    "conflict_skip": "رد شو - این لیست ها را وارد نکن",
+    "conflict_replace": "جایگزین - لیست های موجود را حذف و لیست های جدید را وارد کن",
+    "conflict_copy": ":کپی - لیست ها را با پسوند (copy) ایجاد کن",
+    "copy_suffix": "کپی"
+  },
+  "whats_new": {
+    "title": "چه چیزی در کوفان 2.0 جدید است",
+    "subtitle": "نمای ظاهری از نو بازسازی شده است.",
+    "body": "حالا همه اعمال آنی هستند - دیگر بارگذاری مجدد صفحه، چشمک زدن یا پرش نخواهید دید. همه چیز به صورت زمان واقعی بروزرسانی می شود.",
+    "bugs": "اگر چیز غیرعادی دیدید حتما اطلاع دهید -  بازخورد شما خیلی مهم است.",
+    "enjoy": "لذت ببر!",
+    "dismiss": "فهمیدم"
+  },
+  "danger_zone": {
+    "title": "منطقه خطر",
+    "clear_database": "دیتابیس را پاک کن",
+    "clear_database_warning": "این کار دیتابیس را برای همیشه پاک خواهد کرد. این کار قابل برگشت نیست.",
+    "confirm_title": "همه داده ها حذف شوند؟",
+    "will_delete": "موارد زیر حذف خواهند شد:",
+    "delete_lists": "همه لیست های خرید",
+    "delete_sections": "همه بخش ها",
+    "delete_items": "همه موارد",
+    "delete_templates": "همه قالب ها",
+    "delete_history": "همه پیشینه محصولات",
+    "type_to_confirm": "نوع ",
+    "success": "دیتابیس پاک شد",
+    "error": "پاکسازی دیتابیس با خطا مواجه شد.",
+    "error_invalid_confirmation": "کلمه تایید نامعتبر"
+  }
+}
