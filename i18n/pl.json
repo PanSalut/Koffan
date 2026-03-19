@@ -202,14 +202,6 @@
     "conflict_copy": "Utwórz kopię - dodaj z sufiksem (kopia)",
     "copy_suffix": "kopia"
   },
-  "whats_new": {
-    "title": "Co nowego w Koffan 2.0",
-    "subtitle": "Cały frontend został przebudowany od podstaw.",
-    "body": "Wszystkie akcje działają teraz natychmiastowo - bez przeładowań strony, migotania i przeskakiwania layoutu. Wszystko aktualizuje się płynnie w czasie rzeczywistym.",
-    "bugs": "Jeśli zauważysz coś dziwnego, daj znać - Twoje uwagi bardzo pomagają!",
-    "enjoy": "Miłego korzystania!",
-    "dismiss": "OK"
-  },
   "danger_zone": {
     "title": "Strefa niebezpieczna",
     "clear_database": "Wyczyść bazę danych",

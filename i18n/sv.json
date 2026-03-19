@@ -201,14 +201,6 @@
     "conflict_copy": "Skapa kopia - lägg till med suffix (kopia)",
     "copy_suffix": "kopia"
   },
-  "whats_new": {
-    "title": "Nyheter i Koffan 2.0",
-    "subtitle": "Hela frontend har byggts om fran grunden.",
-    "body": "Alla atgarder ar nu omedelbara - inga sidomladdningar, flimmer eller layouthopp. Allt uppdateras smidigt i realtid.",
-    "bugs": "Om du marker nagot ovanligt, rapportera det garna - din feedback hjalper mycket!",
-    "enjoy": "Ha det bra med appen!",
-    "dismiss": "Uppfattat"
-  },
   "danger_zone": {
     "title": "Farlig zon",
     "clear_database": "Rensa databasen",

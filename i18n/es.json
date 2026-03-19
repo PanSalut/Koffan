@@ -201,14 +201,6 @@
     "conflict_copy": "Crear copia - añadir con sufijo (copia)",
     "copy_suffix": "copia"
   },
-  "whats_new": {
-    "title": "Novedades en Koffan 2.0",
-    "subtitle": "Todo el frontend ha sido reconstruido desde cero.",
-    "body": "Todas las acciones son ahora instantaneas - sin recargas de pagina, parpadeos ni saltos de diseño. Todo se actualiza de forma fluida en tiempo real.",
-    "bugs": "Si notas algo inusual, reportalo por favor - tu opinion ayuda mucho!",
-    "enjoy": "A disfrutar!",
-    "dismiss": "Entendido"
-  },
   "danger_zone": {
     "title": "Zona de peligro",
     "clear_database": "Borrar base de datos",

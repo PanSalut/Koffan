@@ -201,14 +201,6 @@
     "conflict_copy": "Lag kopi - legg til med suffiks (kopi)",
     "copy_suffix": "kopi"
   },
-  "whats_new": {
-    "title": "Hva er nytt i Koffan 2.0",
-    "subtitle": "Hele frontend er bygget opp fra bunnen av.",
-    "body": "Alle handlinger er na oeyeblikkelige - ingen sideinnlastinger, flimring eller layouthopp. Alt oppdateres jevnt i sanntid.",
-    "bugs": "Hvis du merker noe uvanlig, vennligst rapporter det - tilbakemeldingen din hjelper mye!",
-    "enjoy": "God fornoyelse!",
-    "dismiss": "Forstatt"
-  },
   "danger_zone": {
     "title": "Faresone",
     "clear_database": "Tøm databasen",

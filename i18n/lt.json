@@ -201,14 +201,6 @@
 		"conflict_copy": "Sukurti kopiją - pridėti su priesaga (kopija)",
 		"copy_suffix": "kopija"
 	},
-	"whats_new": {
-		"title": "Kas naujo Koffan 2.0",
-		"subtitle": "Visas frontend buvo perkurtas nuo nulio.",
-		"body": "Visi veiksmai dabar vyksta akimirksniu - jokiu puslapio perkrovimu, mirgejimo ar isdestymo sokiu. Viskas atsinaujina sklandziai realiuoju laiku.",
-		"bugs": "Jei pastebejote ka nors neiprastai, praneskit - jusu atsiliepimai labai padeda!",
-		"enjoy": "Gero naudojimosi!",
-		"dismiss": "Supratau"
-	},
 	"danger_zone": {
 		"title": "Pavojinga zona",
 		"clear_database": "Išvalyti duomenų bazę",

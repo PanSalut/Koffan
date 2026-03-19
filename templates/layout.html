@@ -407,37 +407,6 @@
         </svg>
     </div>
 
-    <!-- What's New v2.0 popup -->
-    <div x-data="{ show: !localStorage.getItem('koffan_whats_new_v2') }" x-show="show" x-cloak
-         class="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
-        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="localStorage.setItem('koffan_whats_new_v2', 'true'); show = false"></div>
-        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto shadow-xl"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
-             x-transition:enter-end="translate-y-0 md:scale-100 opacity-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="translate-y-0 md:scale-100 opacity-100"
-             x-transition:leave-end="translate-y-full md:translate-y-0 md:scale-95 opacity-0">
-            <div class="flex justify-center mb-4">
-                <div class="w-14 h-14 rounded-2xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                    <svg class="w-7 h-7 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                    </svg>
-                </div>
-            </div>
-            <h2 class="text-xl font-bold text-center text-stone-900 dark:text-stone-100 mb-2" x-text="t('whats_new.title')"></h2>
-            <p class="text-sm text-center text-stone-500 dark:text-stone-400 mb-4" x-text="t('whats_new.subtitle')"></p>
-            <div class="space-y-3 mb-6">
-                <p class="text-sm text-stone-700 dark:text-stone-300" x-text="t('whats_new.body')"></p>
-                <p class="text-sm text-stone-500 dark:text-stone-400" x-text="t('whats_new.bugs')"></p>
-                <p class="text-sm font-medium text-stone-700 dark:text-stone-300" x-text="t('whats_new.enjoy')"></p>
-            </div>
-            <button @click="localStorage.setItem('koffan_whats_new_v2', 'true'); show = false"
-                    class="w-full py-3 px-4 bg-pink-400 hover:bg-pink-500 active:bg-pink-600 text-white font-semibold rounded-xl transition-colors"
-                    x-text="t('whats_new.dismiss')"></button>
-        </div>
-    </div>
-
     {{embed}}
 
     <script src="/static/offline-storage.js?v=13"></script>

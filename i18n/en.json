@@ -202,14 +202,6 @@
     "conflict_copy": "Copy - create with suffix (copy)",
     "copy_suffix": "copy"
   },
-  "whats_new": {
-    "title": "What's new in Koffan 2.0",
-    "subtitle": "The entire frontend has been rebuilt from the ground up.",
-    "body": "All actions are now instant - no more page reloads, flickering or layout jumps. Everything updates smoothly in real time.",
-    "bugs": "If you notice anything unusual, please report it - your feedback helps a lot!",
-    "enjoy": "Enjoy!",
-    "dismiss": "Got it"
-  },
   "danger_zone": {
     "title": "Danger Zone",
     "clear_database": "Clear Database",

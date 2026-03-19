@@ -201,14 +201,6 @@
     "conflict_copy": "Vytvoriť kópiu - pridať s príponou (kópia)",
     "copy_suffix": "kópia"
   },
-  "whats_new": {
-    "title": "Co je nove v Koffan 2.0",
-    "subtitle": "Cely frontend bol prebudovany od zakladov.",
-    "body": "Vsetky akcie su teraz okamzite - ziadne nacitavanie stranok, blikanie ani preskakovanie rozlozenia. Vsetko sa aktualizuje plynule v realnom case.",
-    "bugs": "Ak si vsimnes nieco neobvykle, daj nam vediet - tvoja spatna vazba velmi pomaha!",
-    "enjoy": "Uzivaj si to!",
-    "dismiss": "Rozumiem"
-  },
   "danger_zone": {
     "title": "Nebezpečná zóna",
     "clear_database": "Vymazať databázu",
