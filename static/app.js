@@ -77,6 +77,7 @@ window.checkEmptyStates = function() {
     const hasItems = sl.querySelector('[id^="item-"]') !== null;
     const daf = document.getElementById('desktop-add-form');
     const mab = document.getElementById('mobile-add-item-btn');
+    const gqa = document.getElementById('global-quick-add');
 
     if (!hasSections) {
         // No sections: show "No sections", hide "No products", hide add form
@@ -97,6 +98,7 @@ window.checkEmptyStates = function() {
         }
         if (daf) daf.style.display = 'none';
         if (mab) mab.style.display = 'none';
+        if (gqa) gqa.style.display = 'none';
     } else if (!hasItems) {
         // Sections exist but no items: show "No products", hide "No sections", show add form
         document.getElementById('empty-no-sections')?.remove();
@@ -115,12 +117,14 @@ window.checkEmptyStates = function() {
         }
         if (daf) daf.style.removeProperty('display');
         if (mab) mab.style.removeProperty('display');
+        if (gqa) gqa.style.removeProperty('display');
     } else {
         // Has sections and items: remove all empty states, show add form
         document.getElementById('empty-no-sections')?.remove();
         document.getElementById('empty-no-products')?.remove();
         if (daf) daf.style.removeProperty('display');
         if (mab) mab.style.removeProperty('display');
+        if (gqa) gqa.style.removeProperty('display');
     }
 };
 
@@ -279,7 +283,6 @@ function shoppingList() {
         showQuickAddSuggestions: false,
         selectedQuickAddSuggestionIndex: -1,
         _quickAddSuggestionTimer: null,
-        showGlobalQuickAdd: false,
 
         // Search
         searchQuery: '',
@@ -302,8 +305,9 @@ function shoppingList() {
             if (this.showAddItem) {
                 return true;
             }
-            // Check if global quick add bar is open
-            if (this.showGlobalQuickAdd) {
+            // Check if global quick add bar input is focused
+            const globalInput = document.getElementById('global-quick-add-input');
+            if (globalInput && document.activeElement === globalInput) {
                 return true;
             }
             // Check if desktop form has focus (name input or section select)
@@ -2307,10 +2311,7 @@ function shoppingList() {
                 iosTrigger.focus();
             }
 
-            // Close global quick add if open
-            this.showGlobalQuickAdd = false;
-
-            // Close any other open quick add
+            // Close any other open quick add and open this section's input
             this.quickAddSectionId = sectionId;
             this.quickAddName = '';
             this.quickAddSuggestions = [];
@@ -2334,11 +2335,23 @@ function shoppingList() {
             this.quickAddSuggestions = [];
             this.showQuickAddSuggestions = false;
             this.selectedQuickAddSuggestionIndex = -1;
-            this.showGlobalQuickAdd = false;
         },
 
-        // Global quick add - opens inline input at top of list (no section selection needed)
-        openGlobalQuickAdd() {
+        // Get the first section ID from the DOM dynamically (used by global quick-add)
+        getDefaultSectionId() {
+            const section = document.querySelector('#sections-list [data-section-id]');
+            return section ? parseInt(section.dataset.sectionId, 10) : 0;
+        },
+
+        // Submit global quick-add (adds to first section)
+        async submitGlobalQuickAdd() {
+            const sectionId = this.getDefaultSectionId();
+            if (!sectionId) return;
+            await this.submitQuickAdd(sectionId);
+        },
+
+        // Global quick add - focuses the always-visible bottom input
+        focusGlobalQuickAdd() {
             // iOS keyboard trick: focus hidden input SYNCHRONOUSLY to trigger keyboard
             const iosTrigger = document.getElementById('ios-keyboard-trigger');
             if (iosTrigger) {
@@ -2346,34 +2359,35 @@ function shoppingList() {
             }
 
             // Close any section-level quick add
-            this.quickAddSectionId = null;
-            this.quickAddName = '';
-            this.quickAddSuggestions = [];
-            this.showQuickAddSuggestions = false;
-            this.selectedQuickAddSuggestionIndex = -1;
-
-            this.showGlobalQuickAdd = true;
+            if (this.quickAddSectionId !== null) {
+                this.quickAddSectionId = null;
+                this.quickAddSuggestions = [];
+                this.showQuickAddSuggestions = false;
+                this.selectedQuickAddSuggestionIndex = -1;
+            }
 
             this.$nextTick(() => {
                 setTimeout(() => {
                     const input = document.getElementById('global-quick-add-input');
                     if (input) {
                         input.focus();
-                        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        input.select();
                     }
                 }, 10);
             });
         },
 
+        // Legacy helpers kept for backward compatibility (no-ops now that bar is always visible)
+        openGlobalQuickAdd() { this.focusGlobalQuickAdd(); },
         closeGlobalQuickAdd() {
-            this.showGlobalQuickAdd = false;
             this.quickAddName = '';
             this.quickAddSuggestions = [];
             this.showQuickAddSuggestions = false;
             this.selectedQuickAddSuggestionIndex = -1;
         },
 
-        handleGlobalQuickAddKeydown(event, defaultSectionId) {
+        handleGlobalQuickAddKeydown(event) {
+            const defaultSectionId = this.getDefaultSectionId();
             if (!defaultSectionId) return;
             // Handle suggestions navigation
             if (this.showQuickAddSuggestions && this.quickAddSuggestions.length > 0) {
@@ -2402,18 +2416,19 @@ function shoppingList() {
             // Handle Enter to submit
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                this.submitQuickAdd(defaultSectionId);
+                this.submitGlobalQuickAdd();
                 return;
             }
 
-            // Handle Escape to close
+            // Handle Escape: clear suggestions first, then clear input (bar stays visible)
             if (event.key === 'Escape') {
                 event.preventDefault();
                 if (this.showQuickAddSuggestions) {
                     this.showQuickAddSuggestions = false;
                     this.selectedQuickAddSuggestionIndex = -1;
                 } else {
-                    this.closeGlobalQuickAdd();
+                    this.quickAddName = '';
+                    document.getElementById('global-quick-add-input')?.blur();
                 }
             }
         },
