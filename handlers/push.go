@@ -123,7 +123,6 @@ func UnsubscribePush(c *fiber.Ctx) error {
 type PushNotificationPayload struct {
 	Title    string `json:"title"`
 	Body     string `json:"body"`
-	Tag      string `json:"tag"`
 	ListName string `json:"listName"`
 	ItemName string `json:"itemName"`
 	Event    string `json:"event"`

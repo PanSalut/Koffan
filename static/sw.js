@@ -225,10 +225,8 @@ self.addEventListener('push', (event) => {
         body: payload.body || '',
         icon: '/static/icon-192.png',
         badge: '/static/icon-192.png',
-        // Group notifications per list so multiple rapid notifications collapse
-        tag: payload.tag || 'koffan',
-        // Replace previous notification with same tag instead of stacking
-        renotify: false,
+        // Each event gets a unique tag so notifications stack rather than replacing
+        tag: 'koffan-' + Date.now(),
         data: {
             listName: payload.listName,
             itemName: payload.itemName,

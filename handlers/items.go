@@ -82,7 +82,6 @@ func CreateItem(c *fiber.Ctx) error {
 				SendPushNotifications(PushNotificationPayload{
 					Title:    listName,
 					Body:     "➕ " + name,
-					Tag:      "koffan-list-" + listName,
 					ListName: listName,
 					ItemName: name,
 					Event:    "item_created",
@@ -116,7 +115,6 @@ func CreateItem(c *fiber.Ctx) error {
 		SendPushNotifications(PushNotificationPayload{
 			Title:    listName,
 			Body:     "➕ " + name,
-			Tag:      "koffan-list-" + listName,
 			ListName: listName,
 			ItemName: name,
 			Event:    "item_created",
@@ -247,7 +245,6 @@ func ToggleItem(c *fiber.Ctx) error {
 			SendPushNotifications(PushNotificationPayload{
 				Title:    listName,
 				Body:     "✅ " + item.Name,
-				Tag:      "koffan-list-" + listName,
 				ListName: listName,
 				ItemName: item.Name,
 				Event:    "item_checked",
