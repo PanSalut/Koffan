@@ -695,14 +695,7 @@ function shoppingList() {
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
-                    const hiddenFor = Date.now() - (this._lastHiddenAt || 0);
-                    // Only full refresh if hidden for more than 3 seconds
-                    // Brief lock/unlock doesn't need a refresh and avoids race conditions
-                    if (hiddenFor > 3000) {
-                        this.fullRefresh();
-                    }
-                } else {
-                    this._lastHiddenAt = Date.now();
+                    this.fullRefresh();
                 }
             });
         },
@@ -985,14 +978,12 @@ function shoppingList() {
 
             this._refreshListTimer = setTimeout(async () => {
                 if (this._isRefreshing) return;
-                if (this._abortRefreshList) return;
                 this._isRefreshing = true;
 
                 try {
                     // Fetch current sections list as JSON
                     const resp = await fetch('/sections/list?format=json');
                     if (!resp.ok) { this._isRefreshing = false; return; }
-                    if (this._abortRefreshList) { this._isRefreshing = false; return; }
                     const sections = await resp.json();
                     const sectionsList = document.getElementById('sections-list');
                     if (!sectionsList) { this._isRefreshing = false; return; }
@@ -1014,7 +1005,6 @@ function shoppingList() {
 
                     // Refresh existing + add new sections
                     for (const section of sections) {
-                        if (this._abortRefreshList) break;
                         const el = document.getElementById(`section-${section.id}`);
                         if (el) {
                             await this.refreshSection(section.id);
@@ -1040,7 +1030,6 @@ function shoppingList() {
                 }
 
                 this._isRefreshing = false;
-                this._abortRefreshList = false;
             }, 100); // 100ms debounce
         },
 
@@ -1473,16 +1462,6 @@ function shoppingList() {
 
             this.markLocalAction('item_toggled');
 
-            // Apply visual toggle immediately for instant feedback
-            this._applyVisualToggle(itemId, sectionId);
-
-            // Cancel any pending/running refreshList to prevent it from overwriting our optimistic update
-            if (this._refreshListTimer) {
-                clearTimeout(this._refreshListTimer);
-                this._refreshListTimer = null;
-            }
-            this._abortRefreshList = true;
-
             try {
                 const response = await this.offlineFetch(
                     `/items/${itemId}/toggle`,
@@ -1491,32 +1470,18 @@ function shoppingList() {
                 );
 
                 if (response.offline) {
-                    await this._applyOfflineToggle(itemId, sectionId, { skipVisualToggle: true });
+                    await this._applyOfflineToggle(itemId, sectionId);
                     return;
                 }
 
                 if (!response.ok) {
                     console.error('[Toggle] Server error:', response.status);
-                    // Revert optimistic toggle
-                    this._applyVisualToggle(itemId, sectionId);
                     return;
                 }
 
-                // Replace item with proper server-rendered template
-                try {
-                    const htmlResp = await fetch(`/items/${itemId}/html`);
-                    if (htmlResp.ok) {
-                        const html = await htmlResp.text();
-                        const currentItem = document.getElementById(`item-${itemId}`);
-                        if (currentItem) {
-                            currentItem.insertAdjacentHTML('afterend', html.trim());
-                            try { Alpine.destroyTree(currentItem); } catch (_) {}
-                            currentItem.remove();
-                        }
-                    }
-                } catch (_) {
-                    // Optimistic toggle is good enough if item fetch fails
-                }
+                // Refresh the entire section to get correct sort order
+                await this.refreshSection(sectionId);
+                this.refreshStats();
             } catch (error) {
                 // Intermittent signal: isOnline=true but fetch fails
                 console.error('[Toggle] Failed, falling back to offline queue:', error);
@@ -1525,15 +1490,13 @@ function shoppingList() {
                     url: `/items/${itemId}/toggle`,
                     method: 'POST'
                 });
-                await this._applyOfflineToggle(itemId, sectionId, { skipVisualToggle: true });
+                await this._applyOfflineToggle(itemId, sectionId);
             } finally {
                 delete this._toggleInFlight[itemId];
-                this._abortRefreshList = false;
             }
         },
 
-        // Optimistic visual toggle - instant UI feedback without waiting for server
-        _applyVisualToggle(itemId, sectionId) {
+        async _applyOfflineToggle(itemId, sectionId) {
             const itemEl = document.getElementById(`item-${itemId}`);
             if (!itemEl) return;
 
@@ -1575,13 +1538,6 @@ function shoppingList() {
                     textEl.classList.remove('text-stone-700');
                     textEl.classList.add('line-through', 'text-stone-400');
                 }
-                // Hide drag handle and action buttons (completed item UI)
-                const dragHandle = itemEl.querySelector('.drag-handle');
-                const mobileActionBtn = itemEl.querySelector('button.md\\:hidden');
-                const desktopActions = itemEl.querySelector('.hidden.md\\:flex');
-                if (dragHandle) dragHandle.style.display = 'none';
-                if (mobileActionBtn) mobileActionBtn.style.display = 'none';
-                if (desktopActions) desktopActions.style.display = 'none';
                 // Move to completed items container
                 if (section) {
                     const completedContainer = section.querySelector('.completed-items');
@@ -1593,31 +1549,6 @@ function shoppingList() {
 
             // Update stats percentage
             this.stats.percentage = Math.round((this.stats.completed / this.stats.total) * 100) || 0;
-
-            // Animate checkbox
-            if (checkboxSpan) {
-                checkboxSpan.classList.add('checkbox-pulse');
-                setTimeout(() => checkboxSpan.classList.remove('checkbox-pulse'), 300);
-            }
-
-            // Update section counters
-            if (section) {
-                this.updateSectionCounter(section);
-                this.updateCompletedCount(section);
-                this.updateCompletedVisibility(section);
-            }
-        },
-
-        async _applyOfflineToggle(itemId, sectionId, { skipVisualToggle = false } = {}) {
-            if (!skipVisualToggle) {
-                this._applyVisualToggle(itemId, sectionId);
-            }
-
-            const itemEl = document.getElementById(`item-${itemId}`);
-            if (!itemEl) return;
-
-            const checkboxSpan = itemEl.querySelector('button > span');
-            const isCompleted = checkboxSpan && checkboxSpan.classList.contains('bg-pink-400');
 
             // Add pending sync styling
             itemEl.classList.add('pending-sync', 'bg-rose-50/40', 'border-l-2', 'border-rose-400');
@@ -1637,15 +1568,28 @@ function shoppingList() {
                 if (contentDiv) contentDiv.after(badge);
             }
 
+            // Animate checkbox
+            if (checkboxSpan) {
+                checkboxSpan.classList.add('checkbox-pulse');
+                setTimeout(() => checkboxSpan.classList.remove('checkbox-pulse'), 300);
+            }
+
+            // Update section counters
+            if (section) {
+                this.updateSectionCounter(section);
+                this.updateCompletedCount(section);
+                this.updateCompletedVisibility(section);
+            }
+
             // Update IndexedDB cache
             if (this.offlineStorageReady) {
                 await window.offlineStorage.updateItemInCache(
                     parseInt(itemId),
-                    { completed: isCompleted }
+                    { completed: !isCompleted }
                 );
             }
 
-            console.log('[Toggle] Offline toggle applied:', itemId, isCompleted ? '-> completed' : '-> active');
+            console.log('[Toggle] Offline toggle applied:', itemId, isCompleted ? '-> active' : '-> completed');
         },
 
         async moveItemDesktop(itemId, fromSectionId, toSectionId) {
