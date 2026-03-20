@@ -1501,6 +1501,22 @@ function shoppingList() {
                     this._applyVisualToggle(itemId, sectionId);
                     return;
                 }
+
+                // Replace item with proper server-rendered template
+                try {
+                    const htmlResp = await fetch(`/items/${itemId}/html`);
+                    if (htmlResp.ok) {
+                        const html = await htmlResp.text();
+                        const currentItem = document.getElementById(`item-${itemId}`);
+                        if (currentItem) {
+                            currentItem.insertAdjacentHTML('afterend', html.trim());
+                            try { Alpine.destroyTree(currentItem); } catch (_) {}
+                            currentItem.remove();
+                        }
+                    }
+                } catch (_) {
+                    // Optimistic toggle is good enough if item fetch fails
+                }
             } catch (error) {
                 // Intermittent signal: isOnline=true but fetch fails
                 console.error('[Toggle] Failed, falling back to offline queue:', error);
@@ -1526,10 +1542,6 @@ function shoppingList() {
             const isCompleted = checkboxSpan && checkboxSpan.classList.contains('bg-pink-400');
 
             // Toggle visual checkbox state
-            const dragHandle = itemEl.querySelector('.drag-handle');
-            const mobileActionBtn = itemEl.querySelector('button.md\\:hidden');
-            const desktopActions = itemEl.querySelector('.hidden.md\\:flex');
-
             if (isCompleted) {
                 // Uncomplete: pink checkbox -> empty border
                 if (checkboxSpan) {
@@ -1543,10 +1555,6 @@ function shoppingList() {
                     textEl.classList.remove('line-through', 'text-stone-400', 'text-stone-300');
                     textEl.classList.add('text-stone-700');
                 }
-                // Show drag handle and action buttons (active item UI)
-                if (dragHandle) dragHandle.style.display = '';
-                if (mobileActionBtn) mobileActionBtn.style.display = '';
-                if (desktopActions) desktopActions.style.display = '';
                 // Move to active items container
                 if (section) {
                     const activeContainer = section.querySelector('.active-items');
@@ -1568,6 +1576,9 @@ function shoppingList() {
                     textEl.classList.add('line-through', 'text-stone-400');
                 }
                 // Hide drag handle and action buttons (completed item UI)
+                const dragHandle = itemEl.querySelector('.drag-handle');
+                const mobileActionBtn = itemEl.querySelector('button.md\\:hidden');
+                const desktopActions = itemEl.querySelector('.hidden.md\\:flex');
                 if (dragHandle) dragHandle.style.display = 'none';
                 if (mobileActionBtn) mobileActionBtn.style.display = 'none';
                 if (desktopActions) desktopActions.style.display = 'none';
