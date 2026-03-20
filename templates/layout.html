@@ -217,6 +217,11 @@
             animation: none !important;
         }
 
+        /* Prevent Chrome Android PWA native pull-to-refresh from interfering with custom PTR */
+        html, body {
+            overscroll-behavior-y: none;
+        }
+
         /* Prevent zoom on touch devices */
         * {
             touch-action: manipulation;
