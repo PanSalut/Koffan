@@ -88,7 +88,7 @@
     "use_first_section": "از بخش اول استفاده کن",
     "use_first_section_desc": "اگر بخش وجود ندارد آن را به اولین بخش موجود اضافه کن",
     "auto_create_section": "ایجاد خودکار بخش",
-    "auto_create_section_desc": "اگر بخش وجود ندارد آن را همان نام ایجاد کن",
+    "auto_create_section_desc": "اگر بخش وجود ندارد آن را با همان نام ایجاد کن",
     "update_available": "نسخه جدید موجود است"
   },
   "login": {
