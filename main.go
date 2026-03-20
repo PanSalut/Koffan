@@ -244,6 +244,7 @@ func main() {
 	app.Post("/import/preview", handlers.PreviewImport)
 
 	// Database management
+	app.Get("/api/database/csrf-token", handlers.GenerateCSRFToken)
 	app.Post("/api/database/clear", handlers.ClearDatabase)
 
 	// Get port from env or default to 3000
