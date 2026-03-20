@@ -46,7 +46,7 @@
                     <!-- Info (clickable) -->
                     <a href="/lists/{{$list.ID}}" class="flex-1 min-w-0">
                         <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{$list.Name}}</p>
-                        <p class="text-sm text-stone-400 dark:text-stone-500">{{$list.Stats.CompletedItems}}/{{$list.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
+                        <p class="text-sm text-stone-400 dark:text-stone-500" data-stats-count>{{$list.Stats.CompletedItems}}/{{$list.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
                     </a>
 
                     <!-- Progress -->
@@ -675,6 +675,11 @@ function homePage() {
         selectedIcon: '🛒',
         icons: ['🛒', '🏠', '🎁', '🎄', '🎂', '🍕', '🥗', '💊', '🐕', '🧹', '📦', '✈️', '🏋️', '📚', '🛠️', '💼'],
         isOnline: navigator.onLine,
+        // WebSocket
+        ws: null,
+        _wsInitialized: false,
+        _reconnectAttempts: 0,
+        _pingInterval: null,
         // Import state
         showImportPreview: false,
         importPreview: {},
@@ -704,6 +709,9 @@ function homePage() {
                 this.isOnline = false;
             });
 
+            // Connect WebSocket for real-time updates
+            this.initWebSocket();
+
             // Pre-cache all lists for offline use
             this.preCacheLists();
         },
@@ -726,6 +734,164 @@ function homePage() {
 
             if (seen.size > 0) {
                 console.log('[Home] Pre-caching', seen.size, 'lists for offline use');
+            }
+        },
+
+        initWebSocket() {
+            if (this._wsInitialized) return;
+            this._wsInitialized = true;
+
+            this.connectWS();
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    this.refreshListStats();
+                }
+            });
+        },
+
+        connectWS() {
+            if (this.ws) {
+                this.ws.onclose = null;
+                this.ws.close();
+                this.ws = null;
+            }
+            if (this._pingInterval) {
+                clearInterval(this._pingInterval);
+                this._pingInterval = null;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            try {
+                this.ws = new WebSocket(wsUrl);
+
+                this.ws.onopen = () => {
+                    this._reconnectAttempts = 0;
+                    this._pingInterval = setInterval(() => {
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({ type: 'ping' }));
+                        }
+                    }, 30000);
+                };
+
+                this.ws.onclose = () => {
+                    if (this._pingInterval) {
+                        clearInterval(this._pingInterval);
+                        this._pingInterval = null;
+                    }
+                    this.scheduleWSReconnect();
+                };
+
+                this.ws.onerror = (e) => {
+                    console.error('[Home] WebSocket error:', e);
+                };
+
+                this.ws.onmessage = (event) => {
+                    this.handleWSMessage(event.data);
+                };
+            } catch (e) {
+                this.scheduleWSReconnect();
+            }
+        },
+
+        scheduleWSReconnect() {
+            if (this._reconnectAttempts >= 5) return;
+            this._reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, this._reconnectAttempts), 30000);
+            setTimeout(() => this.connectWS(), delay);
+        },
+
+        handleWSMessage(data) {
+            try {
+                const message = JSON.parse(data);
+                switch (message.type) {
+                    case 'list_created':
+                        if (message.data?.id && !document.getElementById(`home-list-${message.data.id}`)) {
+                            const container = document.getElementById('lists-container');
+                            if (container) {
+                                container.insertAdjacentHTML('beforeend', this.buildListCardHtml(
+                                    message.data.id,
+                                    message.data.name,
+                                    message.data.icon || '🛒'
+                                ));
+                                Alpine.initTree(container.lastElementChild);
+                            } else {
+                                // No lists container (onboarding state) - reload to show proper UI
+                                window.location.reload();
+                            }
+                        }
+                        break;
+                    case 'list_updated':
+                        if (message.data?.id) {
+                            const el = document.getElementById(`home-list-${message.data.id}`);
+                            if (el) {
+                                const nameEl = el.querySelector('.font-medium');
+                                if (nameEl) nameEl.textContent = message.data.name;
+                                const iconEl = el.querySelector('.text-2xl span');
+                                if (iconEl) iconEl.textContent = message.data.icon || '🛒';
+                            }
+                        }
+                        break;
+                    case 'list_deleted':
+                        if (message.data?.id) {
+                            const el = document.getElementById(`home-list-${message.data.id}`);
+                            if (el) {
+                                Alpine.destroyTree(el);
+                                el.remove();
+                            }
+                        }
+                        break;
+                    case 'item_created':
+                    case 'item_deleted':
+                    case 'item_toggled':
+                    case 'item_updated':
+                    case 'section_deleted':
+                    case 'sections_deleted':
+                    case 'completed_items_deleted':
+                    case 'section_items_checked':
+                    case 'section_items_unchecked':
+                        this.refreshListStats();
+                        break;
+                }
+            } catch (e) {
+                console.error('[Home] Failed to parse WS message:', e);
+            }
+        },
+
+        async refreshListStats() {
+            try {
+                const response = await fetch('/lists?format=json');
+                if (!response.ok) return;
+                const lists = await response.json();
+                if (!Array.isArray(lists)) return;
+
+                lists.forEach(list => {
+                    const el = document.getElementById(`home-list-${list.id}`);
+                    if (!el) return;
+
+                    const stats = list.stats || {};
+                    const total = stats.total_items || 0;
+                    const completed = stats.completed_items || 0;
+                    const pct = stats.percentage || 0;
+
+                    // Update item count text (first text node in the stats paragraph)
+                    const statsP = el.querySelector('[data-stats-count]');
+                    if (statsP && statsP.firstChild && statsP.firstChild.nodeType === Node.TEXT_NODE) {
+                        statsP.firstChild.textContent = `${completed}/${total} `;
+                    }
+
+                    // Update progress bar width
+                    const bar = el.querySelector('.bg-pink-400');
+                    if (bar) bar.style.width = `${pct}%`;
+
+                    // Update percentage text
+                    const pctSpan = el.querySelector('.w-10.text-right');
+                    if (pctSpan) pctSpan.textContent = `${pct}%`;
+                });
+            } catch (e) {
+                console.error('[Home] Failed to refresh list stats:', e);
             }
         },
 
@@ -993,7 +1159,7 @@ function homePage() {
                 </a>
                 <a href="/lists/${id}" class="flex-1 min-w-0">
                     <p class="font-medium text-stone-800 dark:text-stone-100 truncate">${eName}</p>
-                    <p class="text-sm text-stone-400 dark:text-stone-500">0/0 ${completedText}</p>
+                    <p class="text-sm text-stone-400 dark:text-stone-500" data-stats-count>0/0 ${completedText}</p>
                 </a>
                 <div class="flex items-center gap-3">
                     <div class="relative">

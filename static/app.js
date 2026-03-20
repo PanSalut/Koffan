@@ -3505,6 +3505,20 @@ window.getCompletedSectionState = function(sectionId) {
         isPulling = false;
     }, { passive: true });
 
+    // Handle touch cancellation (e.g. browser takes over gesture for native pull-to-refresh)
+    document.addEventListener('touchcancel', () => {
+        if (!isPulling) {
+            startY = 0;
+            return;
+        }
+        spinner.classList.remove('visible', 'refreshing');
+        spinner.style.top = '0';
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
+        isRefreshing = false;
+    }, { passive: true });
+
     async function doRefresh() {
         // Get Alpine component and call fullRefresh
         const appEl = document.querySelector('[x-data="shoppingList()"]');
