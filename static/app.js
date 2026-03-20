@@ -1501,10 +1501,6 @@ function shoppingList() {
                     this._applyVisualToggle(itemId, sectionId);
                     return;
                 }
-
-                // Refresh the entire section to get correct sort order
-                await this.refreshSection(sectionId);
-                this.refreshStats();
             } catch (error) {
                 // Intermittent signal: isOnline=true but fetch fails
                 console.error('[Toggle] Failed, falling back to offline queue:', error);
