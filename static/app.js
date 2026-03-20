@@ -293,7 +293,7 @@ function shoppingList() {
         _refreshStatsTimer: null,
         _isRefreshing: false,
         _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
-        _fullRefreshUntil: 0, // Timestamp until which individual section refreshes are suppressed
+        _fullRefreshInProgress: false, // Flag to suppress WS-driven refreshes during full refresh
 
         // Check if add-item form is currently active (to prevent dropdown updates during form use)
         _isAddFormActive() {
@@ -633,8 +633,8 @@ function shoppingList() {
         async fullRefresh() {
             console.log('[App] Full refresh triggered');
 
-            // Suppress individual section refreshes during full refresh to prevent race conditions
-            this._fullRefreshUntil = Date.now() + 3000;
+            // Suppress WS-driven refreshes during full refresh to prevent race conditions
+            this._fullRefreshInProgress = true;
 
             // Reconnect WebSocket if needed
             const wsOpen = this.ws && this.ws.readyState === WebSocket.OPEN;
@@ -644,16 +644,20 @@ function shoppingList() {
                 this.connect();
             }
 
-            if (this.isOnline) {
-                const hadQueuedActions = await this.processOfflineQueue();
+            try {
+                if (this.isOnline) {
+                    const hadQueuedActions = await this.processOfflineQueue();
 
-                if (!hadQueuedActions) {
-                    // Smooth per-section update instead of full innerHTML swap
-                    await this.refreshSectionsSmooth();
-                    this.refreshStats();
+                    if (!hadQueuedActions) {
+                        // Smooth per-section update instead of full innerHTML swap
+                        await this.refreshSectionsSmooth();
+                        this.refreshStats();
+                    }
+
+                    this.cacheData();
                 }
-
-                this.cacheData();
+            } finally {
+                this._fullRefreshInProgress = false;
             }
         },
 
@@ -780,7 +784,7 @@ function shoppingList() {
                 console.log('WebSocket message:', message.type);
 
                 // Skip refresh-triggering messages during full refresh (background return)
-                if (Date.now() < this._fullRefreshUntil && message.type !== 'pong') {
+                if (this._fullRefreshInProgress && message.type !== 'pong') {
                     console.log(`[App] Skipping WebSocket message '${message.type}' - full refresh in progress`);
                     return;
                 }
@@ -1003,7 +1007,7 @@ function shoppingList() {
                     for (const section of sections) {
                         const el = document.getElementById(`section-${section.id}`);
                         if (el) {
-                            await this.refreshSection(section.id, { force: true });
+                            await this.refreshSection(section.id);
                         } else {
                             const r = await fetch(`/sections/${section.id}/html`);
                             if (r.ok) {
@@ -1070,12 +1074,7 @@ function shoppingList() {
             }
         },
 
-        async refreshSection(sectionId, opts = {}) {
-            // Skip if a full refresh is in progress (prevents race conditions)
-            if (!opts.force && Date.now() < this._fullRefreshUntil) {
-                console.log(`[App] Skipping refreshSection(${sectionId}) - full refresh in progress`);
-                return;
-            }
+        async refreshSection(sectionId) {
             const section = document.getElementById(`section-${sectionId}`);
             if (!section) return;
 
