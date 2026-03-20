@@ -658,6 +658,43 @@
                     </button>
                 </form>
 
+                <!-- Push Notifications -->
+                <div class="mb-6" x-show="pushNotifStatus !== 'unsupported'">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('notifications.title')"></label>
+                    <!-- Not yet granted -->
+                    <button
+                        x-show="pushNotifStatus === 'default' || pushNotifStatus === 'unknown'"
+                        @click="requestPushPermission()"
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span x-text="t('notifications.enable')"></span>
+                    </button>
+                    <!-- Granted and subscribed -->
+                    <button
+                        x-show="pushNotifStatus === 'granted' && pushSubscribed"
+                        @click="disablePushNotifications()"
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span x-text="t('notifications.disable')"></span>
+                    </button>
+                    <!-- Granted but not yet subscribed (re-subscribe) -->
+                    <button
+                        x-show="pushNotifStatus === 'granted' && !pushSubscribed"
+                        @click="requestPushPermission()"
+                        class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-stone-50 dark:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span x-text="t('notifications.enable')"></span>
+                    </button>
+                    <!-- Permission denied -->
+                    <p x-show="pushNotifStatus === 'denied'" x-cloak class="text-xs text-stone-400 dark:text-stone-500 text-center p-2" x-text="t('notifications.blocked')"></p>
+                </div>
+
                 <!-- Sponsor & Bug report -->
                 <div class="pt-4 border-t border-stone-100 dark:border-stone-700 space-y-2">
                     <a href="https://github.com/sponsors/PanSalut" target="_blank" rel="noopener"

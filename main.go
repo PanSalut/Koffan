@@ -48,6 +48,9 @@ func main() {
 	// Initialize login rate limiter
 	handlers.InitLoginRateLimiter()
 
+	// Initialize VAPID keys for Web Push notifications
+	handlers.InitVAPIDKeys()
+
 	// Initialize template engine
 	templatesRootFS, err := fs.Sub(embeddedTemplatesFS, "templates")
 	if err != nil {
@@ -153,6 +156,9 @@ func main() {
 	// Public endpoints (no auth required)
 	app.Get("/api/version", handlers.GetVersion)
 
+	// Push notification API (public VAPID key)
+	app.Get("/api/push/vapid-key", handlers.GetVAPIDPublicKey)
+
 	// Auth middleware for all other routes
 	app.Use(handlers.AuthMiddleware)
 
@@ -219,6 +225,10 @@ func main() {
 	app.Post("/items/:id/move", handlers.MoveItemToSection)
 	app.Post("/items/:id/move-up", handlers.MoveItemUp)
 	app.Post("/items/:id/move-down", handlers.MoveItemDown)
+
+	// Push notification subscriptions (requires auth)
+	app.Post("/api/push/subscribe", handlers.SubscribePush)
+	app.Post("/api/push/unsubscribe", handlers.UnsubscribePush)
 
 	// Stats API
 	app.Get("/stats", handlers.GetStats)

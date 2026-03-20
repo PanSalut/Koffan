@@ -1804,3 +1804,81 @@ func ClearAllData() error {
 
 	return tx.Commit()
 }
+
+// ==================== PUSH NOTIFICATIONS ====================
+
+// PushSubscription represents a Web Push subscription
+type PushSubscription struct {
+	ID       int64  `json:"id"`
+	Endpoint string `json:"endpoint"`
+	Auth     string `json:"auth"`
+	P256dh   string `json:"p256dh"`
+}
+
+// SavePushSubscription inserts or replaces a push subscription
+func SavePushSubscription(endpoint, auth, p256dh string) error {
+	_, err := DB.Exec(`
+		INSERT INTO push_subscriptions (endpoint, auth, p256dh)
+		VALUES (?, ?, ?)
+		ON CONFLICT(endpoint) DO UPDATE SET auth = excluded.auth, p256dh = excluded.p256dh
+	`, endpoint, auth, p256dh)
+	return err
+}
+
+// DeletePushSubscription removes a push subscription by endpoint
+func DeletePushSubscription(endpoint string) error {
+	_, err := DB.Exec(`DELETE FROM push_subscriptions WHERE endpoint = ?`, endpoint)
+	return err
+}
+
+// GetAllPushSubscriptions returns all push subscriptions
+func GetAllPushSubscriptions() ([]PushSubscription, error) {
+	rows, err := DB.Query(`SELECT id, endpoint, auth, p256dh FROM push_subscriptions`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var subs []PushSubscription
+	for rows.Next() {
+		var s PushSubscription
+		if err := rows.Scan(&s.ID, &s.Endpoint, &s.Auth, &s.P256dh); err != nil {
+			return nil, err
+		}
+		subs = append(subs, s)
+	}
+	return subs, nil
+}
+
+// GetAppSetting retrieves an application setting value
+func GetAppSetting(key string) (string, error) {
+	var value string
+	err := DB.QueryRow(`SELECT value FROM app_settings WHERE key = ?`, key).Scan(&value)
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+// SetAppSetting stores an application setting value
+func SetAppSetting(key, value string) error {
+	_, err := DB.Exec(`
+		INSERT INTO app_settings (key, value) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value
+	`, key, value)
+	return err
+}
+
+// GetListNameForSection returns the list name for a given section ID
+func GetListNameForSection(sectionID int64) (string, error) {
+	var name string
+	err := DB.QueryRow(`
+		SELECT l.name FROM lists l
+		JOIN sections s ON s.list_id = l.id
+		WHERE s.id = ?
+	`, sectionID).Scan(&name)
+	if err != nil {
+		return "", err
+	}
+	return name, nil
+}

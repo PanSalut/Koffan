@@ -168,6 +168,9 @@ func runMigrations() {
 
 	// Migration: Add sort_mode to sections
 	migrateSectionSortMode()
+
+	// Migration: Push notification support
+	migratePushNotifications()
 }
 
 func migrateToMultipleLists() {
@@ -342,6 +345,36 @@ func migrateSectionSortMode() {
 	}
 
 	log.Println("Migration completed: Section sort_mode added")
+}
+
+func migratePushNotifications() {
+	// Create app_settings table for VAPID keys
+	_, err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS app_settings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		);
+	`)
+	if err != nil {
+		log.Println("Migration failed - creating app_settings table:", err)
+		return
+	}
+
+	// Create push_subscriptions table
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS push_subscriptions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			endpoint TEXT NOT NULL UNIQUE,
+			auth TEXT NOT NULL,
+			p256dh TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+		CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint ON push_subscriptions(endpoint);
+	`)
+	if err != nil {
+		log.Println("Migration failed - creating push_subscriptions table:", err)
+		return
+	}
 }
 
 func Close() {

@@ -284,6 +284,10 @@ function shoppingList() {
         searchQuery: '',
         searchResults: [],
 
+        // Push notification state
+        pushNotifStatus: 'unknown', // 'unknown' | 'unsupported' | 'denied' | 'granted' | 'default'
+        pushSubscribed: false,
+
         // Track pending local actions to avoid WebSocket race conditions
         pendingLocalActions: {},
         localActionTimeout: 1000, // ms to ignore WebSocket updates after local action
@@ -318,6 +322,7 @@ function shoppingList() {
             this.initCompletedSectionsStore();
             this.initLocalActionTracking();
             this.cacheSuggestions();
+            this.initPushNotifications();
 
             // Listen for mobile action modal
             this.$el.addEventListener('open-mobile-action', (e) => {
@@ -3082,6 +3087,101 @@ function shoppingList() {
                     window.Toast.show(t('import.error'), 'warning');
                 }
             }
+        },
+
+        // ===== PUSH NOTIFICATIONS =====
+
+        async initPushNotifications() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                this.pushNotifStatus = 'unsupported';
+                return;
+            }
+
+            const permission = Notification.permission;
+            this.pushNotifStatus = permission;
+
+            if (permission === 'granted') {
+                // Re-register subscription in case it lapsed
+                await this._registerPushSubscription();
+            }
+        },
+
+        async requestPushPermission() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                window.Toast.show(t('notifications.unsupported'), 'warning');
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            this.pushNotifStatus = permission;
+
+            if (permission === 'granted') {
+                await this._registerPushSubscription();
+                window.Toast.show(t('notifications.enabled'), 'success');
+            } else if (permission === 'denied') {
+                window.Toast.show(t('notifications.denied'), 'warning');
+            }
+        },
+
+        async disablePushNotifications() {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                if (sub) {
+                    // Notify server to remove subscription
+                    await fetch('/api/push/unsubscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ endpoint: sub.endpoint })
+                    });
+                    await sub.unsubscribe();
+                }
+                this.pushSubscribed = false;
+                window.Toast.show(t('notifications.disabled'), 'info');
+            } catch (err) {
+                console.error('[Push] Failed to unsubscribe:', err);
+            }
+        },
+
+        async _registerPushSubscription() {
+            try {
+                const keyResp = await fetch('/api/push/vapid-key');
+                if (!keyResp.ok) return;
+                const { public_key: vapidPublicKey } = await keyResp.json();
+                if (!vapidPublicKey) return;
+
+                const reg = await navigator.serviceWorker.ready;
+                let sub = await reg.pushManager.getSubscription();
+
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: this._urlBase64ToUint8Array(vapidPublicKey)
+                    });
+                }
+
+                // Send subscription to server
+                const response = await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sub.toJSON())
+                });
+
+                this.pushSubscribed = response.ok;
+            } catch (err) {
+                console.error('[Push] Failed to register subscription:', err);
+            }
+        },
+
+        _urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
         }
     };
 }

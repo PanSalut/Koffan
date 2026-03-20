@@ -76,6 +76,18 @@ func CreateItem(c *fiber.Ctx) error {
 			db.SaveItemHistory(name, sectionID)
 			c.Set("X-Item-Reactivated", "true")
 			BroadcastUpdate("item_toggled", item)
+
+			// Reactivation is equivalent to adding an item again
+			if listName, listErr := db.GetListNameForSection(sectionID); listErr == nil {
+				SendPushNotifications(PushNotificationPayload{
+					Title:    listName,
+					Body:     "➕ " + name,
+					Tag:      "koffan-list-" + listName,
+					ListName: listName,
+					ItemName: name,
+					Event:    "item_created",
+				})
+			}
 			c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 			return c.Render("partials/item", fiber.Map{
 				"Item":     item,
@@ -98,6 +110,18 @@ func CreateItem(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_created", item)
+
+	// Send push notification to all subscribers
+	if listName, listErr := db.GetListNameForSection(sectionID); listErr == nil {
+		SendPushNotifications(PushNotificationPayload{
+			Title:    listName,
+			Body:     "➕ " + name,
+			Tag:      "koffan-list-" + listName,
+			ListName: listName,
+			ItemName: name,
+			Event:    "item_created",
+		})
+	}
 
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 
@@ -216,6 +240,20 @@ func ToggleItem(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_toggled", item)
+
+	// Send push notification only when item becomes completed (checked)
+	if item.Completed {
+		if listName, listErr := db.GetListNameForSection(item.SectionID); listErr == nil {
+			SendPushNotifications(PushNotificationPayload{
+				Title:    listName,
+				Body:     "✅ " + item.Name,
+				Tag:      "koffan-list-" + listName,
+				ListName: listName,
+				ItemName: item.Name,
+				Event:    "item_checked",
+			})
+		}
+	}
 
 	// Return per-item partial (no section swap - client handles DOM move)
 	if item.Completed {

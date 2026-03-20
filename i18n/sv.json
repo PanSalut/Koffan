@@ -216,5 +216,15 @@
     "success": "Databasen har rensats",
     "error": "Kunde inte rensa databasen",
     "error_invalid_confirmation": "Ogiltigt bekräftelseord"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "enable": "Enable notifications",
+    "disable": "Disable notifications",
+    "disabled": "Notifications disabled",
+    "enabled": "Notifications enabled",
+    "denied": "Notifications blocked in browser settings",
+    "blocked": "Notifications are blocked. Allow them in browser settings.",
+    "unsupported": "Push notifications are not supported in this browser"
   }
 }

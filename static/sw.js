@@ -1,5 +1,5 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v17';
+const CACHE_VERSION = 'koffan-v18';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 
@@ -207,4 +207,59 @@ self.addEventListener('message', (event) => {
             })
         );
     }
+});
+
+// Handle push notifications from the server
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    let payload;
+    try {
+        payload = event.data.json();
+    } catch (e) {
+        payload = { title: 'Koffan', body: event.data.text() };
+    }
+
+    const title = payload.title || 'Koffan';
+    const options = {
+        body: payload.body || '',
+        icon: '/static/icon-192.png',
+        badge: '/static/icon-192.png',
+        // Group notifications per list so multiple rapid notifications collapse
+        tag: payload.tag || 'koffan',
+        // Replace previous notification with same tag instead of stacking
+        renotify: false,
+        data: {
+            listName: payload.listName,
+            itemName: payload.itemName,
+            event: payload.event,
+            url: '/'
+        }
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
+});
+
+// Handle notification click — open or focus the app
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const targetUrl = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            // Focus an already-open window if possible
+            for (const client of clientList) {
+                if ('focus' in client) {
+                    return client.focus();
+                }
+            }
+            // Otherwise open a new window
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
+        })
+    );
 });

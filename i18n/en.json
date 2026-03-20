@@ -217,5 +217,15 @@
     "success": "Database has been cleared",
     "error": "Failed to clear database",
     "error_invalid_confirmation": "Invalid confirmation word"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "enable": "Enable notifications",
+    "disable": "Disable notifications",
+    "disabled": "Notifications disabled",
+    "enabled": "Notifications enabled",
+    "denied": "Notifications blocked in browser settings",
+    "blocked": "Notifications are blocked. Allow them in browser settings.",
+    "unsupported": "Push notifications are not supported in this browser"
   }
 }
