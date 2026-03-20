@@ -695,7 +695,14 @@ function shoppingList() {
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
-                    this.fullRefresh();
+                    const hiddenFor = Date.now() - (this._lastHiddenAt || 0);
+                    // Only full refresh if hidden for more than 3 seconds
+                    // Brief lock/unlock doesn't need a refresh and avoids race conditions
+                    if (hiddenFor > 3000) {
+                        this.fullRefresh();
+                    }
+                } else {
+                    this._lastHiddenAt = Date.now();
                 }
             });
         },
@@ -978,8 +985,8 @@ function shoppingList() {
 
             this._refreshListTimer = setTimeout(async () => {
                 if (this._isRefreshing) return;
+                if (this._abortRefreshList) return;
                 this._isRefreshing = true;
-                this._abortRefreshList = false;
 
                 try {
                     // Fetch current sections list as JSON
@@ -1033,6 +1040,7 @@ function shoppingList() {
                 }
 
                 this._isRefreshing = false;
+                this._abortRefreshList = false;
             }, 100); // 100ms debounce
         },
 
@@ -1468,10 +1476,12 @@ function shoppingList() {
             // Apply visual toggle immediately for instant feedback
             this._applyVisualToggle(itemId, sectionId);
 
-            // Abort any running refreshList to prevent it from overwriting our optimistic update
-            if (this._fullRefreshInProgress) {
-                this._abortRefreshList = true;
+            // Cancel any pending/running refreshList to prevent it from overwriting our optimistic update
+            if (this._refreshListTimer) {
+                clearTimeout(this._refreshListTimer);
+                this._refreshListTimer = null;
             }
+            this._abortRefreshList = true;
 
             try {
                 const response = await this.offlineFetch(
@@ -1506,6 +1516,7 @@ function shoppingList() {
                 await this._applyOfflineToggle(itemId, sectionId, { skipVisualToggle: true });
             } finally {
                 delete this._toggleInFlight[itemId];
+                this._abortRefreshList = false;
             }
         },
 
