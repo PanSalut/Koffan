@@ -414,7 +414,7 @@
     <script>
         // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js?v=12')
+            navigator.serviceWorker.register('/sw.js')
                 .then(reg => {
                     console.log('[App] Service Worker registered:', reg.scope);
                     // Force update check

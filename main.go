@@ -124,11 +124,15 @@ func main() {
 	app.Use(logger.New())
 	app.Use(recover.New())
 
-	// Service Worker at root path
+	// Service Worker at root path - served from embedded FS so it works in production Docker
 	app.Get("/sw.js", func(c *fiber.Ctx) error {
+		content, err := embeddedStaticFS.ReadFile("static/sw.js")
+		if err != nil {
+			return c.Status(500).SendString("Service worker not found")
+		}
 		c.Set("Content-Type", "application/javascript")
 		c.Set("Cache-Control", "no-cache")
-		return c.SendFile("./static/sw.js")
+		return c.Send(content)
 	})
 
 	// Static files
