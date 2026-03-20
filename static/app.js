@@ -3487,6 +3487,7 @@ window.getCompletedSectionState = function(sectionId) {
         if (pullWithResistance >= threshold && !isRefreshing) {
             // Trigger refresh - keep spinner visible at current position
             isRefreshing = true;
+            if (navigator.vibrate) { navigator.vibrate(30); }
             spinner.classList.add('refreshing');
 
             doRefresh().finally(() => {
