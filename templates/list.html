@@ -1,5 +1,5 @@
 {{define "list"}}
-<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors">
+<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors" data-list-id="{{.List.ID}}">
     <!-- Hidden input for iOS keyboard trick -->
     <input type="text" id="ios-keyboard-trigger" class="absolute opacity-0 pointer-events-none" style="position: absolute; top: -9999px; left: -9999px;" tabindex="-1" aria-hidden="true">
     <!-- Header -->
@@ -50,6 +50,23 @@
                         </svg>
                     </button>
 
+                    <!-- Toggle bought items visibility -->
+                    <button
+                        @click="fetch('/lists/{{.List.ID}}/toggle-completed', {method: 'POST'}).then(r => r.text()).then(html => { document.getElementById('sections-list').innerHTML = html; showCompleted = !showCompleted; })"
+                        x-data="{ showCompleted: {{.ShowCompleted}} }"
+                        class="p-1.5 rounded-lg transition-colors"
+                        :class="showCompleted ? 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300' : 'text-pink-400 hover:text-pink-500'"
+                        :title="showCompleted ? t('list.hide_completed') : t('list.show_completed')"
+                    >
+                        <svg x-show="showCompleted" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg x-show="!showCompleted" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                        </svg>
+                    </button>
+
                     <!-- Settings -->
                     <button
                         @click="showSettings = true"
@@ -75,6 +92,23 @@
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Toggle bought items visibility -->
+                    <button
+                        @click="fetch('/lists/{{.List.ID}}/toggle-completed', {method: 'POST'}).then(r => r.text()).then(html => { document.getElementById('sections-list').innerHTML = html; showCompleted = !showCompleted; })"
+                        x-data="{ showCompleted: {{.ShowCompleted}} }"
+                        class="p-1.5 rounded-lg transition-colors"
+                        :class="showCompleted ? 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300' : 'text-pink-400 hover:text-pink-500'"
+                        :title="showCompleted ? t('list.hide_completed') : t('list.show_completed')"
+                    >
+                        <svg x-show="showCompleted" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <svg x-show="!showCompleted" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                         </svg>
                     </button>
 
@@ -200,7 +234,7 @@
         <!-- Sections List -->
         <div id="sections-list">
             {{range .Sections}}
-            {{template "partials/section" dict "Section" . "Sections" $.Sections}}
+            {{template "partials/section" dict "Section" . "Sections" $.Sections "ShowCompleted" $.ShowCompleted}}
             {{end}}
 
             <!-- Empty State - sections exist but no products -->

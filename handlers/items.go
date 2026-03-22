@@ -365,8 +365,9 @@ func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 	}
 
 	return c.Render("partials/section", fiber.Map{
-		"Section":  section,
-		"Sections": getSectionsForDropdown(),
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": getShowCompletedForSection(sectionID),
 	}, "")
 }
 

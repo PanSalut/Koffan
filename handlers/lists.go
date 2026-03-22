@@ -68,13 +68,14 @@ func GetListView(c *fiber.Ctx) error {
 	lists, _ := db.GetAllLists()
 
 	return c.Render("list", fiber.Map{
-		"List":         list,
-		"Lists":        lists,
-		"Sections":     sections,
-		"Stats":        stats,
-		"Translations": i18n.GetAllLocales(),
-		"Locales":      i18n.AvailableLocales(),
-		"DefaultLang":  i18n.GetDefaultLang(),
+		"List":          list,
+		"Lists":         lists,
+		"Sections":      sections,
+		"Stats":         stats,
+		"ShowCompleted": list.ShowCompleted,
+		"Translations":  i18n.GetAllLocales(),
+		"Locales":       i18n.AvailableLocales(),
+		"DefaultLang":   i18n.GetDefaultLang(),
 	})
 }
 
@@ -293,4 +294,44 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// ToggleShowCompleted toggles the show_completed setting for a list
+func ToggleShowCompleted(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return c.Status(400).SendString("Invalid ID")
+	}
+
+	list, err := db.ToggleListShowCompleted(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to toggle show completed")
+	}
+
+	// Broadcast to WebSocket clients
+	BroadcastUpdate("list_updated", list)
+
+	// Return the updated sections list
+	sections, err := db.GetSectionsByList(id)
+	if err != nil {
+		return c.Status(500).SendString("Failed to fetch sections")
+	}
+
+	return c.Render("partials/sections_list", fiber.Map{
+		"Sections":      sections,
+		"ShowCompleted": list.ShowCompleted,
+	}, "")
+}
+
+// getShowCompletedForSection returns show_completed setting for the list a section belongs to
+func getShowCompletedForSection(sectionID int64) bool {
+	section, err := db.GetSectionByID(sectionID)
+	if err != nil {
+		return true
+	}
+	list, err := db.GetListByID(section.ListID)
+	if err != nil {
+		return true
+	}
+	return list.ShowCompleted
 }

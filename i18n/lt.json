@@ -26,7 +26,9 @@
 		"shopping_list": "Pirkinių sąrašas",
 		"completed": "atlikta",
 		"bought": "Nupirkta",
-		"name_exists": "Sąrašas su tokiu pavadinimu jau egzistuoja"
+		"name_exists": "Sąrašas su tokiu pavadinimu jau egzistuoja",
+		"show_completed": "Rodyti nupirktus produktus",
+		"hide_completed": "Slėpti nupirktus produktus"
 	},
 	"items": {
 		"what_to_buy": "Ką pirkti?",

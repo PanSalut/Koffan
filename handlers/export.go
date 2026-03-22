@@ -28,10 +28,11 @@ type ExportBody struct {
 
 // ExportList represents a list with sections and items
 type ExportList struct {
-	Name     string          `json:"name"`
-	Icon     string          `json:"icon"`
-	IsActive bool            `json:"is_active"`
-	Sections []ExportSection `json:"sections"`
+	Name          string          `json:"name"`
+	Icon          string          `json:"icon"`
+	IsActive      bool            `json:"is_active"`
+	ShowCompleted *bool           `json:"show_completed,omitempty"`
+	Sections      []ExportSection `json:"sections"`
 }
 
 // ExportSection represents a section with items
@@ -131,10 +132,11 @@ func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHis
 		}
 
 		exportList := ExportList{
-			Name:     list.Name,
-			Icon:     list.Icon,
-			IsActive: list.IsActive,
-			Sections: make([]ExportSection, 0, len(sections)),
+			Name:          list.Name,
+			Icon:          list.Icon,
+			IsActive:      list.IsActive,
+			ShowCompleted: &list.ShowCompleted,
+			Sections:      make([]ExportSection, 0, len(sections)),
 		}
 
 		for _, section := range sections {
@@ -220,10 +222,11 @@ func exportListAsJSON(c *fiber.Ctx, list *db.List, sections []db.Section) error 
 	}
 
 	exportList := ExportList{
-		Name:     list.Name,
-		Icon:     list.Icon,
-		IsActive: list.IsActive,
-		Sections: make([]ExportSection, 0, len(sections)),
+		Name:          list.Name,
+		Icon:          list.Icon,
+		IsActive:      list.IsActive,
+		ShowCompleted: &list.ShowCompleted,
+		Sections:      make([]ExportSection, 0, len(sections)),
 	}
 
 	for _, section := range sections {

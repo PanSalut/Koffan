@@ -180,6 +180,7 @@
     </div>
 
     <!-- Completed Items - Always rendered, hidden when empty -->
+    {{if .ShowCompleted}}
     <div class="border-t border-stone-100 dark:border-stone-700 bg-stone-50/50 dark:bg-stone-900/50 rounded-b-xl completed-wrapper"
          {{if eq $completedItems 0}}style="display:none"{{end}}
          x-data="{ open: false, init() { try { const s = localStorage.getItem('completedSections'); if (s) { this.open = JSON.parse(s)['section-{{.Section.ID}}'] || false; } } catch(e) {} } }">
@@ -200,5 +201,6 @@
             {{end}}
         </div>
     </div>
+    {{end}}
 </div>
 {{end}}

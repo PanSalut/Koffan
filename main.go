@@ -195,6 +195,7 @@ func main() {
 	app.Get("/lists/:id/activate", handlers.SetActiveList)
 	app.Post("/lists/:id/move-up", handlers.MoveListUp)
 	app.Post("/lists/:id/move-down", handlers.MoveListDown)
+	app.Post("/lists/:id/toggle-completed", handlers.ToggleShowCompleted)
 
 	// Templates API
 	app.Get("/templates", handlers.GetTemplates)

@@ -962,6 +962,15 @@ function shoppingList() {
                         break;
                     case 'pong':
                         break;
+                    case 'list_updated':
+                        // show_completed or other list setting changed — reload to reflect
+                        if (message.data?.id) {
+                            const currentListId = document.querySelector('[data-list-id]')?.dataset?.listId;
+                            if (String(message.data.id) === currentListId) {
+                                window.location.reload();
+                            }
+                        }
+                        break;
                     default:
                         console.log('Unknown message type:', message.type);
                 }

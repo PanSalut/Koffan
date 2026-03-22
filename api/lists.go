@@ -199,6 +199,17 @@ func UpdateList(c *fiber.Ctx) error {
 		})
 	}
 
+	// Handle show_completed toggle via API
+	if req.ShowCompleted != nil && *req.ShowCompleted != list.ShowCompleted {
+		list, err = db.ToggleListShowCompleted(int64(id))
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+				Error:   "update_failed",
+				Message: "Failed to update show_completed",
+			})
+		}
+	}
+
 	handlers.BroadcastUpdate("list_updated", list)
 	return c.JSON(list)
 }

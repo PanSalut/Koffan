@@ -168,6 +168,9 @@ func runMigrations() {
 
 	// Migration: Add sort_mode to sections
 	migrateSectionSortMode()
+
+	// Migration: Add show_completed to lists
+	migrateListShowCompleted()
 }
 
 func migrateToMultipleLists() {
@@ -342,6 +345,29 @@ func migrateSectionSortMode() {
 	}
 
 	log.Println("Migration completed: Section sort_mode added")
+}
+
+func migrateListShowCompleted() {
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('lists') WHERE name='show_completed'").Scan(&count)
+	if err != nil {
+		log.Println("Migration check failed:", err)
+		return
+	}
+
+	if count > 0 {
+		return // Already migrated
+	}
+
+	log.Println("Running migration: Adding show_completed to lists...")
+
+	_, err = DB.Exec("ALTER TABLE lists ADD COLUMN show_completed BOOLEAN DEFAULT TRUE")
+	if err != nil {
+		log.Println("Migration failed - adding show_completed to lists:", err)
+		return
+	}
+
+	log.Println("Migration completed: List show_completed added")
 }
 
 func Close() {
