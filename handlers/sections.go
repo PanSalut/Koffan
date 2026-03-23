@@ -279,9 +279,20 @@ func trimSpace(s string) string {
 	return s[start:end]
 }
 
+// getSectionsForList returns sections for a specific list (by list_id query param) or falls back to the active list.
+func getSectionsForList(c *fiber.Ctx) ([]db.Section, error) {
+	if listIDStr := c.Query("list_id"); listIDStr != "" {
+		listID, err := strconv.ParseInt(listIDStr, 10, 64)
+		if err == nil {
+			return db.GetSectionsByList(listID)
+		}
+	}
+	return db.GetAllSections()
+}
+
 // Helper to return sections for modal
 func returnSectionsForModal(c *fiber.Ctx) error {
-	sections, err := db.GetAllSections()
+	sections, err := getSectionsForList(c)
 	if err != nil {
 		return c.Status(500).SendString("Failed to fetch sections")
 	}
@@ -295,7 +306,7 @@ func returnSectionsForModal(c *fiber.Ctx) error {
 func GetSectionsListForModal(c *fiber.Ctx) error {
 	// Check if JSON format is requested
 	if c.Query("format") == "json" {
-		sections, err := db.GetAllSections()
+		sections, err := getSectionsForList(c)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch sections"})
 		}
