@@ -1750,6 +1750,10 @@ function shoppingList() {
                 const resp = await fetch(`/items/${itemId}/html`);
                 if (!resp.ok) { this.refreshSection(sectionId); return; }
                 const html = await resp.text();
+                // Guard against race condition: a concurrent refreshSection() may have already
+                // inserted this item into the refreshed section HTML while the fetch above was
+                // in-flight.  Don't insert a second copy.
+                if (document.getElementById(`item-${itemId}`)) return;
                 const section = document.getElementById(`section-${sectionId}`);
                 if (!section) return;
                 const container = section.querySelector('.active-items');
