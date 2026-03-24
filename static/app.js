@@ -651,17 +651,17 @@ function shoppingList() {
             }
 
             try {
-            if (this.isOnline) {
-                const hadQueuedActions = await this.processOfflineQueue();
+                if (this.isOnline) {
+                    const hadQueuedActions = await this.processOfflineQueue();
 
-                if (!hadQueuedActions) {
-                    // Smooth per-section update instead of full innerHTML swap
-                    await this.refreshSectionsSmooth();
-                    this.refreshStats();
+                    if (!hadQueuedActions) {
+                        // Smooth per-section update instead of full innerHTML swap
+                        await this.refreshSectionsSmooth();
+                        this.refreshStats();
+                    }
+
+                    this.cacheData();
                 }
-
-                this.cacheData();
-            }
             } finally {
                 this._fullRefreshInProgress = false;
             }
