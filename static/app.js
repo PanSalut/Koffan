@@ -3472,6 +3472,7 @@ window.getCompletedSectionState = function(sectionId) {
         if (pullWithResistance >= threshold && !isRefreshing) {
             // Trigger refresh - keep spinner visible at current position
             isRefreshing = true;
+            if (navigator.vibrate) { navigator.vibrate(30); }
             spinner.classList.add('refreshing');
 
             doRefresh().finally(() => {
@@ -3488,6 +3489,20 @@ window.getCompletedSectionState = function(sectionId) {
         startY = 0;
         currentY = 0;
         isPulling = false;
+    }, { passive: true });
+
+    // Handle touch cancellation (e.g. browser takes over gesture for native pull-to-refresh)
+    document.addEventListener('touchcancel', () => {
+        if (!isPulling) {
+            startY = 0;
+            return;
+        }
+        spinner.classList.remove('visible', 'refreshing');
+        spinner.style.top = '0';
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
+        isRefreshing = false;
     }, { passive: true });
 
     async function doRefresh() {
