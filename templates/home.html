@@ -1308,12 +1308,22 @@ function homePage() {
             this.clearDatabaseLoading = true;
 
             try {
+                // Fetch CSRF token first
+                const csrfResponse = await fetch('/api/database/csrf-token');
+                if (!csrfResponse.ok) {
+                    throw new Error('Failed to get CSRF token');
+                }
+                const csrfData = await csrfResponse.json();
+
                 const response = await fetch('/api/database/clear', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ confirmation: this.clearDatabaseInput })
+                    body: JSON.stringify({
+                        confirmation: this.clearDatabaseInput,
+                        csrf_token: csrfData.csrf_token
+                    })
                 });
 
                 const result = await response.json();
@@ -1330,6 +1340,8 @@ function homePage() {
                     if (window.Toast) {
                         if (result.error === 'invalid_confirmation') {
                             window.Toast.show(this.t('danger_zone.error_invalid_confirmation'), 'warning');
+                        } else if (result.error === 'invalid_csrf_token') {
+                            window.Toast.show(this.t('danger_zone.error'), 'warning');
                         } else {
                             window.Toast.show(result.error || this.t('danger_zone.error'), 'warning');
                         }

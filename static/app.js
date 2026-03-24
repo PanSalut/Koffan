@@ -293,6 +293,7 @@ function shoppingList() {
         _refreshStatsTimer: null,
         _isRefreshing: false,
         _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
+        _fullRefreshInProgress: false, // Flag to suppress WS-driven refreshes during full refresh
 
         // Return the current list ID extracted from the page URL (e.g. /lists/5 → 5), or null if not on a list page.
         currentListId() {
@@ -638,6 +639,9 @@ function shoppingList() {
         async fullRefresh() {
             console.log('[App] Full refresh triggered');
 
+            // Suppress WS-driven refreshes during full refresh to prevent race conditions
+            this._fullRefreshInProgress = true;
+
             // Reconnect WebSocket if needed
             const wsOpen = this.ws && this.ws.readyState === WebSocket.OPEN;
             if (!wsOpen && this.isOnline) {
@@ -646,6 +650,7 @@ function shoppingList() {
                 this.connect();
             }
 
+            try {
             if (this.isOnline) {
                 const hadQueuedActions = await this.processOfflineQueue();
 
@@ -656,6 +661,9 @@ function shoppingList() {
                 }
 
                 this.cacheData();
+            }
+            } finally {
+                this._fullRefreshInProgress = false;
             }
         },
 
@@ -780,6 +788,12 @@ function shoppingList() {
             try {
                 const message = JSON.parse(data);
                 console.log('WebSocket message:', message.type);
+
+                // Skip refresh-triggering messages during full refresh (background return)
+                if (this._fullRefreshInProgress && message.type !== 'pong') {
+                    console.log(`[App] Skipping WebSocket message '${message.type}' - full refresh in progress`);
+                    return;
+                }
 
                 const sectionId = message.data?.section_id;
 
@@ -1069,15 +1083,15 @@ function shoppingList() {
         },
 
         async refreshSection(sectionId) {
-            const section = document.getElementById(`section-${sectionId}`);
-            if (!section) return;
+            if (!document.getElementById(`section-${sectionId}`)) return;
 
             try {
                 const resp = await fetch(`/sections/${sectionId}/html`);
                 if (!resp.ok) return;
                 const html = await resp.text();
-                // Verify section still exists (may have been removed by concurrent operation)
-                if (!section.parentNode) return;
+                // Re-lookup after fetch - element may have been replaced by a concurrent refresh
+                const section = document.getElementById(`section-${sectionId}`);
+                if (!section) return;
                 section.insertAdjacentHTML('afterend', html.trim());
                 // Remove old section first to prevent duplicates, then clean up Alpine
                 section.remove();
