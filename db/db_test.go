@@ -70,6 +70,9 @@ func runIntegrationTests(t *testing.T) {
 	t.Run("SectionsCRUD", testSectionsCRUD)
 	t.Run("ItemsCRUD", testItemsCRUD)
 	t.Run("HistoryUpsert", testHistoryUpsert)
+	t.Run("ImportPreservesHigherCount", testImportPreservesHigherCount)
+	t.Run("ImportAdoptsHigherCount", testImportAdoptsHigherCount)
+	t.Run("ImportPreservesSectionWhenZero", testImportPreservesSectionWhenZero)
 	t.Run("Templates", testTemplates)
 	t.Run("Sessions", testSessions)
 	t.Run("ClearAllData", testClearAllData)
@@ -254,6 +257,95 @@ func testHistoryUpsert(t *testing.T) {
 
 	if err := DeleteList(list.ID); err != nil {
 		t.Fatalf("DeleteList cleanup: %v", err)
+	}
+}
+
+func setupImportTestFixture(t *testing.T) (sectionA, sectionB *Section, cleanup func()) {
+	t.Helper()
+	list, err := CreateList("Import Test List", "🛒")
+	if err != nil {
+		t.Fatalf("CreateList: %v", err)
+	}
+	if err := SetActiveList(list.ID); err != nil {
+		t.Fatalf("SetActiveList: %v", err)
+	}
+	a, err := CreateSectionForList(list.ID, "Dairy")
+	if err != nil {
+		t.Fatalf("CreateSectionForList Dairy: %v", err)
+	}
+	b, err := CreateSectionForList(list.ID, "Produce")
+	if err != nil {
+		t.Fatalf("CreateSectionForList Produce: %v", err)
+	}
+	return a, b, func() { DeleteList(list.ID) }
+}
+
+func testImportPreservesHigherCount(t *testing.T) {
+	sectionA, sectionB, cleanup := setupImportTestFixture(t)
+	defer cleanup()
+
+	if err := SaveItemHistoryWithCount("Butter", sectionA.ID, 50); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := SaveItemHistoryWithCount("butter", sectionB.ID, 10); err != nil {
+		t.Fatalf("re-import: %v", err)
+	}
+
+	suggestions, err := GetItemSuggestions("Butter", 10)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if len(suggestions) != 1 {
+		t.Fatalf("expected 1 suggestion, got %d", len(suggestions))
+	}
+	if suggestions[0].UsageCount != 50 {
+		t.Errorf("re-import with lower count should preserve existing 50, got %d", suggestions[0].UsageCount)
+	}
+}
+
+func testImportAdoptsHigherCount(t *testing.T) {
+	sectionA, _, cleanup := setupImportTestFixture(t)
+	defer cleanup()
+
+	if err := SaveItemHistoryWithCount("Eggs", sectionA.ID, 10); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := SaveItemHistoryWithCount("eggs", sectionA.ID, 100); err != nil {
+		t.Fatalf("re-import: %v", err)
+	}
+
+	suggestions, err := GetItemSuggestions("Eggs", 10)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if len(suggestions) != 1 {
+		t.Fatalf("expected 1 suggestion, got %d", len(suggestions))
+	}
+	if suggestions[0].UsageCount != 100 {
+		t.Errorf("re-import with higher count should adopt 100, got %d", suggestions[0].UsageCount)
+	}
+}
+
+func testImportPreservesSectionWhenZero(t *testing.T) {
+	sectionA, _, cleanup := setupImportTestFixture(t)
+	defer cleanup()
+
+	if err := SaveItemHistoryWithCount("Cheese", sectionA.ID, 5); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := SaveItemHistoryWithCount("cheese", 0, 5); err != nil {
+		t.Fatalf("re-import: %v", err)
+	}
+
+	suggestions, err := GetItemSuggestions("Cheese", 10)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if len(suggestions) != 1 {
+		t.Fatalf("expected 1 suggestion, got %d", len(suggestions))
+	}
+	if suggestions[0].LastSectionID == 0 {
+		t.Errorf("re-import with section_id=0 should preserve existing section %d, got 0", sectionA.ID)
 	}
 }
 

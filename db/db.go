@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -30,6 +31,9 @@ func Init() {
 		if err = DB.Ping(); err != nil {
 			log.Fatal("Failed to ping Postgres database:", err)
 		}
+		DB.SetMaxOpenConns(25)
+		DB.SetMaxIdleConns(25)
+		DB.SetConnMaxLifetime(5 * time.Minute)
 	} else {
 		// SQLite path (default)
 		Driver = "sqlite"

@@ -80,11 +80,11 @@ type TemplateItem struct {
 
 // GetAllLists returns all shopping lists with their stats
 func GetAllLists() ([]List, error) {
-	rows, err := DB.Query(DB.Rebind(`
+	rows, err := DB.Query(`
 		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
 		FROM lists
 		ORDER BY sort_order ASC
-	`))
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -120,11 +120,11 @@ func GetListByID(id int64) (*List, error) {
 // GetActiveList returns the currently active list
 func GetActiveList() (*List, error) {
 	var l List
-	err := DB.QueryRow(DB.Rebind(`
+	err := DB.QueryRow(`
 		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
 		FROM lists WHERE is_active = TRUE
 		LIMIT 1
-	`)).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+	`).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func GetActiveList() (*List, error) {
 // CreateList creates a new shopping list
 func CreateList(name, icon string) (*List, error) {
 	var maxOrder int
-	DB.QueryRow(DB.Rebind("SELECT COALESCE(MAX(sort_order), -1) FROM lists")).Scan(&maxOrder)
+	DB.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM lists").Scan(&maxOrder)
 
 	if icon == "" {
 		icon = "🛒"
@@ -201,7 +201,7 @@ func SetActiveList(id int64) error {
 	defer tx.Rollback()
 
 	// Deactivate all lists
-	_, err = tx.Exec(tx.Rebind("UPDATE lists SET is_active = FALSE"))
+	_, err = tx.Exec("UPDATE lists SET is_active = FALSE")
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func MoveListDown(id int64) error {
 	if err != nil {
 		return err
 	}
-	err = tx.QueryRow(tx.Rebind("SELECT MAX(sort_order) FROM lists")).Scan(&maxOrder)
+	err = tx.QueryRow("SELECT MAX(sort_order) FROM lists").Scan(&maxOrder)
 	if err != nil {
 		return err
 	}
@@ -284,16 +284,16 @@ func MoveListDown(id int64) error {
 // GetListStats returns stats for a specific list
 func GetListStats(listID int64) Stats {
 	var stats Stats
-	DB.QueryRow(DB.Rebind(`
+	DB.QueryRow(`
 		SELECT COUNT(*) FROM items i
 		JOIN sections s ON i.section_id = s.id
 		WHERE s.list_id = ?
-	`), listID).Scan(&stats.TotalItems)
-	DB.QueryRow(DB.Rebind(`
+	`, listID).Scan(&stats.TotalItems)
+	DB.QueryRow(`
 		SELECT COUNT(*) FROM items i
 		JOIN sections s ON i.section_id = s.id
 		WHERE s.list_id = ? AND i.completed = TRUE
-	`), listID).Scan(&stats.CompletedItems)
+	`, listID).Scan(&stats.CompletedItems)
 	if stats.TotalItems > 0 {
 		stats.Percentage = (stats.CompletedItems * 100) / stats.TotalItems
 	}
@@ -342,11 +342,11 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 
 // getAllSectionsGlobal returns all sections (fallback, used during migration)
 func getAllSectionsGlobal() ([]Section, error) {
-	rows, err := DB.Query(DB.Rebind(`
+	rows, err := DB.Query(`
 		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
 		FROM sections
 		ORDER BY sort_order ASC
-	`))
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -553,33 +553,17 @@ func GetItemsBySection(sectionID int64) ([]Item, error) {
 	var query string
 	switch sortMode {
 	case "alphabetical":
-		if Driver == "postgres" {
-			query = `
-			SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-			FROM items
-			WHERE section_id = ?
-			ORDER BY completed ASC, LOWER(name) ASC`
-		} else {
-			query = `
-			SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-			FROM items
-			WHERE section_id = ?
-			ORDER BY completed ASC, name COLLATE NOCASE ASC`
-		}
+		query = fmt.Sprintf(`
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
+		FROM items
+		WHERE section_id = ?
+		ORDER BY completed ASC, %s`, caseInsensitiveOrder("name", "ASC"))
 	case "alphabetical_desc":
-		if Driver == "postgres" {
-			query = `
-			SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-			FROM items
-			WHERE section_id = ?
-			ORDER BY completed ASC, LOWER(name) DESC`
-		} else {
-			query = `
-			SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-			FROM items
-			WHERE section_id = ?
-			ORDER BY completed ASC, name COLLATE NOCASE DESC`
-		}
+		query = fmt.Sprintf(`
+		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
+		FROM items
+		WHERE section_id = ?
+		ORDER BY completed ASC, %s`, caseInsensitiveOrder("name", "DESC"))
 	default:
 		query = `
 		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
@@ -1025,8 +1009,8 @@ func GetStats() Stats {
 // getGlobalStats returns stats for all items (fallback)
 func getGlobalStats() Stats {
 	var stats Stats
-	DB.QueryRow(DB.Rebind("SELECT COUNT(*) FROM items")).Scan(&stats.TotalItems)
-	DB.QueryRow(DB.Rebind("SELECT COUNT(*) FROM items WHERE completed = TRUE")).Scan(&stats.CompletedItems)
+	DB.QueryRow("SELECT COUNT(*) FROM items").Scan(&stats.TotalItems)
+	DB.QueryRow("SELECT COUNT(*) FROM items WHERE completed = TRUE").Scan(&stats.CompletedItems)
 	if stats.TotalItems > 0 {
 		stats.Percentage = (stats.CompletedItems * 100) / stats.TotalItems
 	}
@@ -1093,7 +1077,7 @@ func SaveItemHistoryWithCount(name string, sectionID int64, usageCount int) erro
 	_, err := DB.Exec(DB.Rebind(`
 		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
 		VALUES (?, ?, ?, ?)
-		`+UpsertHistoryQuery()), name, sectionID, usageCount, TimestampNow())
+		`+UpsertHistoryImportQuery()), name, sectionID, usageCount, TimestampNow())
 	return err
 }
 
@@ -1102,7 +1086,7 @@ func SaveItemHistoryWithCountTx(tx *sqlx.Tx, name string, sectionID int64, usage
 	_, err := tx.Exec(tx.Rebind(`
 		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
 		VALUES (?, ?, ?, ?)
-		`+UpsertHistoryQuery()), name, sectionID, usageCount, TimestampNow())
+		`+UpsertHistoryImportQuery()), name, sectionID, usageCount, TimestampNow())
 	return err
 }
 
@@ -1196,13 +1180,13 @@ func GetItemSuggestions(query string, limit int) ([]ItemSuggestion, error) {
 	}
 
 	// Fetch more items to allow for fuzzy matching and scoring
-	rows, err := DB.Query(DB.Rebind(`
+	rows, err := DB.Query(`
 		SELECT h.name, COALESCE(h.last_section_id, 0), COALESCE(s.name, ''), h.usage_count
 		FROM item_history h
 		LEFT JOIN sections s ON h.last_section_id = s.id
 		ORDER BY h.usage_count DESC, h.last_used_at DESC
 		LIMIT 200
-	`))
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -1285,13 +1269,13 @@ type HistoryItem struct {
 
 // GetItemHistoryList returns all history items for management UI
 func GetItemHistoryList() ([]HistoryItem, error) {
-	rows, err := DB.Query(DB.Rebind(`
+	rows, err := DB.Query(`
 		SELECT h.id, h.name, COALESCE(h.last_section_id, 0), COALESCE(s.name, ''), h.usage_count
 		FROM item_history h
 		LEFT JOIN sections s ON h.last_section_id = s.id
 		ORDER BY h.usage_count DESC, h.last_used_at DESC
 		LIMIT 100
-	`))
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -1347,11 +1331,11 @@ func DeleteItemHistoryBatch(ids []int64) (int64, error) {
 
 // GetAllTemplates returns all templates with their items
 func GetAllTemplates() ([]Template, error) {
-	rows, err := DB.Query(DB.Rebind(`
+	rows, err := DB.Query(`
 		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
 		FROM templates
 		ORDER BY sort_order ASC
-	`))
+	`)
 	if err != nil {
 		return nil, err
 	}
@@ -1418,7 +1402,7 @@ func GetTemplateItems(templateID int64) ([]TemplateItem, error) {
 // CreateTemplate creates a new template
 func CreateTemplate(name, description string) (*Template, error) {
 	var maxOrder int
-	DB.QueryRow(DB.Rebind("SELECT COALESCE(MAX(sort_order), -1) FROM templates")).Scan(&maxOrder)
+	DB.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM templates").Scan(&maxOrder)
 
 	id, err := InsertReturningID(DB, `INSERT INTO templates (name, description, sort_order) VALUES (?, ?, ?)`, name, description, maxOrder+1)
 	if err != nil {
@@ -1731,32 +1715,32 @@ func ClearAllData() error {
 
 	// Delete in proper order due to foreign key constraints
 	// 1. template_items (references templates)
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM template_items")); err != nil {
+	if _, err := tx.Exec("DELETE FROM template_items"); err != nil {
 		return fmt.Errorf("failed to delete template_items: %w", err)
 	}
 
 	// 2. templates
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM templates")); err != nil {
+	if _, err := tx.Exec("DELETE FROM templates"); err != nil {
 		return fmt.Errorf("failed to delete templates: %w", err)
 	}
 
 	// 3. items (references sections)
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM items")); err != nil {
+	if _, err := tx.Exec("DELETE FROM items"); err != nil {
 		return fmt.Errorf("failed to delete items: %w", err)
 	}
 
 	// 4. sections (references lists)
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM sections")); err != nil {
+	if _, err := tx.Exec("DELETE FROM sections"); err != nil {
 		return fmt.Errorf("failed to delete sections: %w", err)
 	}
 
 	// 5. lists
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM lists")); err != nil {
+	if _, err := tx.Exec("DELETE FROM lists"); err != nil {
 		return fmt.Errorf("failed to delete lists: %w", err)
 	}
 
 	// 6. item_history
-	if _, err := tx.Exec(tx.Rebind("DELETE FROM item_history")); err != nil {
+	if _, err := tx.Exec("DELETE FROM item_history"); err != nil {
 		return fmt.Errorf("failed to delete item_history: %w", err)
 	}
 
