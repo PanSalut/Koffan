@@ -392,7 +392,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	}
 
 	// Start transaction
-	tx, err := db.DB.Begin()
+	tx, err := db.DB.Beginx()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to start transaction"})
 	}
@@ -433,7 +433,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 				continue
 			case "replace":
 				// Delete existing list
-				_, err := tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
+				_, err := tx.Exec(tx.Rebind("DELETE FROM lists WHERE id = ?"), existingID)
 				if err != nil {
 					continue
 				}
@@ -451,7 +451,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 
 		// Set is_active if it was active in export
 		if exportList.IsActive {
-			tx.Exec("UPDATE lists SET is_active = TRUE WHERE id = ?", list.ID)
+			tx.Exec(tx.Rebind("UPDATE lists SET is_active = TRUE WHERE id = ?"), list.ID)
 		}
 
 		importedLists++
@@ -491,10 +491,10 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 
 				// Set completed and uncertain flags directly
 				if exportItem.Completed {
-					tx.Exec("UPDATE items SET completed = TRUE WHERE id = ?", item.ID)
+					tx.Exec(tx.Rebind("UPDATE items SET completed = TRUE WHERE id = ?"), item.ID)
 				}
 				if exportItem.Uncertain {
-					tx.Exec("UPDATE items SET uncertain = TRUE WHERE id = ?", item.ID)
+					tx.Exec(tx.Rebind("UPDATE items SET uncertain = TRUE WHERE id = ?"), item.ID)
 				}
 
 				importedItems++
@@ -565,7 +565,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	}
 
 	// Start transaction
-	tx, err := db.DB.Begin()
+	tx, err := db.DB.Beginx()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to start transaction"})
 	}
@@ -705,7 +705,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 					skippedListNames[listKey] = true
 					continue
 				case "replace":
-					tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
+					tx.Exec(tx.Rebind("DELETE FROM lists WHERE id = ?"), existingID)
 				case "copy":
 					listName = findUniqueName(listName, copySuffix, existingNames)
 					listKey = strings.ToLower(listName)
@@ -752,10 +752,10 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 			itemOrders[section.ID]++
 
 			if itemCompleted {
-				tx.Exec("UPDATE items SET completed = TRUE WHERE id = ?", item.ID)
+				tx.Exec(tx.Rebind("UPDATE items SET completed = TRUE WHERE id = ?"), item.ID)
 			}
 			if itemUncertain {
-				tx.Exec("UPDATE items SET uncertain = TRUE WHERE id = ?", item.ID)
+				tx.Exec(tx.Rebind("UPDATE items SET uncertain = TRUE WHERE id = ?"), item.ID)
 			}
 
 			importedItems++

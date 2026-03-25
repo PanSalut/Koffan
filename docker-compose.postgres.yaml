@@ -1,0 +1,39 @@
+# Local Postgres testing:
+# docker compose -f docker-compose.postgres.yaml up -d
+# App available at http://localhost:3000
+# To stop: docker compose -f docker-compose.postgres.yaml down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: koffan
+      POSTGRES_PASSWORD: koffan
+      POSTGRES_DB: koffan
+    ports:
+      - "5432:5432"
+    volumes:
+      - koffan-pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "koffan"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  koffan:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - DATABASE_URL=postgres://koffan:koffan@postgres:5432/koffan?sslmode=disable
+      - APP_PASSWORD=${APP_PASSWORD:-shopping123}
+      - APP_ENV=production
+      - PORT=80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  koffan-pgdata:

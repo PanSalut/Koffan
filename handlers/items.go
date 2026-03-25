@@ -13,6 +13,10 @@ import (
 
 // retryOnBusy retries a database operation if it fails with SQLITE_BUSY
 func retryOnBusy[T any](maxRetries int, operation func() (T, error)) (T, error) {
+	// Postgres does not have SQLite's file-locking model; no retry needed.
+	if db.Driver == "postgres" {
+		return operation()
+	}
 	var result T
 	var err error
 	for i := 0; i < maxRetries; i++ {

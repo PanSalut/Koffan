@@ -86,7 +86,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 	}
 
 	// Start transaction
-	tx, err := db.DB.Begin()
+	tx, err := db.DB.Beginx()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "db_error",
@@ -209,7 +209,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 	}
 
 	// Start transaction
-	tx, err := db.DB.Begin()
+	tx, err := db.DB.Beginx()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "db_error",
@@ -306,7 +306,7 @@ func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 	}
 
 	// Start transaction
-	tx, err := db.DB.Begin()
+	tx, err := db.DB.Beginx()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "db_error",
