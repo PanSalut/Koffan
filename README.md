@@ -122,6 +122,33 @@ docker-compose up -d
 # App available at http://localhost:80
 ```
 
+## PostgreSQL (Optional)
+
+By default, Koffan uses SQLite — no configuration needed. For Kubernetes deployments or environments requiring a shared database, you can use PostgreSQL instead.
+
+### Local Testing with Docker Compose
+
+```bash
+docker compose -f docker-compose.postgres.yaml up -d
+```
+
+App available at http://localhost:3000 (connected to Postgres).
+
+### Manual Setup
+
+Set the `DATABASE_URL` environment variable:
+
+```bash
+DATABASE_URL="postgres://user:pass@localhost:5432/koffan?sslmode=disable" ./koffan
+```
+
+For managed Postgres services (Railway, Render, Heroku), use `sslmode=require` or `sslmode=verify-full` as required by your provider.
+
+### Known Limitations
+
+- **No data migration tool**: There is no built-in SQLite → PostgreSQL migration tool. To migrate existing data, use the [REST API](https://github.com/PanSalut/Koffan/wiki/REST-API) export/import functionality.
+- **WebSocket state is in-memory**: Real-time updates are broadcast only within a single process. Multi-instance deployments need sticky sessions (out of scope for this feature).
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -131,6 +158,7 @@ docker-compose up -d
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
 | `PORT` | `80` (Docker) / `3000` (local) | Server port |
 | `DB_PATH` | `./shopping.db` | Database file path |
+| `DATABASE_URL` | *(disabled)* | PostgreSQL connection string. When set, Koffan uses Postgres instead of SQLite. Example: `postgres://user:pass@host:5432/koffan?sslmode=disable` |
 | `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt, uk, no, lt, el, sk, ru) |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |

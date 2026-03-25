@@ -1,61 +1,90 @@
 package db
 
 import (
-	"database/sql"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var DB *sql.DB
+var DB *sqlx.DB
 
 func Init() {
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "./shopping.db"
-	}
+	databaseURL := os.Getenv("DATABASE_URL")
 
-	// Create parent directory if it doesn't exist
-	dir := filepath.Dir(dbPath)
-	if dir != "." && dir != "" {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			log.Fatal("Failed to create database directory:", err)
+	if databaseURL != "" {
+		// Postgres path
+		Driver = "postgres"
+		dbPath := os.Getenv("DB_PATH")
+		if dbPath != "" {
+			log.Println("Warning: DB_PATH is ignored when DATABASE_URL is set")
+		}
+		var err error
+		DB, err = sqlx.Open("pgx", databaseURL)
+		if err != nil {
+			log.Fatal("Failed to open Postgres connection:", err)
+		}
+		if err = DB.Ping(); err != nil {
+			log.Fatal("Failed to ping Postgres database:", err)
+		}
+		DB.SetMaxOpenConns(25)
+		DB.SetMaxIdleConns(25)
+		DB.SetConnMaxLifetime(5 * time.Minute)
+	} else {
+		// SQLite path (default)
+		Driver = "sqlite"
+		dbPath := os.Getenv("DB_PATH")
+		if dbPath == "" {
+			dbPath = "./shopping.db"
+		}
+		// Create parent directory if needed
+		dir := filepath.Dir(dbPath)
+		if dir != "." && dir != "" {
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				log.Fatal("Failed to create database directory:", err)
+			}
+		}
+		var err error
+		DB, err = sqlx.Open("sqlite3", dbPath+"?_foreign_keys=on&_journal_mode=WAL&_busy_timeout=5000")
+		if err != nil {
+			log.Fatal("Failed to connect to database:", err)
+		}
+		if err = DB.Ping(); err != nil {
+			log.Fatal("Failed to ping database:", err)
+		}
+		// SQLite-specific PRAGMAs
+		_, err = DB.Exec("PRAGMA journal_mode=WAL")
+		if err != nil {
+			log.Println("Warning: Could not enable WAL mode:", err)
+		}
+		_, err = DB.Exec("PRAGMA busy_timeout=5000")
+		if err != nil {
+			log.Println("Warning: Could not set busy timeout:", err)
 		}
 	}
 
-	var err error
-	// Enable WAL mode and foreign keys for better concurrency
-	DB, err = sql.Open("sqlite3", dbPath+"?_foreign_keys=on&_journal_mode=WAL&_busy_timeout=5000")
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
-	}
-
-	// Test connection
-	if err = DB.Ping(); err != nil {
-		log.Fatal("Failed to ping database:", err)
-	}
-
-	// Enable WAL mode explicitly (in case pragma wasn't applied via connection string)
-	_, err = DB.Exec("PRAGMA journal_mode=WAL")
-	if err != nil {
-		log.Println("Warning: Could not enable WAL mode:", err)
-	}
-
-	// Set busy timeout to 5 seconds
-	_, err = DB.Exec("PRAGMA busy_timeout=5000")
-	if err != nil {
-		log.Println("Warning: Could not set busy timeout:", err)
-	}
-
-	// Create tables
 	createTables()
 
-	log.Println("Database initialized successfully (WAL mode)")
+	if Driver == "sqlite" {
+		log.Println("Database initialized successfully (WAL mode)")
+	} else {
+		log.Println("Database initialized successfully (Postgres)")
+	}
 }
 
 func createTables() {
+	if Driver == "postgres" {
+		createTablesPostgres()
+	} else {
+		createTablesSQLite()
+	}
+}
+
+func createTablesSQLite() {
 	schema := `
 	CREATE TABLE IF NOT EXISTS sections (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,53 +131,123 @@ func createTables() {
 		log.Fatal("Failed to create tables:", err)
 	}
 
-	// Migration: Add updated_at column if it doesn't exist
+	runMigrations()
+}
+
+func createTablesPostgres() {
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS lists (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			icon TEXT NOT NULL DEFAULT '🛒',
+			sort_order INTEGER NOT NULL,
+			is_active BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`,
+		`CREATE TABLE IF NOT EXISTS sections (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			sort_order INTEGER NOT NULL,
+			sort_mode TEXT DEFAULT 'manual',
+			list_id BIGINT REFERENCES lists(id) ON DELETE CASCADE,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`,
+		`CREATE TABLE IF NOT EXISTS items (
+			id BIGSERIAL PRIMARY KEY,
+			section_id BIGINT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			completed BOOLEAN DEFAULT FALSE,
+			uncertain BOOLEAN DEFAULT FALSE,
+			quantity INTEGER DEFAULT 0,
+			sort_order INTEGER NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`,
+		`CREATE TABLE IF NOT EXISTS sessions (
+			id TEXT PRIMARY KEY,
+			expires_at BIGINT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS item_history (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			last_section_id BIGINT,
+			usage_count INTEGER DEFAULT 1,
+			last_used_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`,
+		`CREATE TABLE IF NOT EXISTS templates (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			sort_order INTEGER NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`,
+		`CREATE TABLE IF NOT EXISTS template_items (
+			id BIGSERIAL PRIMARY KEY,
+			template_id BIGINT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+			section_name TEXT NOT NULL,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			sort_order INTEGER NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
+		// Indexes
+		`CREATE INDEX IF NOT EXISTS idx_items_section ON items(section_id, sort_order)`,
+		`CREATE INDEX IF NOT EXISTS idx_sections_order ON sections(sort_order)`,
+		`CREATE INDEX IF NOT EXISTS idx_sections_list ON sections(list_id, sort_order)`,
+		`CREATE INDEX IF NOT EXISTS idx_lists_order ON lists(sort_order)`,
+		`CREATE INDEX IF NOT EXISTS idx_lists_active ON lists(is_active)`,
+		`CREATE INDEX IF NOT EXISTS idx_templates_order ON templates(sort_order)`,
+		`CREATE INDEX IF NOT EXISTS idx_template_items_template ON template_items(template_id, sort_order)`,
+		// Functional unique index for case-insensitive name uniqueness
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_item_history_name_lower ON item_history (LOWER(name))`,
+	}
+
+	for _, stmt := range statements {
+		if _, err := DB.Exec(stmt); err != nil {
+			log.Fatalf("Failed to create Postgres schema: %v\nStatement: %s", err, stmt)
+		}
+	}
+	log.Println("Database schema created successfully (Postgres)")
+
 	runMigrations()
 }
 
 func runMigrations() {
-	// Check if updated_at column exists in sections
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sections') WHERE name='updated_at'").Scan(&count)
+	// Migration: Add updated_at to sections
+	exists, err := ColumnExists("sections", "updated_at")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count == 0 {
+	if !exists {
 		log.Println("Running migration: Adding updated_at to sections...")
-		// SQLite doesn't support dynamic DEFAULT in ALTER TABLE, so add with NULL first
-		_, err := DB.Exec("ALTER TABLE sections ADD COLUMN updated_at INTEGER")
-		if err != nil {
+		if _, err := DB.Exec("ALTER TABLE sections ADD COLUMN updated_at INTEGER"); err != nil {
 			log.Println("Migration failed for sections:", err)
 		} else {
-			// Set updated_at for existing rows
-			_, updateErr := DB.Exec("UPDATE sections SET updated_at = strftime('%s', 'now')")
-			if updateErr != nil {
-				log.Printf("WARNING: Migration UPDATE failed for sections: %v", updateErr)
+			if _, err := DB.Exec(DB.Rebind("UPDATE sections SET updated_at = ?"), TimestampNow()); err != nil {
+				log.Printf("WARNING: Migration UPDATE failed for sections: %v", err)
 			}
 			log.Println("Migration completed: sections.updated_at added")
 		}
 	}
 
-	// Check if updated_at column exists in items
-	err = DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('items') WHERE name='updated_at'").Scan(&count)
+	// Migration: Add updated_at to items
+	exists, err = ColumnExists("items", "updated_at")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count == 0 {
+	if !exists {
 		log.Println("Running migration: Adding updated_at to items...")
-		// SQLite doesn't support dynamic DEFAULT in ALTER TABLE, so add with NULL first
-		_, err := DB.Exec("ALTER TABLE items ADD COLUMN updated_at INTEGER")
-		if err != nil {
+		if _, err := DB.Exec("ALTER TABLE items ADD COLUMN updated_at INTEGER"); err != nil {
 			log.Println("Migration failed for items:", err)
 		} else {
-			// Set updated_at for existing rows
-			_, updateErr := DB.Exec("UPDATE items SET updated_at = strftime('%s', 'now')")
-			if updateErr != nil {
-				log.Printf("WARNING: Migration UPDATE failed for items: %v", updateErr)
+			if _, err := DB.Exec(DB.Rebind("UPDATE items SET updated_at = ?"), TimestampNow()); err != nil {
+				log.Printf("WARNING: Migration UPDATE failed for items: %v", err)
 			}
 			log.Println("Migration completed: items.updated_at added")
 		}
@@ -171,48 +270,58 @@ func runMigrations() {
 }
 
 func migrateToMultipleLists() {
-	// Check if lists table exists
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='lists'").Scan(&count)
+	exists, err := TableExists("lists")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count > 0 {
+	if exists {
 		return // Already migrated
 	}
 
 	log.Println("Running migration: Adding multiple lists support...")
 
-	// Create lists table
-	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS lists (
+	// Create lists table — driver-specific DDL
+	var createErr error
+	if Driver == "postgres" {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS lists (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			icon TEXT NOT NULL DEFAULT '🛒',
+			sort_order INTEGER NOT NULL,
+			is_active BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`)
+	} else {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS lists (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			sort_order INTEGER NOT NULL,
 			is_active BOOLEAN DEFAULT FALSE,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at INTEGER DEFAULT (strftime('%s', 'now'))
-		);
-		CREATE INDEX IF NOT EXISTS idx_lists_order ON lists(sort_order);
-		CREATE INDEX IF NOT EXISTS idx_lists_active ON lists(is_active);
-	`)
-	if err != nil {
-		log.Println("Migration failed - creating lists table:", err)
+		)`)
+	}
+	if createErr != nil {
+		log.Println("Migration failed - creating lists table:", createErr)
 		return
 	}
 
-	// Add list_id column to sections
-	_, err = DB.Exec("ALTER TABLE sections ADD COLUMN list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE")
-	if err != nil {
+	if _, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_lists_order ON lists(sort_order)"); err != nil {
+		log.Println("Migration warning - creating lists order index:", err)
+	}
+	if _, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_lists_active ON lists(is_active)"); err != nil {
+		log.Println("Migration warning - creating lists active index:", err)
+	}
+
+	// Add list_id to sections
+	if _, err = DB.Exec("ALTER TABLE sections ADD COLUMN list_id INTEGER REFERENCES lists(id) ON DELETE CASCADE"); err != nil {
 		log.Println("Migration failed - adding list_id to sections:", err)
 		return
 	}
 
-	// Create index for list_id
-	_, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_sections_list ON sections(list_id, sort_order)")
-	if err != nil {
+	if _, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_sections_list ON sections(list_id, sort_order)"); err != nil {
 		log.Println("Migration warning - creating sections list index:", err)
 	}
 
@@ -220,40 +329,57 @@ func migrateToMultipleLists() {
 }
 
 func migrateTemplates() {
-	// Check if templates table exists
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='templates'").Scan(&count)
+	exists, err := TableExists("templates")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count > 0 {
+	if exists {
 		return // Already migrated
 	}
 
 	log.Println("Running migration: Adding templates support...")
 
-	// Create templates table
-	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS templates (
+	var createErr error
+	if Driver == "postgres" {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS templates (
+			id BIGSERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			sort_order INTEGER NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW(),
+			updated_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
+		)`)
+	} else {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS templates (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			description TEXT DEFAULT '',
 			sort_order INTEGER NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at INTEGER DEFAULT (strftime('%s', 'now'))
-		);
-		CREATE INDEX IF NOT EXISTS idx_templates_order ON templates(sort_order);
-	`)
-	if err != nil {
-		log.Println("Migration failed - creating templates table:", err)
+		)`)
+	}
+	if createErr != nil {
+		log.Println("Migration failed - creating templates table:", createErr)
 		return
 	}
+	if _, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_templates_order ON templates(sort_order)"); err != nil {
+		log.Println("Migration warning:", err)
+	}
 
-	// Create template_items table
-	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS template_items (
+	if Driver == "postgres" {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS template_items (
+			id BIGSERIAL PRIMARY KEY,
+			template_id BIGINT NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+			section_name TEXT NOT NULL,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			sort_order INTEGER NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`)
+	} else {
+		_, createErr = DB.Exec(`CREATE TABLE IF NOT EXISTS template_items (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			template_id INTEGER NOT NULL,
 			section_name TEXT NOT NULL,
@@ -262,85 +388,67 @@ func migrateTemplates() {
 			sort_order INTEGER NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE CASCADE
-		);
-		CREATE INDEX IF NOT EXISTS idx_template_items_template ON template_items(template_id, sort_order);
-	`)
-	if err != nil {
-		log.Println("Migration failed - creating template_items table:", err)
+		)`)
+	}
+	if createErr != nil {
+		log.Println("Migration failed - creating template_items table:", createErr)
 		return
+	}
+	if _, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_template_items_template ON template_items(template_id, sort_order)"); err != nil {
+		log.Println("Migration warning:", err)
 	}
 
 	log.Println("Migration completed: Templates support added")
 }
 
 func migrateListIcons() {
-	// Check if icon column exists in lists
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('lists') WHERE name='icon'").Scan(&count)
+	exists, err := ColumnExists("lists", "icon")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count > 0 {
-		return // Already migrated
+	if exists {
+		return
 	}
-
 	log.Println("Running migration: Adding icon to lists...")
-
-	_, err = DB.Exec("ALTER TABLE lists ADD COLUMN icon TEXT DEFAULT '🛒'")
-	if err != nil {
+	if _, err = DB.Exec(`ALTER TABLE lists ADD COLUMN icon TEXT DEFAULT '🛒'`); err != nil {
 		log.Println("Migration failed - adding icon to lists:", err)
 		return
 	}
-
 	log.Println("Migration completed: List icons added")
 }
 
 func migrateItemQuantity() {
-	// Check if quantity column exists in items
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('items') WHERE name='quantity'").Scan(&count)
+	exists, err := ColumnExists("items", "quantity")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count > 0 {
-		return // Already migrated
+	if exists {
+		return
 	}
-
 	log.Println("Running migration: Adding quantity to items...")
-
-	_, err = DB.Exec("ALTER TABLE items ADD COLUMN quantity INTEGER DEFAULT 0")
-	if err != nil {
+	if _, err = DB.Exec("ALTER TABLE items ADD COLUMN quantity INTEGER DEFAULT 0"); err != nil {
 		log.Println("Migration failed - adding quantity to items:", err)
 		return
 	}
-
 	log.Println("Migration completed: Item quantity added")
 }
 
 func migrateSectionSortMode() {
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM pragma_table_info('sections') WHERE name='sort_mode'").Scan(&count)
+	exists, err := ColumnExists("sections", "sort_mode")
 	if err != nil {
 		log.Println("Migration check failed:", err)
 		return
 	}
-
-	if count > 0 {
-		return // Already migrated
+	if exists {
+		return
 	}
-
 	log.Println("Running migration: Adding sort_mode to sections...")
-
-	_, err = DB.Exec("ALTER TABLE sections ADD COLUMN sort_mode TEXT DEFAULT 'manual'")
-	if err != nil {
+	if _, err = DB.Exec("ALTER TABLE sections ADD COLUMN sort_mode TEXT DEFAULT 'manual'"); err != nil {
 		log.Println("Migration failed - adding sort_mode to sections:", err)
 		return
 	}
-
 	log.Println("Migration completed: Section sort_mode added")
 }
 
