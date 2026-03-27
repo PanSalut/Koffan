@@ -969,10 +969,12 @@ function shoppingList() {
                         if (message.data?.id) {
                             const currentListId = document.querySelector('[data-list-id]')?.dataset?.listId;
                             if (String(message.data.id) === currentListId) {
-                                if (message.data.show_completed !== undefined) {
-                                    this.showCompleted = message.data.show_completed;
+                                if (!this.isLocalAction('list_updated')) {
+                                    if (message.data.show_completed !== undefined) {
+                                        this.showCompleted = message.data.show_completed;
+                                    }
+                                    this.refreshList();
                                 }
-                                this.refreshList();
                             }
                         }
                         break;
@@ -1469,6 +1471,7 @@ function shoppingList() {
 
         // Toggle show/hide completed items for current list
         async toggleShowCompleted(listId) {
+            this.markLocalAction('list_updated');
             try {
                 const resp = await fetch(`/lists/${listId}/toggle-completed`, { method: 'POST' });
                 if (!resp.ok) throw new Error(resp.statusText);
