@@ -325,13 +325,5 @@ func ToggleShowCompleted(c *fiber.Ctx) error {
 
 // getShowCompletedForSection returns show_completed setting for the list a section belongs to
 func getShowCompletedForSection(sectionID int64) bool {
-	section, err := db.GetSectionByID(sectionID)
-	if err != nil {
-		return true
-	}
-	list, err := db.GetListByID(section.ListID)
-	if err != nil {
-		return true
-	}
-	return list.ShowCompleted
+	return db.GetShowCompletedForSection(sectionID)
 }

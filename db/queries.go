@@ -198,6 +198,25 @@ func ToggleListShowCompleted(id int64) (*List, error) {
 	return GetListByID(id)
 }
 
+// SetListShowCompleted explicitly sets the show_completed flag on a list
+func SetListShowCompleted(id int64, value bool) (*List, error) {
+	_, err := DB.Exec(`UPDATE lists SET show_completed = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, value, id)
+	if err != nil {
+		return nil, err
+	}
+	return GetListByID(id)
+}
+
+// GetShowCompletedForSection returns the show_completed setting for the list a section belongs to
+func GetShowCompletedForSection(sectionID int64) bool {
+	var showCompleted bool
+	err := DB.QueryRow(`SELECT COALESCE(l.show_completed, TRUE) FROM lists l JOIN sections s ON s.list_id = l.id WHERE s.id = ?`, sectionID).Scan(&showCompleted)
+	if err != nil {
+		return true
+	}
+	return showCompleted
+}
+
 // DeleteList deletes a list and all its sections/items
 func DeleteList(id int64) error {
 	_, err := DB.Exec(`DELETE FROM lists WHERE id = ?`, id)

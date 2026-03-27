@@ -455,8 +455,8 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 		}
 
 		// Set show_completed if specified in export
-		if exportList.ShowCompleted != nil && !*exportList.ShowCompleted {
-			tx.Exec("UPDATE lists SET show_completed = FALSE WHERE id = ?", list.ID)
+		if exportList.ShowCompleted != nil {
+			tx.Exec("UPDATE lists SET show_completed = ? WHERE id = ?", *exportList.ShowCompleted, list.ID)
 		}
 
 		importedLists++

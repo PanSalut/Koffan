@@ -1,5 +1,5 @@
 {{define "list"}}
-<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors" data-list-id="{{.List.ID}}">
+<div x-data="shoppingList()" x-init="init()" @refresh-list.window="refreshList()" class="min-h-screen pb-28 md:pb-8 bg-stone-50 dark:bg-stone-900 transition-colors" data-list-id="{{.List.ID}}" data-show-completed="{{.ShowCompleted}}">
     <!-- Hidden input for iOS keyboard trick -->
     <input type="text" id="ios-keyboard-trigger" class="absolute opacity-0 pointer-events-none" style="position: absolute; top: -9999px; left: -9999px;" tabindex="-1" aria-hidden="true">
     <!-- Header -->
@@ -52,8 +52,7 @@
 
                     <!-- Toggle bought items visibility -->
                     <button
-                        @click="fetch('/lists/{{.List.ID}}/toggle-completed', {method: 'POST'}).then(r => r.text()).then(html => { document.getElementById('sections-list').innerHTML = html; showCompleted = !showCompleted; })"
-                        x-data="{ showCompleted: {{.ShowCompleted}} }"
+                        @click="toggleShowCompleted({{.List.ID}})"
                         class="p-1.5 rounded-lg transition-colors"
                         :class="showCompleted ? 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300' : 'text-pink-400 hover:text-pink-500'"
                         :title="showCompleted ? t('list.hide_completed') : t('list.show_completed')"
@@ -97,8 +96,7 @@
 
                     <!-- Toggle bought items visibility -->
                     <button
-                        @click="fetch('/lists/{{.List.ID}}/toggle-completed', {method: 'POST'}).then(r => r.text()).then(html => { document.getElementById('sections-list').innerHTML = html; showCompleted = !showCompleted; })"
-                        x-data="{ showCompleted: {{.ShowCompleted}} }"
+                        @click="toggleShowCompleted({{.List.ID}})"
                         class="p-1.5 rounded-lg transition-colors"
                         :class="showCompleted ? 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300' : 'text-pink-400 hover:text-pink-500'"
                         :title="showCompleted ? t('list.hide_completed') : t('list.show_completed')"
