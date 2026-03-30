@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "code": "cs",
+    "name": "Čeština",
+    "flag": "CZ"
+  },
+  "common": {
+    "add": "Přidat",
+    "cancel": "Zrušit",
+    "save": "Uložit",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "close": "Zavřít",
+    "create": "Vytvořit",
+    "name": "Název",
+    "description": "Popis",
+    "reserved_name": "Tento název je vyhrazen pro systém"
+  },
+  "nav": {
+    "settings": "Nastavení",
+    "logout": "Odhlásit se"
+  },
+  "list": {
+    "title": "Nákupní seznam Koffan",
+    "empty_list": "prázdný seznam",
+    "shopping_list": "Nákupní seznam",
+    "completed": "hotovo",
+    "bought": "Nakoupeno",
+    "name_exists": "Seznam s tímto názvem již existuje"
+  },
+  "items": {
+    "what_to_buy": "Co koupit?",
+    "note": "Poznámka...",
+    "note_optional": "Poznámka (volitelné)...",
+    "name": "Název...",
+    "quantity": "Množství (např. 2)",
+    "new_product": "Nový produkt",
+    "select_section": "Vyber sekci...",
+    "section": "Sekce...",
+    "add_more": "Přidat další",
+    "no_items": "Žádné produkty",
+    "add_first_item": "Přidej první produkt",
+    "quick_add": "Rychlé přidání do sekce",
+    "more_options": "Další možnosti",
+    "check_all": "Označit vše",
+    "uncheck_all": "Odznačit vše",
+    "sort_mode": "Řazení",
+    "sort_manual": "Ruční",
+    "sort_alphabetical": "A–Z",
+    "sort_alphabetical_desc": "Z–A"
+  },
+  "sections": {
+    "title": "Sekce",
+    "new_section": "Nová sekce...",
+    "section_list": "Seznam sekcí",
+    "manage": "Spravovat sekce",
+    "select": "Vybrat",
+    "no_sections": "Žádné sekce",
+    "add_first_section": "Přidej první sekci pro začátek",
+    "add_section_btn": "Přidat první sekci",
+    "default": "Obecné"
+  },
+  "actions": {
+    "move_up": "Posunout nahoru",
+    "move_down": "Posunout dolů",
+    "move": "Přesunout",
+    "uncertain": "Nejisté",
+    "certain": "Jisté",
+    "remove_mark": "Odebrat označení",
+    "mark_uncertain": "Označit jako nejisté"
+  },
+  "settings": {
+    "title": "Nastavení",
+    "theme": "Vzhled",
+    "theme_light": "Světlý",
+    "theme_dark": "Tmavý",
+    "theme_system": "Podle systému",
+    "language": "Jazyk",
+    "coming_soon": "Již brzy...",
+    "sponsor": "Chceš podpořit aplikaci? Přidej do košíku!",
+    "report_bug": "Našel jsi chybu? Dej mi vědět!",
+    "tab_account": "Účet",
+    "tab_shopping_list": "Nákupní seznam",
+    "tab_data": "Data",
+    "delete_completed": "Smazat nakoupené položky",
+    "delete_completed_description": "Odstraní všechny položky označené jako nakoupené.",
+    "history_section_mode": "Sekce pro návrhy z historie",
+    "use_first_section": "Použít první sekci",
+    "use_first_section_desc": "Pokud sekce neexistuje, přidá do první dostupné",
+    "auto_create_section": "Automaticky vytvořit sekci",
+    "auto_create_section_desc": "Pokud sekce neexistuje, vytvoří novou se stejným názvem",
+    "update_available": "Dostupná nová verze"
+  },
+  "login": {
+    "title": "Přihlášení - Koffan",
+    "subtitle": "Přihlas se pro pokračování",
+    "password": "Heslo",
+    "password_placeholder": "Zadej heslo...",
+    "submit": "Přihlásit se",
+    "error_invalid": "Neplatné heslo",
+    "error_rate_limited": "Příliš mnoho pokusů. Zkus to později."
+  },
+  "confirm": {
+    "delete_item": "Smazat „{{name}}“?",
+    "delete_sections": "Smazat {{count}} vybraných sekcí?",
+    "delete_section": "Smazat sekci „{{name}}“?",
+    "delete_completed_items": "Smazat všechny nakoupené položky?"
+  },
+  "stats": {
+    "progress": "Průběh"
+  },
+  "status": {
+    "syncing": "Synchronizace"
+  },
+  "error": {
+    "generic": "Chyba",
+    "delete_items": "Chyba při mazání položek"
+  },
+  "offline": {
+    "title": "Offline režim",
+    "message": "Jsi offline. Změny se automaticky synchronizují po obnovení připojení.",
+    "hint": "Změny se synchronizují automaticky",
+    "action_blocked": "Tato akce vyžaduje připojení k internetu",
+    "available_actions": "Dostupné offline:",
+    "can_add": "Přidávat produkty",
+    "can_toggle": "Označovat a odznačovat položky",
+    "can_edit": "Upravovat produkty",
+    "can_uncertain": "Označit jako nejisté",
+    "back_online": "Jsi zpět online. Vše synchronizováno!",
+    "queued": "Uloženo pro synchronizaci"
+  },
+  "history": {
+    "title": "Historie produktů",
+    "description": "Produkty používané pro návrhy. Odstraň položky přidané omylem nebo ty, které už nepotřebuješ.",
+    "manage": "Spravovat historii",
+    "search_placeholder": "Hledat v historii...",
+    "empty": "Žádné uložené produkty",
+    "delete_selected": "Smazat vybrané",
+    "confirm_delete": "Smazat „{{name}}“ z historie?",
+    "confirm_delete_batch": "Smazat {{count}} vybraných produktů z historie?",
+    "deleted": "Smazáno {{count}} produktů"
+  },
+  "lists": {
+    "title": "Tvoje seznamy",
+    "manage": "Spravovat seznamy",
+    "new_list": "Přidat nový seznam...",
+    "no_lists": "Žádné seznamy",
+    "add_first_list": "Přidej první nákupní seznam",
+    "switch": "Přepnout na",
+    "active": "Aktivní",
+    "icon": "Ikona",
+    "delete_confirm": "Smazat seznam „{{name}}“? Všechny položky budou ztraceny."
+  },
+  "templates": {
+    "title": "Šablony",
+    "new_template": "Nová šablona",
+    "apply": "Použít",
+    "applied": "Šablona použita",
+    "confirm_apply": "Přidat položky ze šablony do aktivního seznamu?",
+    "create_from_list": "Vytvořit šablonu ze seznamu",
+    "from_list_hint": "Šablona bude vytvořena z nenakoupených položek aktivního seznamu.",
+    "edit": "Upravit šablonu",
+    "items": "položek",
+    "section": "Sekce",
+    "add_item": "Přidat položku",
+    "empty": "Šablona je prázdná"
+  },
+  "onboarding": {
+    "welcome": "Vítej v Koffan!",
+    "description": "Tvůj osobní nákupní asistent. Vytvoř si první seznam a začni.",
+    "list_name": "Název seznamu",
+    "list_placeholder": "např. Týdenní nákup",
+    "create_list": "Vytvořit nákupní seznam",
+    "feature_sections": "Sekce",
+    "feature_templates": "Reálný čas",
+    "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Export dat",
+    "download_json": "Stáhnout jako JSON",
+    "download_csv": "Stáhnout jako CSV",
+    "include_templates": "Zahrnout šablony"
+  },
+  "import": {
+    "title": "Import dat",
+    "select_file": "Vyber soubor pro import",
+    "preview_title": "Náhled importu",
+    "confirm": "Importovat",
+    "success": "Data byla úspěšně importována",
+    "error": "Import se nezdařil",
+    "error_preview": "Nepodařilo se zobrazit náhled souboru",
+    "error_file_too_large": "Soubor je příliš velký (max 5MB)",
+    "error_invalid_format": "Neplatný formát souboru. Použij JSON nebo CSV.",
+    "error_invalid_file": "Neplatný soubor",
+    "lists": "Seznamy",
+    "items": "Položky",
+    "templates": "Šablony",
+    "history": "Historie návrhů",
+    "conflict_warning": "Tyto seznamy již existují:",
+    "conflict_skip": "Přeskočit – neimportovat",
+    "conflict_replace": "Nahradit – smazat existující a importovat nové",
+    "conflict_copy": "Kopie – vytvořit s příponou (kopie)",
+    "copy_suffix": "kopie"
+  },
+  "danger_zone": {
+    "title": "Nebezpečná zóna",
+    "clear_database": "Vymazat databázi",
+    "clear_database_warning": "Tato akce trvale smaže všechna data. Nelze vrátit zpět.",
+    "confirm_title": "Smazat všechna data?",
+    "will_delete": "Budou trvale smazána:",
+    "delete_lists": "Všechny seznamy",
+    "delete_sections": "Všechny sekce",
+    "delete_items": "Všechny položky",
+    "delete_templates": "Všechny šablony",
+    "delete_history": "Celá historie produktů",
+    "type_to_confirm": "Napiš ",
+    "success": "Databáze byla vymazána",
+    "error": "Nepodařilo se vymazat databázi",
+    "error_invalid_confirmation": "Neplatné potvrzení"
+  }
+}
