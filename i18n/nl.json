@@ -1,0 +1,220 @@
+{
+  "meta": {
+    "code": "nl",
+    "name": "Nederlands/Vlaams",
+    "flag": "NL/BE"
+  },
+  "common": {
+    "add": "Toevoegen",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten",
+    "create": "Aanmaken",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "reserved_name": "Deze naam is gereserveerd voor systeemgebruik"
+  },
+  "nav": {
+    "settings": "Instellingen",
+    "logout": "Uitloggen"
+  },
+  "list": {
+    "title": "Koffan Boodschappenlijst",
+    "empty_list": "Leeg Lijst",
+    "shopping_list": "Boodschappenlijst",
+    "completed": "Voltooid",
+    "bought": "Gekocht",
+    "name_exists": "Een lijst met deze naam bestaat al"
+  },
+  "items": {
+    "what_to_buy": "Wat kopen?",
+    "note": "Notitie...",
+    "note_optional": "Notitie (optioneel)...",
+    "name": "Naam...",
+    "new_product": "Nieuw product",
+    "select_section": "Selecteer categorie...",
+    "section": "Categorie...",
+    "add_more": "Meer toevoegen",
+    "no_items": "Geen artikelen",
+    "add_first_item": "Voeg je eerste product toe",
+    "quick_add": "Snel toevoegen aan categorie",
+    "more_options": "Meer opties",
+    "check_all": "Alle selecteren",
+    "uncheck_all": "Alle deselecteren",
+    "sort_mode": "Sortering",
+    "sort_manual": "Handmatig",
+    "sort_alphabetical": "A tot Z",
+    "sort_alphabetical_desc": "Z tot A"
+  },
+  "sections": {
+    "title": "Categorieën",
+    "new_section": "Nieuwe categorie...",
+    "section_list": "Categorielijst",
+    "manage": "Categorieën beheren",
+    "select": "Selecteren",
+    "no_sections": "Geen categorieën",
+    "add_first_section": "Voeg je eerste categorie toe",
+    "add_section_btn": "Eerste categorie toevoegen",
+    "default": "Standaard"
+  },
+  "actions": {
+    "move_up": "Omhoog verplaatsen",
+    "move_down": "Omlaag verplaatsen",
+    "move": "Verplaatsen",
+    "uncertain": "Onzeker",
+    "certain": "Zeker",
+    "remove_mark": "Markering verwijderen",
+    "mark_uncertain": "Als onzeker markeren"
+  },
+  "settings": {
+    "title": "Instellingen",
+    "theme": "Thema",
+    "theme_light": "Licht",
+    "theme_dark": "Donker",
+    "theme_system": "Systeem",
+    "language": "Taal",
+    "coming_soon": "Binnenkort beschikbaar...",
+    "sponsor": "Wil je de app steunen? Voeg toe aan je winkelwagen!",
+    "report_bug": "Bug gevonden? Laat het ons weten!",
+    "tab_account": "Account",
+    "tab_shopping_list": "Boodschappenlijst",
+    "tab_data": "Gegevens",
+    "delete_completed": "Alle gekochte items verwijderen",
+    "delete_completed_description": "Verwijdert alle als gekocht gemarkeerde items uit de boodschappenlijst.",
+    "history_section_mode": "Sectie voor geschiedenisvoorstellingen",
+    "use_first_section": "Eerste sectie gebruiken",
+    "use_first_section_desc": "Als de sectie niet bestaat, voeg toe aan de eerste beschikbare",
+    "auto_create_section": "Sectie automatisch aanmaken",
+    "auto_create_section_desc": "Als de sectie niet bestaat, maak dan een nieuwe met dezelfde naam",
+    "update_available": "Nieuwe update beschikbaar"
+  },
+  "login": {
+    "title": "Aanmelden - Koffan",
+    "subtitle": "Melden Sie sich an, um fortzufahren",
+    "password": "Wachtwoord",
+    "password_placeholder": "Wachtwoord invoeren...",
+    "submit": "Aanmelden",
+    "error_invalid": "Ongeldig wachtwoord",
+    "error_rate_limited": "Te veel aanmeldpogingen. Probeer het later opnieuw."
+  },
+  "confirm": {
+    "delete_item": "\"{{name}}\" verwijderen?",
+    "delete_sections": "{{count}} geselecteerde Categorie verwijderen?",
+    "delete_section": "Kategorie '{{name}}' verwijderen?",
+    "delete_completed_items": "Alle gekochte items verwijderen?"
+  },
+  "stats": {
+    "progress": "Voortgang"
+  },
+  "status": {
+    "syncing": "Synchroniseren"
+  },
+  "error": {
+    "generic": "Error",
+    "delete_items": "Error bij het verwijderen van items"
+  },
+  "offline": {
+    "title": "Offline-Modus",
+    "message": "U bent offline. Alle wijzigingen worden automatisch gesynchroniseerd zodra de verbinding is hersteld.",
+    "hint": "Wijzigingen worden automatisch gesynchroniseerd",
+    "action_blocked": "Deze actie vereist een internetverbinding",
+    "available_actions": "Offline beschikbaar:",
+    "can_add": "artikelen toevoegen",
+    "can_toggle": "Aan/uitvinken",
+    "can_edit": "artikelen bewerken",
+    "can_uncertain": "Als onzeker markeren",
+    "back_online": "U bent weer online. Alles gesynchroniseerd!",
+    "queued": "Voor synchronisatie in wachtrij geplaatst"
+  },
+  "history": {
+    "title": "Aankoopgeschiedenis",
+    "description": "artikelen voor automatische suggesties. Verwijder onbedoeld toegevoegde of niet langer vereiste artikelen.",
+    "manage": "Aankoopgeschiedenis beheren",
+    "search_placeholder": "In Aankoopgeschiedenis zoeken...",
+    "empty": "Geen opgeslagen artikelen",
+    "delete_selected": "Geselecteerde verwijderen",
+    "confirm_delete": "\"{{name}}\" uit de Aankoopgeschiedenis verwijderen?",
+    "confirm_delete_batch": "{{count}} geselecteerde artikelen uit de Aankoopgeschiedenis verwijderen?",
+    "deleted": "{{count}} Product verwijderd"
+  },
+  "lists": {
+    "title": "Uw lijsten",
+    "manage": "Lijsten beheren",
+    "new_list": "Nieuwe lijst toevoegen...",
+    "no_lists": "Geen lijsten",
+    "add_first_list": "Maak je eerste boodschappenlijst",
+    "switch": "Wisselen naar",
+    "active": "Actief",
+    "icon": "Symbool",
+    "delete_confirm": "Lijst \"{{name}}\" verwijderen? Alle artikelen gaan verloren."
+  },
+  "templates": {
+    "title": "Sjablonen",
+    "new_template": "Nieuw sjabloon",
+    "apply": "Toepassen",
+    "applied": "Sjabloon toegepast",
+    "confirm_apply": "Artikelen uit het sjabloon toevoegen aan de actieve lijst?",
+    "create_from_list": "Sjabloon van lijst maken",
+    "from_list_hint": "Het sjabloon wordt aangemaakt van de niet gekochte artikelen van de actieve lijst.",
+    "edit": "Sjabloon bewerken",
+    "items": "Artikel",
+    "section": "Kategorie",
+    "add_item": "Artikel toevoegen",
+    "empty": "Sjabloon is leeg"
+  },
+  "onboarding": {
+    "welcome": "Welkom bij Koffan!",
+    "description": "Jouw persoonlijke aankoop assistent. Maak je eerste boodschappenlijst aan om te beginnen.",
+    "list_name": "Lijst naam",
+    "list_placeholder": "b.v. Wekelijkse boodschappen",
+    "create_list": "Boodschappenlijst maken",
+    "feature_sections": "Categorieën",
+    "feature_templates": "Real-time",
+    "feature_offline": "Offline"
+  },
+  "export": {
+    "title": "Date exporteren",
+    "download_json": "Als JSON downloaden",
+    "download_csv": "Als CSV downloaden",
+    "include_templates": "Sjablonen opnemen"
+  },
+  "import": {
+    "title": "Data importeren",
+    "select_file": "Selecteer bestand om te importeren",
+    "preview_title": "Import-vooruitblik",
+    "confirm": "Importeren",
+    "success": "Data succesvol geïmporteerd",
+    "error": "Import mislukt",
+    "error_preview": "Bestand kon niet worden gelezen",
+    "error_file_too_large": "Bestand is te groot (max 5MB)",
+    "error_invalid_format": "Ongeldig bestandsformaat. Maak gebruik van JSON of CSV.",
+    "error_invalid_file": "Ongeldig bestand",
+    "lists": "Lijsten",
+    "items": "Artikelen",
+    "templates": "Sjablonen",
+    "history": "Suggestie geschiedenis",
+    "conflict_warning": "Deze lijsten bestaan al:",
+    "conflict_skip": "Overslaan - deze lijsten niet importeren",
+    "conflict_replace": "Vervangen - verwijder bestaande lijsten en importeer nieuwe lijsten",
+    "conflict_copy": "Kopiëren - maken met Suffix (Kopie)",
+    "copy_suffix": "Kopiëren"
+  },
+  "danger_zone": {
+    "title": "Gevaren zone",
+    "clear_database": "Database verwijderen",
+    "clear_database_warning": " Deze actie verwijderd permanent alle data van de database. Dit kan niet worden teruggedraaid.",
+    "confirm_title": "Alle data verwijderen?",
+    "will_delete": "De volgende gegevens worden permanent verwijderd:",
+    "delete_lists": "Alle boodschappenlijsten",
+    "delete_sections": "Alle Categorieën",
+    "delete_items": "Alle Artikelen",
+    "delete_templates": "Alle Sjablonen",
+    "delete_history": "Alle aankoopgeschiedenis",
+    "type_to_confirm": "Type om te bevestigen ",
+    "success": "Database is geleegd werd geledigd",
+    "error": "Het is niet gelukt om de database te legen",
+    "error_invalid_confirmation": "Ongeldig bevestigingswoord"
+  }
+}
