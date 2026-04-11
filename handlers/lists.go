@@ -323,7 +323,11 @@ func ToggleShowCompleted(c *fiber.Ctx) error {
 	}, "")
 }
 
-// getShowCompletedForSection returns show_completed setting for the list a section belongs to
-func getShowCompletedForSection(sectionID int64) bool {
-	return db.GetShowCompletedForSection(sectionID)
+// sectionRenderMap builds the template data map for rendering a single section partial
+func sectionRenderMap(section *db.Section) fiber.Map {
+	return fiber.Map{
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": db.GetShowCompletedForSection(section.ID),
+	}
 }

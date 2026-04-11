@@ -364,11 +364,7 @@ func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 		return sendError(c, 500, "error.fetch_failed")
 	}
 
-	return c.Render("partials/section", fiber.Map{
-		"Section":       section,
-		"Sections":      getSectionsForDropdown(),
-		"ShowCompleted": getShowCompletedForSection(sectionID),
-	}, "")
+	return c.Render("partials/section", sectionRenderMap(section), "")
 }
 
 // GetItemHTML returns a single item rendered as HTML partial
