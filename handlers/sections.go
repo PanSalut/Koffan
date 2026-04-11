@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"shopping-list/db"
 	"shopping-list/i18n"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+var ErrInvalidListID = errors.New("invalid list_id")
 
 // GetSectionHTML returns a single section rendered as HTML partial
 func GetSectionHTML(c *fiber.Ctx) error {
@@ -283,9 +287,10 @@ func trimSpace(s string) string {
 func getSectionsForList(c *fiber.Ctx) ([]db.Section, error) {
 	if listIDStr := c.Query("list_id"); listIDStr != "" {
 		listID, err := strconv.ParseInt(listIDStr, 10, 64)
-		if err == nil {
-			return db.GetSectionsByList(listID)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", ErrInvalidListID, listIDStr)
 		}
+		return db.GetSectionsByList(listID)
 	}
 	return db.GetAllSections()
 }
@@ -294,6 +299,9 @@ func getSectionsForList(c *fiber.Ctx) ([]db.Section, error) {
 func returnSectionsForModal(c *fiber.Ctx) error {
 	sections, err := getSectionsForList(c)
 	if err != nil {
+		if errors.Is(err, ErrInvalidListID) {
+			return c.Status(400).SendString("Invalid list_id parameter")
+		}
 		return c.Status(500).SendString("Failed to fetch sections")
 	}
 
@@ -308,6 +316,9 @@ func GetSectionsListForModal(c *fiber.Ctx) error {
 	if c.Query("format") == "json" {
 		sections, err := getSectionsForList(c)
 		if err != nil {
+			if errors.Is(err, ErrInvalidListID) {
+				return c.Status(400).JSON(fiber.Map{"error": "Invalid list_id parameter"})
+			}
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch sections"})
 		}
 		// Return simplified JSON for select options
