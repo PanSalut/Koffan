@@ -280,6 +280,9 @@ function shoppingList() {
         selectedQuickAddSuggestionIndex: -1,
         _quickAddSuggestionTimer: null,
 
+        // Show/hide completed items (shared state for both desktop + mobile toggle buttons)
+        showCompleted: document.querySelector('[data-show-completed]')?.dataset?.showCompleted === 'true',
+
         // Search
         searchQuery: '',
         searchResults: [],
@@ -968,6 +971,19 @@ function shoppingList() {
                         break;
                     case 'pong':
                         break;
+                    case 'list_updated':
+                        if (message.data?.id) {
+                            const currentListId = document.querySelector('[data-list-id]')?.dataset?.listId;
+                            if (String(message.data.id) === currentListId) {
+                                if (!this.isLocalAction('list_updated')) {
+                                    if (message.data.show_completed !== undefined) {
+                                        this.showCompleted = message.data.show_completed;
+                                    }
+                                    this.refreshList();
+                                }
+                            }
+                        }
+                        break;
                     default:
                         console.log('Unknown message type:', message.type);
                 }
@@ -1464,6 +1480,20 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('[Uncertain] Failed:', error);
+            }
+        },
+
+        // Toggle show/hide completed items for current list
+        async toggleShowCompleted(listId) {
+            this.markLocalAction('list_updated');
+            try {
+                const resp = await fetch(`/lists/${listId}/toggle-completed`, { method: 'POST' });
+                if (!resp.ok) throw new Error(resp.statusText);
+                const html = await resp.text();
+                document.getElementById('sections-list').innerHTML = html;
+                this.showCompleted = !this.showCompleted;
+            } catch (e) {
+                console.error('Failed to toggle show completed:', e);
             }
         },
 

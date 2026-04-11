@@ -26,7 +26,9 @@
     "shopping_list": "Liste de courses",
     "completed": "terminé",
     "bought": "Acheté",
-    "name_exists": "Une liste avec ce nom existe déjà"
+    "name_exists": "Une liste avec ce nom existe déjà",
+    "show_completed": "Afficher les articles achetés",
+    "hide_completed": "Masquer les articles achetés"
   },
   "items": {
     "what_to_buy": "Qu'acheter ?",

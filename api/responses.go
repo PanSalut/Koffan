@@ -75,8 +75,9 @@ type CreateListRequest struct {
 
 // UpdateListRequest for updating a list
 type UpdateListRequest struct {
-	Name string `json:"name,omitempty"`
-	Icon string `json:"icon,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Icon          string `json:"icon,omitempty"`
+	ShowCompleted *bool  `json:"show_completed,omitempty"`
 }
 
 // CreateSectionRequest for creating a new section

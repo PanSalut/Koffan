@@ -26,7 +26,9 @@
     "shopping_list": "Handleliste",
     "completed": "ferdig",
     "bought": "Kjøpt",
-    "name_exists": "En liste med dette navnet finnes allerede"
+    "name_exists": "En liste med dette navnet finnes allerede",
+    "show_completed": "Vis kjøpte varer",
+    "hide_completed": "Skjul kjøpte varer"
   },
   "items": {
     "what_to_buy": "Hva skal kjøpes?",

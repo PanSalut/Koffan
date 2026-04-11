@@ -26,7 +26,9 @@
     "shopping_list": "لیست خرید",
     "completed": "تمام",
     "bought": "خریده شده",
-    "name_exists": "لیستی با این نام وجود دارد."
+    "name_exists": "لیستی با این نام وجود دارد.",
+    "show_completed": "نمایش اقلام خریداری شده",
+    "hide_completed": "مخفی کردن اقلام خریداری شده"
   },
   "items": {
     "what_to_buy": "چی بخریم؟",

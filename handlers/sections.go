@@ -25,8 +25,9 @@ func GetSectionHTML(c *fiber.Ctx) error {
 	}
 
 	return c.Render("partials/section", fiber.Map{
-		"Section":  section,
-		"Sections": getSectionsForDropdown(),
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": getShowCompletedForSection(id),
 	}, "")
 }
 
@@ -77,8 +78,9 @@ func CreateSection(c *fiber.Ctx) error {
 
 	// Return the new section partial for HTMX
 	return c.Render("partials/section", fiber.Map{
-		"Section":  section,
-		"Sections": getSectionsForDropdown(),
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": getShowCompletedForSection(section.ID),
 	}, "")
 }
 
@@ -115,8 +117,9 @@ func UpdateSection(c *fiber.Ctx) error {
 
 	// Return updated section partial for main list
 	return c.Render("partials/section", fiber.Map{
-		"Section":  section,
-		"Sections": getSectionsForDropdown(),
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": getShowCompletedForSection(id),
 	}, "")
 }
 
@@ -200,8 +203,9 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 	BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode})
 
 	return c.Render("partials/section", fiber.Map{
-		"Section":  section,
-		"Sections": getSectionsForDropdown(),
+		"Section":       section,
+		"Sections":      getSectionsForDropdown(),
+		"ShowCompleted": getShowCompletedForSection(id),
 	}, "")
 }
 

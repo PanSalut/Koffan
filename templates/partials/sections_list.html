@@ -1,5 +1,5 @@
 {{define "partials/sections_list"}}
 {{range .Sections}}
-{{template "partials/section" dict "Section" . "Sections" $.Sections}}
+{{template "partials/section" dict "Section" . "Sections" $.Sections "ShowCompleted" $.ShowCompleted}}
 {{end}}
 {{end}}

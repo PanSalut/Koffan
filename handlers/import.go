@@ -454,6 +454,11 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 			tx.Exec("UPDATE lists SET is_active = TRUE WHERE id = ?", list.ID)
 		}
 
+		// Set show_completed if specified in export
+		if exportList.ShowCompleted != nil {
+			tx.Exec("UPDATE lists SET show_completed = ? WHERE id = ?", *exportList.ShowCompleted, list.ID)
+		}
+
 		importedLists++
 
 		// Create sections and items

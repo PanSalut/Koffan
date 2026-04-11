@@ -42,14 +42,15 @@ type Session struct {
 
 // List represents a shopping list
 type List struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Icon      string    `json:"icon"`
-	SortOrder int       `json:"sort_order"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt int64     `json:"updated_at"`
-	Stats     Stats     `json:"stats,omitempty"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	Icon          string    `json:"icon"`
+	SortOrder     int       `json:"sort_order"`
+	IsActive      bool      `json:"is_active"`
+	ShowCompleted bool      `json:"show_completed"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     int64     `json:"updated_at"`
+	Stats         Stats     `json:"stats,omitempty"`
 }
 
 // Template represents a reusable template
@@ -79,7 +80,7 @@ type TemplateItem struct {
 // GetAllLists returns all shopping lists with their stats
 func GetAllLists() ([]List, error) {
 	rows, err := DB.Query(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
 		FROM lists
 		ORDER BY sort_order ASC
 	`)
@@ -91,7 +92,7 @@ func GetAllLists() ([]List, error) {
 	var lists []List
 	for rows.Next() {
 		var l List
-		err := rows.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+		err := rows.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -105,9 +106,9 @@ func GetAllLists() ([]List, error) {
 func GetListByID(id int64) (*List, error) {
 	var l List
 	err := DB.QueryRow(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
 		FROM lists WHERE id = ?
-	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +120,10 @@ func GetListByID(id int64) (*List, error) {
 func GetActiveList() (*List, error) {
 	var l List
 	err := DB.QueryRow(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
 		FROM lists WHERE is_active = TRUE
 		LIMIT 1
-	`).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.CreatedAt, &l.UpdatedAt)
+	`).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +187,34 @@ func UpdateList(id int64, name, icon string) (*List, error) {
 		}
 	}
 	return GetListByID(id)
+}
+
+// ToggleListShowCompleted toggles the show_completed flag on a list
+func ToggleListShowCompleted(id int64) (*List, error) {
+	_, err := DB.Exec(`UPDATE lists SET show_completed = NOT COALESCE(show_completed, TRUE), updated_at = strftime('%s', 'now') WHERE id = ?`, id)
+	if err != nil {
+		return nil, err
+	}
+	return GetListByID(id)
+}
+
+// SetListShowCompleted explicitly sets the show_completed flag on a list
+func SetListShowCompleted(id int64, value bool) (*List, error) {
+	_, err := DB.Exec(`UPDATE lists SET show_completed = ?, updated_at = strftime('%s', 'now') WHERE id = ?`, value, id)
+	if err != nil {
+		return nil, err
+	}
+	return GetListByID(id)
+}
+
+// GetShowCompletedForSection returns the show_completed setting for the list a section belongs to
+func GetShowCompletedForSection(sectionID int64) bool {
+	var showCompleted bool
+	err := DB.QueryRow(`SELECT COALESCE(l.show_completed, TRUE) FROM lists l JOIN sections s ON s.list_id = l.id WHERE s.id = ?`, sectionID).Scan(&showCompleted)
+	if err != nil {
+		return true
+	}
+	return showCompleted
 }
 
 // DeleteList deletes a list and all its sections/items
