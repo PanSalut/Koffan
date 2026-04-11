@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Instellingen",
-    "logout": "Uitloggen"
+    "logout": "Uitloggen",
+    "back_to_lists": "Terug naar lijsten"
   },
   "list": {
     "title": "Koffan Boodschappenlijst",
@@ -47,7 +48,9 @@
     "sort_mode": "Sortering",
     "sort_manual": "Handmatig",
     "sort_alphabetical": "A tot Z",
-    "sort_alphabetical_desc": "Z tot A"
+    "sort_alphabetical_desc": "Z tot A",
+    "search_found": "Gevonden:",
+    "search_no_results": "Geen resultaten voor \"{{query}}\""
   },
   "sections": {
     "title": "Categorieën",
@@ -89,7 +92,8 @@
     "use_first_section_desc": "Als de sectie niet bestaat, voeg toe aan de eerste beschikbare",
     "auto_create_section": "Sectie automatisch aanmaken",
     "auto_create_section_desc": "Als de sectie niet bestaat, maak dan een nieuwe met dezelfde naam",
-    "update_available": "Nieuwe update beschikbaar"
+    "update_available": "Nieuwe update beschikbaar",
+    "delete_completed_count": "Gekochte verwijderd: {{count}}"
   },
   "login": {
     "title": "Aanmelden - Koffan",
@@ -104,7 +108,8 @@
     "delete_item": "\"{{name}}\" verwijderen?",
     "delete_sections": "{{count}} geselecteerde Categorie verwijderen?",
     "delete_section": "Kategorie '{{name}}' verwijderen?",
-    "delete_completed_items": "Alle gekochte items verwijderen?"
+    "delete_completed_items": "Alle gekochte items verwijderen?",
+    "delete_template": "Sjabloon \"{{name}}\" verwijderen?"
   },
   "stats": {
     "progress": "Voortgang"
@@ -114,7 +119,37 @@
   },
   "error": {
     "generic": "Error",
-    "delete_items": "Error bij het verwijderen van items"
+    "delete_items": "Error bij het verwijderen van items",
+    "invalid_id": "Ongeldig ID",
+    "invalid_section_id": "Ongeldig categorie-ID",
+    "invalid_list_id": "Ongeldig lijst-ID",
+    "invalid_position": "Ongeldige positie",
+    "name_required": "Naam is verplicht",
+    "name_too_long": "Naam te lang (max 100 tekens)",
+    "icon_too_long": "Icoon te lang",
+    "sort_mode_required": "Sorteermodus is verplicht",
+    "no_ids": "Geen ID's opgegeven",
+    "no_valid_ids": "Geen geldige ID's",
+    "not_found": "Niet gevonden",
+    "section_not_found": "Categorie niet gevonden",
+    "item_not_found": "Product niet gevonden",
+    "template_not_found": "Sjabloon niet gevonden",
+    "no_active_list": "Geen actieve lijst",
+    "section_name_required": "Categorienaam is verplicht",
+    "item_name_required": "Productnaam is verplicht",
+    "template_name_required": "Sjabloonnaam is verplicht",
+    "create_failed": "Aanmaken mislukt",
+    "update_failed": "Bijwerken mislukt",
+    "delete_failed": "Verwijderen mislukt",
+    "move_failed": "Verplaatsen mislukt",
+    "fetch_failed": "Laden mislukt",
+    "toggle_failed": "Wisselen mislukt",
+    "reorder_failed": "Herordenen mislukt",
+    "check_failed": "Bewerking mislukt",
+    "apply_failed": "Toepassen mislukt",
+    "session_failed": "Sessie aanmaken mislukt",
+    "database_unavailable": "Database tijdelijk niet beschikbaar, probeer opnieuw",
+    "database_error": "Databasefout"
   },
   "offline": {
     "title": "Offline-Modus",
@@ -127,7 +162,10 @@
     "can_edit": "artikelen bewerken",
     "can_uncertain": "Als onzeker markeren",
     "back_online": "U bent weer online. Alles gesynchroniseerd!",
-    "queued": "Voor synchronisatie in wachtrij geplaatst"
+    "queued": "Voor synchronisatie in wachtrij geplaatst",
+    "check_connection": "Controleer uw verbinding",
+    "not_saved_offline": "Deze lijst is niet offline opgeslagen.",
+    "back_to_home": "Terug naar startpagina"
   },
   "history": {
     "title": "Aankoopgeschiedenis",
@@ -163,7 +201,9 @@
     "items": "Artikel",
     "section": "Kategorie",
     "add_item": "Artikel toevoegen",
-    "empty": "Sjabloon is leeg"
+    "empty": "Sjabloon is leeg",
+    "no_templates": "Geen sjablonen",
+    "no_templates_hint": "Maak een sjabloon om snel producten toe te voegen"
   },
   "onboarding": {
     "welcome": "Welkom bij Koffan!",

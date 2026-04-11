@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Innstillinger",
-    "logout": "Logg ut"
+    "logout": "Logg ut",
+    "back_to_lists": "Tilbake til lister"
   },
   "list": {
     "title": "Koffan handleliste",
@@ -48,7 +49,9 @@
     "sort_mode": "Sortering",
     "sort_manual": "Manuell",
     "sort_alphabetical": "A til Å",
-    "sort_alphabetical_desc": "Å til A"
+    "sort_alphabetical_desc": "Å til A",
+    "search_found": "Funnet:",
+    "search_no_results": "Ingen resultater for \"{{query}}\""
   },
   "sections": {
     "title": "Seksjoner",
@@ -90,7 +93,8 @@
     "use_first_section_desc": "Hvis seksjonen ikke finnes, legg til i første tilgjengelige",
     "auto_create_section": "Opprett seksjon automatisk",
     "auto_create_section_desc": "Hvis seksjonen ikke finnes, opprett en ny med samme navn",
-    "update_available": "Ny versjon tilgjengelig"
+    "update_available": "Ny versjon tilgjengelig",
+    "delete_completed_count": "Slettet kjøpte: {{count}}"
   },
   "login": {
     "title": "Innlogging - Koffan",
@@ -105,7 +109,8 @@
     "delete_item": "Slett \"{{name}}\"?",
     "delete_sections": "Slett {{count}} valgte seksjoner?",
     "delete_section": "Slett seksjonen \"{{name}}\"?",
-    "delete_completed_items": "Slett alle kjøpte varer?"
+    "delete_completed_items": "Slett alle kjøpte varer?",
+    "delete_template": "Slette mal \"{{name}}\"?"
   },
   "stats": {
     "progress": "Fremgang"
@@ -115,7 +120,37 @@
   },
   "error": {
     "generic": "Feil",
-    "delete_items": "Feil ved sletting av varer"
+    "delete_items": "Feil ved sletting av varer",
+    "invalid_id": "Ugyldig ID",
+    "invalid_section_id": "Ugyldig seksjons-ID",
+    "invalid_list_id": "Ugyldig liste-ID",
+    "invalid_position": "Ugyldig posisjon",
+    "name_required": "Navn er påkrevd",
+    "name_too_long": "Navn for langt (maks 100 tegn)",
+    "icon_too_long": "Ikon for langt",
+    "sort_mode_required": "Sorteringsmodus er påkrevd",
+    "no_ids": "Ingen IDer oppgitt",
+    "no_valid_ids": "Ingen gyldige IDer",
+    "not_found": "Ikke funnet",
+    "section_not_found": "Seksjon ikke funnet",
+    "item_not_found": "Produkt ikke funnet",
+    "template_not_found": "Mal ikke funnet",
+    "no_active_list": "Ingen aktiv liste",
+    "section_name_required": "Seksjonsnavn er påkrevd",
+    "item_name_required": "Produktnavn er påkrevd",
+    "template_name_required": "Malnavn er påkrevd",
+    "create_failed": "Kunne ikke opprette",
+    "update_failed": "Kunne ikke oppdatere",
+    "delete_failed": "Kunne ikke slette",
+    "move_failed": "Kunne ikke flytte",
+    "fetch_failed": "Kunne ikke laste",
+    "toggle_failed": "Kunne ikke bytte",
+    "reorder_failed": "Kunne ikke sortere",
+    "check_failed": "Operasjonen feilet",
+    "apply_failed": "Kunne ikke bruke",
+    "session_failed": "Kunne ikke opprette økt",
+    "database_unavailable": "Databasen er midlertidig utilgjengelig, prøv igjen",
+    "database_error": "Databasefeil"
   },
   "offline": {
     "title": "Frakoblet modus",
@@ -128,7 +163,10 @@
     "can_edit": "Redigere produkter",
     "can_uncertain": "Markere som usikker",
     "back_online": "Du er tilbake på nett. Alt er synkronisert!",
-    "queued": "Lagret for synkronisering"
+    "queued": "Lagret for synkronisering",
+    "check_connection": "Sjekk tilkoblingen din",
+    "not_saved_offline": "Denne listen er ikke lagret frakoblet.",
+    "back_to_home": "Tilbake til forsiden"
   },
   "history": {
     "title": "Produkthistorikk",
@@ -164,7 +202,9 @@
     "items": "varer",
     "section": "Seksjon",
     "add_item": "Legg til vare",
-    "empty": "Malen er tom"
+    "empty": "Malen er tom",
+    "no_templates": "Ingen maler",
+    "no_templates_hint": "Opprett en mal for å raskt legge til produkter"
   },
   "onboarding": {
     "welcome": "Velkommen til Koffan!",

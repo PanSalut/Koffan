@@ -12,8 +12,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
         </svg>
     </div>
-    <p class="text-sm text-stone-500">Brak szablonów</p>
-    <p class="text-xs text-stone-400 mt-1">Utwórz szablon, aby szybko dodawać produkty</p>
+    <div x-data>
+        <p class="text-sm text-stone-500" x-text="t('templates.no_templates')">Brak szablonów</p>
+        <p class="text-xs text-stone-400 mt-1" x-text="t('templates.no_templates_hint')">Utwórz szablon, aby szybko dodawać produkty</p>
+    </div>
 </div>
 {{end}}
 {{end}}

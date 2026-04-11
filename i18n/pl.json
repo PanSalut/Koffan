@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Ustawienia",
-    "logout": "Wyloguj"
+    "logout": "Wyloguj",
+    "back_to_lists": "Powrót do list"
   },
   "list": {
     "title": "Koffan Lista Zakupów",
@@ -49,7 +50,9 @@
     "sort_mode": "Kolejność",
     "sort_manual": "Ręczna",
     "sort_alphabetical": "A do Z",
-    "sort_alphabetical_desc": "Z do A"
+    "sort_alphabetical_desc": "Z do A",
+    "search_found": "Znaleziono:",
+    "search_no_results": "Brak wyników dla \"{{query}}\""
   },
   "sections": {
     "title": "Sekcje",
@@ -91,7 +94,8 @@
     "use_first_section_desc": "Jeśli sekcja nie istnieje, dodaj do pierwszej dostępnej",
     "auto_create_section": "Automatycznie twórz sekcję",
     "auto_create_section_desc": "Jeśli sekcja nie istnieje, stwórz nową o tej samej nazwie",
-    "update_available": "Dostępna nowa wersja"
+    "update_available": "Dostępna nowa wersja",
+    "delete_completed_count": "Usunięto kupione: {{count}}"
   },
   "login": {
     "title": "Logowanie - Koffan",
@@ -106,7 +110,8 @@
     "delete_item": "Usunąć \"{{name}}\"?",
     "delete_sections": "Usunąć {{count}} wybranych sekcji?",
     "delete_section": "Usunąć sekcję '{{name}}'?",
-    "delete_completed_items": "Usunąć wszystkie kupione przedmioty?"
+    "delete_completed_items": "Usunąć wszystkie kupione przedmioty?",
+    "delete_template": "Usunąć szablon \"{{name}}\"?"
   },
   "stats": {
     "progress": "Postęp"
@@ -116,7 +121,37 @@
   },
   "error": {
     "generic": "Błąd",
-    "delete_items": "Błąd usuwania przedmiotów"
+    "delete_items": "Błąd usuwania przedmiotów",
+    "invalid_id": "Nieprawidłowe ID",
+    "invalid_section_id": "Nieprawidłowe ID sekcji",
+    "invalid_list_id": "Nieprawidłowe ID listy",
+    "invalid_position": "Nieprawidłowa pozycja",
+    "name_required": "Nazwa jest wymagana",
+    "name_too_long": "Nazwa za długa (max 100 znaków)",
+    "icon_too_long": "Ikona za długa",
+    "sort_mode_required": "Tryb sortowania jest wymagany",
+    "no_ids": "Nie podano żadnych ID",
+    "no_valid_ids": "Brak prawidłowych ID",
+    "not_found": "Nie znaleziono",
+    "section_not_found": "Sekcja nie znaleziona",
+    "item_not_found": "Produkt nie znaleziony",
+    "template_not_found": "Szablon nie znaleziony",
+    "no_active_list": "Brak aktywnej listy",
+    "section_name_required": "Nazwa sekcji jest wymagana",
+    "item_name_required": "Nazwa produktu jest wymagana",
+    "template_name_required": "Nazwa szablonu jest wymagana",
+    "create_failed": "Nie udało się utworzyć",
+    "update_failed": "Nie udało się zaktualizować",
+    "delete_failed": "Nie udało się usunąć",
+    "move_failed": "Nie udało się przenieść",
+    "fetch_failed": "Nie udało się załadować",
+    "toggle_failed": "Nie udało się przełączyć",
+    "reorder_failed": "Nie udało się zmienić kolejności",
+    "check_failed": "Operacja nie powiodła się",
+    "apply_failed": "Nie udało się zastosować",
+    "session_failed": "Nie udało się utworzyć sesji",
+    "database_unavailable": "Baza danych tymczasowo niedostępna, spróbuj ponownie",
+    "database_error": "Błąd bazy danych"
   },
   "offline": {
     "title": "Tryb offline",
@@ -129,7 +164,10 @@
     "can_edit": "Edycja produktów",
     "can_uncertain": "Oznaczanie jako niepewne",
     "back_online": "Wróciłeś online. Wszystko zsynchronizowane!",
-    "queued": "Zapisano do synchronizacji"
+    "queued": "Zapisano do synchronizacji",
+    "check_connection": "Sprawdź połączenie",
+    "not_saved_offline": "Ta lista nie jest zapisana offline.",
+    "back_to_home": "Wróć do strony głównej"
   },
   "history": {
     "title": "Historia produktów",
@@ -165,7 +203,9 @@
     "items": "produktów",
     "section": "Sekcja",
     "add_item": "Dodaj produkt",
-    "empty": "Szablon jest pusty"
+    "empty": "Szablon jest pusty",
+    "no_templates": "Brak szablonów",
+    "no_templates_hint": "Utwórz szablon, aby szybko dodawać produkty"
   },
   "onboarding": {
     "welcome": "Witaj w Koffan!",

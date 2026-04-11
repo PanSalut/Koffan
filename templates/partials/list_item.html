@@ -22,7 +22,7 @@
         <!-- View mode -->
         <div x-show="!editing">
             <p class="font-medium text-stone-800 truncate {{if .List.IsActive}}text-pink-700{{end}}">{{.List.Name}}</p>
-            <p class="text-xs text-stone-400">{{.List.Stats.CompletedItems}}/{{.List.Stats.TotalItems}} produktów</p>
+            <p class="text-xs text-stone-400">{{.List.Stats.CompletedItems}}/{{.List.Stats.TotalItems}} <span x-text="t('templates.items')">produktów</span></p>
         </div>
 
         <!-- Edit mode -->

@@ -55,12 +55,7 @@ window.handleSectionFormError = function(form, xhr) {
     form.querySelector('.error-msg')?.remove();
 
     // Get error text from response
-    let errorText = xhr.responseText || 'Error';
-
-    // Translate known error codes
-    if (errorText === 'This name is reserved for system use') {
-        errorText = window.getTranslation?.('common.reserved_name') || 'Ta nazwa jest zarezerwowana dla systemu';
-    }
+    let errorText = xhr.responseText || t('error.generic');
 
     // Create and insert error message
     const errorDiv = document.createElement('div');
@@ -1606,7 +1601,7 @@ function shoppingList() {
                     <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
-                    sync
+                    ${t('status.syncing')}
                 `;
                 const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
                 if (contentDiv) contentDiv.after(badge);
@@ -1757,7 +1752,7 @@ function shoppingList() {
 
                     // Show success toast
                     if (result.deleted > 0) {
-                        window.Toast.show(t('settings.delete_completed') + ': ' + result.deleted, 'success');
+                        window.Toast.show(t('settings.delete_completed_count', {count: result.deleted}), 'success');
                     }
                 } else {
                     window.Toast.show(t('error.delete_items'), 'warning');
@@ -2956,7 +2951,7 @@ function shoppingList() {
 
                 if (!response.ok) {
                     console.error('Failed to reorder item');
-                    window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
+                    window.Toast?.show(t('error.reorder_failed'), 'error');
                     if (navigator.onLine) this.refreshSection(parseInt(sectionId));
                     return;
                 }
@@ -2967,7 +2962,7 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('Failed to sync item position:', error);
-                window.Toast?.show(window.t?.('errors.reorder_failed') || 'Failed to reorder item', 'error');
+                window.Toast?.show(t('error.reorder_failed'), 'error');
                 if (navigator.onLine) this.refreshSection(parseInt(sectionId));
             }
         },
@@ -2993,7 +2988,7 @@ function shoppingList() {
 
                 if (!response.ok) {
                     console.error('Failed to move item to section');
-                    window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
+                    window.Toast?.show(t('error.move_failed'), 'error');
                     if (navigator.onLine) this.refreshList();
                     return;
                 }
@@ -3028,7 +3023,7 @@ function shoppingList() {
                 }
             } catch (error) {
                 console.error('Failed to move item to section:', error);
-                window.Toast?.show(window.t?.('errors.move_failed') || 'Failed to move item', 'error');
+                window.Toast?.show(t('error.move_failed'), 'error');
                 if (navigator.onLine) this.refreshList();
             }
         },
@@ -3397,7 +3392,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.body.addEventListener('htmx:afterSwap', function(event) {
         // Restore correct page title after swap (prevents HTMX from resetting to hardcoded title)
-        document.title = window.translations[window.currentLang]?.list?.title || 'Koffan Shopping List';
+        document.title = t('list.title');
 
         // Animate only new items after swap (works for both full list and section swaps)
         const targetId = event.detail.target?.id || '';
@@ -3419,7 +3414,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Also restore title after any HTMX request completes (belt and suspenders approach)
     document.body.addEventListener('htmx:afterRequest', function(event) {
-        document.title = window.translations[window.currentLang]?.list?.title || 'Koffan Shopping List';
+        document.title = t('list.title');
     });
 
 });
@@ -3446,7 +3441,7 @@ function createOfflineItemHtml(id, name, description, sectionId) {
         <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
-        sync
+        ${t('status.syncing')}
     </span>
 </div>`;
 }

@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Настройки",
-    "logout": "Выход"
+    "logout": "Выход",
+    "back_to_lists": "Назад к спискам"
   },
   "list": {
     "title": "Koffan - список покупок",
@@ -49,7 +50,9 @@
     "sort_mode": "Сортировка",
     "sort_manual": "Вручную",
     "sort_alphabetical": "А до Я",
-    "sort_alphabetical_desc": "Я до А"
+    "sort_alphabetical_desc": "Я до А",
+    "search_found": "Найдено:",
+    "search_no_results": "Нет результатов для \"{{query}}\""
   },
   "sections": {
     "title": "Разделы",
@@ -84,7 +87,8 @@
     "delete_item": "Удалить \"{{name}}\"?",
     "delete_sections": "Удалить {{count}} выбранных разделов?",
     "delete_section": "Удалить раздел '{{name}}'?",
-    "delete_completed_items": "Удалить все купленные товары?"
+    "delete_completed_items": "Удалить все купленные товары?",
+    "delete_template": "Удалить шаблон \"{{name}}\"?"
   },
   "stats": {
     "progress": "Прогресс"
@@ -94,7 +98,37 @@
   },
   "error": {
     "generic": "Ошибка",
-    "delete_items": "Ошибка удаления элементов"
+    "delete_items": "Ошибка удаления элементов",
+    "invalid_id": "Недействительный ID",
+    "invalid_section_id": "Недействительный ID раздела",
+    "invalid_list_id": "Недействительный ID списка",
+    "invalid_position": "Недействительная позиция",
+    "name_required": "Имя обязательно",
+    "name_too_long": "Имя слишком длинное (макс. 100 символов)",
+    "icon_too_long": "Иконка слишком длинная",
+    "sort_mode_required": "Режим сортировки обязателен",
+    "no_ids": "Не указаны ID",
+    "no_valid_ids": "Нет действительных ID",
+    "not_found": "Не найдено",
+    "section_not_found": "Раздел не найден",
+    "item_not_found": "Продукт не найден",
+    "template_not_found": "Шаблон не найден",
+    "no_active_list": "Нет активного списка",
+    "section_name_required": "Название раздела обязательно",
+    "item_name_required": "Название продукта обязательно",
+    "template_name_required": "Название шаблона обязательно",
+    "create_failed": "Не удалось создать",
+    "update_failed": "Не удалось обновить",
+    "delete_failed": "Не удалось удалить",
+    "move_failed": "Не удалось переместить",
+    "fetch_failed": "Не удалось загрузить",
+    "toggle_failed": "Не удалось переключить",
+    "reorder_failed": "Не удалось изменить порядок",
+    "check_failed": "Операция не удалась",
+    "apply_failed": "Не удалось применить",
+    "session_failed": "Не удалось создать сессию",
+    "database_unavailable": "База данных временно недоступна, попробуйте снова",
+    "database_error": "Ошибка базы данных"
   },
   "offline": {
     "title": "Автономный режим",
@@ -107,7 +141,10 @@
     "can_edit": "Редактирование товаров",
     "can_uncertain": "Отметки \"Под вопросом\"",
     "back_online": "Вы в сети. Всё синхронизировано!",
-    "queued": "Ожидает синхронизации"
+    "queued": "Ожидает синхронизации",
+    "check_connection": "Проверьте подключение",
+    "not_saved_offline": "Этот список не сохранён офлайн.",
+    "back_to_home": "Вернуться на главную"
   },
   "history": {
     "title": "Подсказки для товаров",
@@ -143,7 +180,9 @@
     "items": "товаров",
     "section": "Раздел",
     "add_item": "Добавить товар",
-    "empty": "Шаблон пуст"
+    "empty": "Шаблон пуст",
+    "no_templates": "Нет шаблонов",
+    "no_templates_hint": "Создайте шаблон для быстрого добавления продуктов"
   },
   "onboarding": {
     "welcome": "Добро пожаловать в Koffan!",
@@ -175,7 +214,8 @@
     "use_first_section_desc": "Если раздела не существует, товар будет добавлен в первый доступный раздел",
     "auto_create_section": "Автоматически создавать",
     "auto_create_section_desc": "Если раздела не существует, он будет создан на основе последнего раздела, в котором был товар",
-    "update_available": "Доступна новая версия"
+    "update_available": "Доступна новая версия",
+    "delete_completed_count": "Удалено купленных: {{count}}"
   },
   "export": {
     "title": "Экспорт данных",

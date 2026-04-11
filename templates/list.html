@@ -8,7 +8,7 @@
             <div class="flex items-center justify-between h-14 mb-4 gap-3">
                 <!-- Logo and List Name -->
                 <div class="flex items-center gap-2 md:gap-3 overflow-hidden">
-                    <a href="/" class="hover:opacity-80 transition-opacity flex-shrink-0" title="Powrót do list">
+                    <a href="/" class="hover:opacity-80 transition-opacity flex-shrink-0" :title="t('nav.back_to_lists')">
                         <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="h-8 md:h-10">
                     </a>
                     <span class="text-stone-300 dark:text-stone-600 text-sm md:text-base">/</span>
@@ -18,7 +18,7 @@
                             @click="showListSwitcher = !showListSwitcher"
                             class="flex items-center gap-1.5 md:gap-2 overflow-hidden hover:opacity-70 transition-opacity"
                         >
-                            <h1 class="text-sm md:text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" title="{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}">{{if .List}}{{.List.Name}}{{else}}Lista zakupów{{end}}</h1>
+                            <h1 class="text-sm md:text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" x-init="if (!$el.textContent.trim()) { $el.textContent = t('list.shopping_list'); $el.title = t('list.shopping_list'); }">{{if .List}}{{.List.Name}}{{else}}{{end}}</h1>
                             <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 dark:text-stone-500 flex-shrink-0 transition-transform" :class="showListSwitcher && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
@@ -159,10 +159,10 @@
             </button>
         </div>
         <p x-show="searchQuery && searchResults.length > 0" x-cloak class="mt-2 text-xs text-stone-500 dark:text-stone-400">
-            Znaleziono: <span x-text="searchResults.length"></span>
+            <span x-text="t('items.search_found')"></span> <span x-text="searchResults.length"></span>
         </p>
         <p x-show="searchQuery && searchQuery.length >= 2 && searchResults.length === 0" x-cloak class="mt-2 text-xs text-stone-400 dark:text-stone-500">
-            Brak wyników dla "<span x-text="searchQuery"></span>"
+            <span x-text="t('items.search_no_results', {query: searchQuery})"></span>
         </p>
     </div>
 

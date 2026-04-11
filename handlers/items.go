@@ -34,12 +34,12 @@ func retryOnBusy[T any](maxRetries int, operation func() (T, error)) (T, error) 
 func CreateItem(c *fiber.Ctx) error {
 	sectionID, err := strconv.ParseInt(c.FormValue("section_id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid section ID")
+		return sendError(c, 400, "error.invalid_section_id")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 
 	description := c.FormValue("description")
@@ -55,7 +55,7 @@ func CreateItem(c *fiber.Ctx) error {
 	// Check if item with same name already exists in this section
 	existing, findErr := db.FindItemByNameInSection(sectionID, name)
 	if findErr != nil {
-		return c.Status(500).SendString("Failed to check existing items")
+		return sendError(c, 500, "error.check_failed")
 	}
 
 	if existing != nil {
@@ -71,7 +71,7 @@ func CreateItem(c *fiber.Ctx) error {
 			}
 			item, err := db.ReactivateItem(existing.ID, desc, qty)
 			if err != nil {
-				return c.Status(500).SendString("Failed to reactivate item")
+				return sendError(c, 500, "error.check_failed")
 			}
 			db.SaveItemHistory(name, sectionID)
 			c.Set("X-Item-Reactivated", "true")
@@ -90,7 +90,7 @@ func CreateItem(c *fiber.Ctx) error {
 
 	item, err := db.CreateItem(sectionID, name, description, quantity)
 	if err != nil {
-		return c.Status(500).SendString("Failed to create item")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Save to item history for auto-completion
@@ -120,12 +120,12 @@ func CreateItem(c *fiber.Ctx) error {
 func UpdateItem(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 
 	description := c.FormValue("description")
@@ -133,7 +133,7 @@ func UpdateItem(c *fiber.Ctx) error {
 	// Get existing item to preserve quantity if not provided
 	existing, err := db.GetItemByID(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to get item")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	// Parse quantity (preserve existing if not provided)
@@ -146,7 +146,7 @@ func UpdateItem(c *fiber.Ctx) error {
 
 	item, err := db.UpdateItem(id, name, description, quantity)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update item")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -170,17 +170,17 @@ func UpdateItem(c *fiber.Ctx) error {
 func DeleteItem(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	item, err := db.GetItemByID(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to get item")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	err = db.DeleteItem(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete item")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	BroadcastUpdate("item_deleted", map[string]int64{"id": id, "section_id": item.SectionID})
@@ -192,7 +192,7 @@ func DeleteItem(c *fiber.Ctx) error {
 func DeleteCompletedItems(c *fiber.Ctx) error {
 	count, err := db.DeleteCompletedItems()
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete completed items")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -206,12 +206,12 @@ func DeleteCompletedItems(c *fiber.Ctx) error {
 func ToggleItem(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	item, err := db.ToggleItemCompleted(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to toggle item")
+		return sendError(c, 500, "error.toggle_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -234,12 +234,12 @@ func ToggleItem(c *fiber.Ctx) error {
 func ToggleUncertain(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	item, err := db.ToggleItemUncertain(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to toggle uncertain")
+		return sendError(c, 500, "error.toggle_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -263,18 +263,18 @@ func ToggleUncertain(c *fiber.Ctx) error {
 func MoveItemToSection(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	newSectionID, err := strconv.ParseInt(c.FormValue("section_id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid section ID")
+		return sendError(c, 400, "error.invalid_section_id")
 	}
 
 	// Get old section_id BEFORE moving
 	oldItem, err := db.GetItemByID(id)
 	if err != nil {
-		return c.Status(404).SendString("Item not found")
+		return sendError(c, 404, "error.item_not_found")
 	}
 	fromSectionID := oldItem.SectionID
 
@@ -285,7 +285,7 @@ func MoveItemToSection(c *fiber.Ctx) error {
 	if positionStr != "" {
 		position, err := strconv.Atoi(positionStr)
 		if err != nil {
-			return c.Status(400).SendString("Invalid position")
+			return sendError(c, 400, "error.invalid_position")
 		}
 		// Use retry for concurrent access protection
 		item, err = retryOnBusy(3, func() (*db.Item, error) {
@@ -293,12 +293,12 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		})
 		if err != nil {
 			log.Printf("MoveItemToSection failed after retries: %v", err)
-			return c.Status(500).SendString("Failed to move item")
+			return sendError(c, 500, "error.move_failed")
 		}
 	} else {
 		item, err = db.MoveItemToSection(id, newSectionID)
 		if err != nil {
-			return c.Status(500).SendString("Failed to move item")
+			return sendError(c, 500, "error.move_failed")
 		}
 	}
 
@@ -321,12 +321,12 @@ func MoveItemToSection(c *fiber.Ctx) error {
 func MoveItemUp(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveItemUp(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move item")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	item, _ := db.GetItemByID(id)
@@ -341,12 +341,12 @@ func MoveItemUp(c *fiber.Ctx) error {
 func MoveItemDown(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveItemDown(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move item")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	item, _ := db.GetItemByID(id)
@@ -361,7 +361,7 @@ func MoveItemDown(c *fiber.Ctx) error {
 func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 	section, err := db.GetSectionByID(sectionID)
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch section")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	return c.Render("partials/section", fiber.Map{
@@ -375,12 +375,12 @@ func returnSectionItems(c *fiber.Ctx, sectionID int64) error {
 func GetItemHTML(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	item, err := db.GetItemByID(id)
 	if err != nil {
-		return c.Status(404).SendString("Item not found")
+		return sendError(c, 404, "error.item_not_found")
 	}
 
 	tmpl := "partials/item"
@@ -398,12 +398,12 @@ func GetItemHTML(c *fiber.Ctx) error {
 func CheckAllItems(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid section ID")
+		return sendError(c, 400, "error.invalid_section_id")
 	}
 
 	count, err := db.CheckAllItems(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to check all items")
+		return sendError(c, 500, "error.check_failed")
 	}
 
 	BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": id, "count": count})
@@ -415,12 +415,12 @@ func CheckAllItems(c *fiber.Ctx) error {
 func UncheckAllItems(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid section ID")
+		return sendError(c, 400, "error.invalid_section_id")
 	}
 
 	count, err := db.UncheckAllItems(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to uncheck all items")
+		return sendError(c, 500, "error.check_failed")
 	}
 
 	BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": id, "count": count})

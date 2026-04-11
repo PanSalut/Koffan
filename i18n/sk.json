@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Nastavenia",
-    "logout": "Odhlásiť sa"
+    "logout": "Odhlásiť sa",
+    "back_to_lists": "Späť na zoznamy"
   },
   "list": {
     "title": "Koffan nákupný zoznam",
@@ -48,7 +49,9 @@
     "sort_mode": "Zoradenie",
     "sort_manual": "Ručne",
     "sort_alphabetical": "A po Z",
-    "sort_alphabetical_desc": "Z po A"
+    "sort_alphabetical_desc": "Z po A",
+    "search_found": "Nájdené:",
+    "search_no_results": "Žiadne výsledky pre \"{{query}}\""
   },
   "sections": {
     "title": "Sekcie",
@@ -90,7 +93,8 @@
     "use_first_section_desc": "Ak sekcia neexistuje, pridaj do prvej dostupnej",
     "auto_create_section": "Automaticky vytvor sekciu",
     "auto_create_section_desc": "Ak sekcia neexistuje, vytvor novú s rovnakým názvom",
-    "update_available": "Dostupná nová verzia"
+    "update_available": "Dostupná nová verzia",
+    "delete_completed_count": "Zmazané kúpené: {{count}}"
   },
   "login": {
     "title": "Prihlásenie - Koffan",
@@ -105,7 +109,8 @@
     "delete_item": "Odstrániť \"{{name}}\"?",
     "delete_sections": "Odstrániť {{count}} zvolených sekcií?",
     "delete_section": "Odstrániť sekciu '{{name}}'?",
-    "delete_completed_items": "Odstrániť všetky kúpené položky?"
+    "delete_completed_items": "Odstrániť všetky kúpené položky?",
+    "delete_template": "Odstrániť šablónu \"{{name}}\"?"
   },
   "stats": {
     "progress": "Postup"
@@ -115,7 +120,37 @@
   },
   "error": {
     "generic": "Chyba",
-    "delete_items": "Chyba pri odstraňovaní položiek"
+    "delete_items": "Chyba pri odstraňovaní položiek",
+    "invalid_id": "Neplatné ID",
+    "invalid_section_id": "Neplatné ID sekcie",
+    "invalid_list_id": "Neplatné ID zoznamu",
+    "invalid_position": "Neplatná pozícia",
+    "name_required": "Názov je povinný",
+    "name_too_long": "Názov príliš dlhý (max. 100 znakov)",
+    "icon_too_long": "Ikona príliš dlhá",
+    "sort_mode_required": "Režim zoradenia je povinný",
+    "no_ids": "Neboli zadané žiadne ID",
+    "no_valid_ids": "Žiadne platné ID",
+    "not_found": "Nenájdené",
+    "section_not_found": "Sekcia nenájdená",
+    "item_not_found": "Produkt nenájdený",
+    "template_not_found": "Šablóna nenájdená",
+    "no_active_list": "Žiadny aktívny zoznam",
+    "section_name_required": "Názov sekcie je povinný",
+    "item_name_required": "Názov produktu je povinný",
+    "template_name_required": "Názov šablóny je povinný",
+    "create_failed": "Nepodarilo sa vytvoriť",
+    "update_failed": "Nepodarilo sa aktualizovať",
+    "delete_failed": "Nepodarilo sa odstrániť",
+    "move_failed": "Nepodarilo sa presunúť",
+    "fetch_failed": "Nepodarilo sa načítať",
+    "toggle_failed": "Nepodarilo sa prepnúť",
+    "reorder_failed": "Nepodarilo sa preusporiadať",
+    "check_failed": "Operácia zlyhala",
+    "apply_failed": "Nepodarilo sa použiť",
+    "session_failed": "Nepodarilo sa vytvoriť reláciu",
+    "database_unavailable": "Databáza je dočasne nedostupná, skúste znova",
+    "database_error": "Chyba databázy"
   },
   "offline": {
     "title": "Offline režim",
@@ -128,7 +163,10 @@
     "can_edit": "Úprava produktov",
     "can_uncertain": "Označenie ako neisté",
     "back_online": "Si opäť online. Všetky zmeny sa zosynchronizovali!",
-    "queued": "Uložené pre synchronizáciu"
+    "queued": "Uložené pre synchronizáciu",
+    "check_connection": "Skontrolujte pripojenie",
+    "not_saved_offline": "Tento zoznam nie je uložený offline.",
+    "back_to_home": "Späť na hlavnú stránku"
   },
   "history": {
     "title": "História produktov",
@@ -164,7 +202,9 @@
     "items": "položky",
     "section": "Sekcia",
     "add_item": "Pridať položku",
-    "empty": "Šablóna je prázdna"
+    "empty": "Šablóna je prázdna",
+    "no_templates": "Žiadne šablóny",
+    "no_templates_hint": "Vytvorte šablónu na rýchle pridávanie produktov"
   },
   "onboarding": {
     "welcome": "Vitaj v Koffane!",

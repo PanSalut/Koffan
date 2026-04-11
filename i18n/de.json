@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Einstellungen",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "back_to_lists": "Zurück zu Listen"
   },
   "list": {
     "title": "Koffan Einkaufsliste",
@@ -35,6 +36,7 @@
     "note": "Notiz...",
     "note_optional": "Notiz (optional)...",
     "name": "Name...",
+    "quantity": "Menge (z.B. 2)",
     "new_product": "Neues Produkt",
     "select_section": "Kategorie wählen...",
     "section": "Kategorie...",
@@ -48,7 +50,9 @@
     "sort_mode": "Sortierung",
     "sort_manual": "Manuell",
     "sort_alphabetical": "A bis Z",
-    "sort_alphabetical_desc": "Z bis A"
+    "sort_alphabetical_desc": "Z bis A",
+    "search_found": "Gefunden:",
+    "search_no_results": "Keine Ergebnisse für \"{{query}}\""
   },
   "sections": {
     "title": "Kategorien",
@@ -90,7 +94,8 @@
     "use_first_section_desc": "Wenn der Abschnitt nicht existiert, zum ersten verfügbaren hinzufügen",
     "auto_create_section": "Abschnitt automatisch erstellen",
     "auto_create_section_desc": "Wenn der Abschnitt nicht existiert, einen neuen mit gleichem Namen erstellen",
-    "update_available": "Neue Version verfügbar"
+    "update_available": "Neue Version verfügbar",
+    "delete_completed_count": "Gekaufte gelöscht: {{count}}"
   },
   "login": {
     "title": "Anmeldung - Koffan",
@@ -105,7 +110,8 @@
     "delete_item": "\"{{name}}\" löschen?",
     "delete_sections": "{{count}} ausgewählte Kategorien löschen?",
     "delete_section": "Kategorie '{{name}}' löschen?",
-    "delete_completed_items": "Alle gekauften Artikel löschen?"
+    "delete_completed_items": "Alle gekauften Artikel löschen?",
+    "delete_template": "Vorlage \"{{name}}\" löschen?"
   },
   "stats": {
     "progress": "Fortschritt"
@@ -115,7 +121,37 @@
   },
   "error": {
     "generic": "Fehler",
-    "delete_items": "Fehler beim Löschen"
+    "delete_items": "Fehler beim Löschen",
+    "invalid_id": "Ungültige ID",
+    "invalid_section_id": "Ungültige Bereichs-ID",
+    "invalid_list_id": "Ungültige Listen-ID",
+    "invalid_position": "Ungültige Position",
+    "name_required": "Name ist erforderlich",
+    "name_too_long": "Name zu lang (max. 100 Zeichen)",
+    "icon_too_long": "Symbol zu lang",
+    "sort_mode_required": "Sortiermodus ist erforderlich",
+    "no_ids": "Keine IDs angegeben",
+    "no_valid_ids": "Keine gültigen IDs",
+    "not_found": "Nicht gefunden",
+    "section_not_found": "Bereich nicht gefunden",
+    "item_not_found": "Produkt nicht gefunden",
+    "template_not_found": "Vorlage nicht gefunden",
+    "no_active_list": "Keine aktive Liste",
+    "section_name_required": "Bereichsname ist erforderlich",
+    "item_name_required": "Produktname ist erforderlich",
+    "template_name_required": "Vorlagename ist erforderlich",
+    "create_failed": "Erstellen fehlgeschlagen",
+    "update_failed": "Aktualisieren fehlgeschlagen",
+    "delete_failed": "Löschen fehlgeschlagen",
+    "move_failed": "Verschieben fehlgeschlagen",
+    "fetch_failed": "Laden fehlgeschlagen",
+    "toggle_failed": "Umschalten fehlgeschlagen",
+    "reorder_failed": "Neuordnung fehlgeschlagen",
+    "check_failed": "Vorgang fehlgeschlagen",
+    "apply_failed": "Anwenden fehlgeschlagen",
+    "session_failed": "Sitzungserstellung fehlgeschlagen",
+    "database_unavailable": "Datenbank vorübergehend nicht verfügbar, bitte erneut versuchen",
+    "database_error": "Datenbankfehler"
   },
   "offline": {
     "title": "Offline-Modus",
@@ -128,7 +164,10 @@
     "can_edit": "Produkte bearbeiten",
     "can_uncertain": "Als unsicher markieren",
     "back_online": "Du bist wieder online. Alles synchronisiert!",
-    "queued": "Zur Synchronisierung gespeichert"
+    "queued": "Zur Synchronisierung gespeichert",
+    "check_connection": "Überprüfe deine Verbindung",
+    "not_saved_offline": "Diese Liste ist nicht offline gespeichert.",
+    "back_to_home": "Zurück zur Startseite"
   },
   "history": {
     "title": "Produktverlauf",
@@ -164,7 +203,9 @@
     "items": "Artikel",
     "section": "Kategorie",
     "add_item": "Artikel hinzufügen",
-    "empty": "Vorlage ist leer"
+    "empty": "Vorlage ist leer",
+    "no_templates": "Keine Vorlagen",
+    "no_templates_hint": "Erstelle eine Vorlage, um schnell Produkte hinzuzufügen"
   },
   "onboarding": {
     "welcome": "Willkommen bei Koffan!",

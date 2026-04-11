@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "تنظیمات",
-    "logout": "خروج"
+    "logout": "خروج",
+    "back_to_lists": "بازگشت به لیست‌ها"
   },
   "list": {
     "title": "لیست خرید کوفان",
@@ -49,7 +50,9 @@
     "sort_mode": "ترتیب مرتب سازی",
     "sort_manual": "دستی",
     "sort_alphabetical": "الف تا ی",
-    "sort_alphabetical_desc": "ی تا الف"
+    "sort_alphabetical_desc": "ی تا الف",
+    "search_found": "یافت شد:",
+    "search_no_results": "نتیجه‌ای برای \"{{query}}\" یافت نشد"
   },
   "sections": {
     "title": "بخش ها",
@@ -91,7 +94,8 @@
     "use_first_section_desc": "اگر بخش وجود ندارد آن را به اولین بخش موجود اضافه کن",
     "auto_create_section": "ایجاد خودکار بخش",
     "auto_create_section_desc": "اگر بخش وجود ندارد آن را با همان نام ایجاد کن",
-    "update_available": "نسخه جدید موجود است"
+    "update_available": "نسخه جدید موجود است",
+    "delete_completed_count": "خریداری‌شده‌های حذف‌شده: {{count}}"
   },
   "login": {
     "title": "ورود - کوفان",
@@ -106,7 +110,8 @@
     "delete_item": "آیا \"{{name}}\" حذف شود؟",
     "delete_sections": "آیا {{count}} بخش حذف شود؟",
     "delete_section": "آیا بخش'{{name}}' حذف شود؟",
-    "delete_completed_items": "آیا همه موارد خریده شده حذف شود؟"
+    "delete_completed_items": "آیا همه موارد خریده شده حذف شود؟",
+    "delete_template": "حذف الگوی \"{{name}}\"؟"
   },
   "stats": {
     "progress": "در حال پردازش"
@@ -116,7 +121,37 @@
   },
   "error": {
     "generic": "خطا",
-    "delete_items": "خطا در حذف مورد"
+    "delete_items": "خطا در حذف مورد",
+    "invalid_id": "شناسه نامعتبر",
+    "invalid_section_id": "شناسه بخش نامعتبر",
+    "invalid_list_id": "شناسه لیست نامعتبر",
+    "invalid_position": "موقعیت نامعتبر",
+    "name_required": "نام الزامی است",
+    "name_too_long": "نام بیش از حد طولانی (حداکثر ۱۰۰ کاراکتر)",
+    "icon_too_long": "آیکون بیش از حد طولانی",
+    "sort_mode_required": "حالت مرتب‌سازی الزامی است",
+    "no_ids": "هیچ شناسه‌ای ارائه نشده",
+    "no_valid_ids": "شناسه معتبری وجود ندارد",
+    "not_found": "یافت نشد",
+    "section_not_found": "بخش یافت نشد",
+    "item_not_found": "محصول یافت نشد",
+    "template_not_found": "الگو یافت نشد",
+    "no_active_list": "لیست فعالی وجود ندارد",
+    "section_name_required": "نام بخش الزامی است",
+    "item_name_required": "نام محصول الزامی است",
+    "template_name_required": "نام الگو الزامی است",
+    "create_failed": "ایجاد ناموفق",
+    "update_failed": "به‌روزرسانی ناموفق",
+    "delete_failed": "حذف ناموفق",
+    "move_failed": "انتقال ناموفق",
+    "fetch_failed": "بارگذاری ناموفق",
+    "toggle_failed": "تغییر ناموفق",
+    "reorder_failed": "مرتب‌سازی مجدد ناموفق",
+    "check_failed": "عملیات ناموفق",
+    "apply_failed": "اعمال ناموفق",
+    "session_failed": "ایجاد نشست ناموفق",
+    "database_unavailable": "پایگاه داده موقتاً در دسترس نیست، دوباره تلاش کنید",
+    "database_error": "خطای پایگاه داده"
   },
   "offline": {
     "title": "حالت آفلاین",
@@ -129,7 +164,10 @@
     "can_edit": "ویرایش محصولات",
     "can_uncertain": "به عنوان نامشخص علامت بزن.",
     "back_online": "شما دوباره آنلاین هستید. همه چیز بروزرسانی شد!",
-    "queued": "برای بروزرسانی ذخیره شد"
+    "queued": "برای بروزرسانی ذخیره شد",
+    "check_connection": "اتصال خود را بررسی کنید",
+    "not_saved_offline": "این لیست به صورت آفلاین ذخیره نشده است.",
+    "back_to_home": "بازگشت به صفحه اصلی"
   },
   "history": {
     "title": "پیشینه محصول",
@@ -165,7 +203,9 @@
     "items": "موارد",
     "section": "بخش",
     "add_item": "افزودن مورد",
-    "empty": "قالب خالی است"
+    "empty": "قالب خالی است",
+    "no_templates": "الگویی وجود ندارد",
+    "no_templates_hint": "یک الگو بسازید تا محصولات را سریع اضافه کنید"
   },
   "onboarding": {
     "welcome": "به کوفان خوش آمدید!",

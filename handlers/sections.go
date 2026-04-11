@@ -16,12 +16,12 @@ var ErrInvalidListID = errors.New("invalid list_id")
 func GetSectionHTML(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	section, err := db.GetSectionByID(id)
 	if err != nil {
-		return c.Status(404).SendString("Section not found")
+		return sendError(c, 404, "error.section_not_found")
 	}
 
 	return c.Render("partials/section", fiber.Map{
@@ -35,7 +35,7 @@ func GetSectionHTML(c *fiber.Ctx) error {
 func GetSections(c *fiber.Ctx) error {
 	sections, err := db.GetAllSections()
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch sections")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	stats := db.GetStats()
@@ -59,18 +59,18 @@ func GetSections(c *fiber.Ctx) error {
 func CreateSection(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 	if len(name) > MaxSectionNameLength {
-		return c.Status(400).SendString("Name too long (max 100 characters)")
+		return sendError(c, 400, "error.name_too_long")
 	}
 	if name == "[HISTORY]" {
-		return c.Status(400).SendString("This name is reserved for system use")
+		return sendError(c, 400, "common.reserved_name")
 	}
 
 	section, err := db.CreateSection(name)
 	if err != nil {
-		return c.Status(500).SendString("Failed to create section")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -88,23 +88,23 @@ func CreateSection(c *fiber.Ctx) error {
 func UpdateSection(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 	if len(name) > MaxSectionNameLength {
-		return c.Status(400).SendString("Name too long (max 100 characters)")
+		return sendError(c, 400, "error.name_too_long")
 	}
 	if name == "[HISTORY]" {
-		return c.Status(400).SendString("This name is reserved for system use")
+		return sendError(c, 400, "common.reserved_name")
 	}
 
 	section, err := db.UpdateSection(id, name)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update section")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -127,12 +127,12 @@ func UpdateSection(c *fiber.Ctx) error {
 func DeleteSection(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.DeleteSection(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete section")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -146,12 +146,12 @@ func DeleteSection(c *fiber.Ctx) error {
 func MoveSectionUp(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveSectionUp(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move section")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	BroadcastUpdate("sections_reordered", nil)
@@ -167,12 +167,12 @@ func MoveSectionUp(c *fiber.Ctx) error {
 func MoveSectionDown(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveSectionDown(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move section")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	BroadcastUpdate("sections_reordered", nil)
@@ -187,17 +187,17 @@ func MoveSectionDown(c *fiber.Ctx) error {
 func UpdateSectionSortMode(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	sortMode := c.FormValue("sort_mode")
 	if sortMode == "" {
-		return c.Status(400).SendString("sort_mode is required")
+		return sendError(c, 400, "error.sort_mode_required")
 	}
 
 	section, err := db.UpdateSectionSortMode(id, sortMode)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update sort mode")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode})
@@ -220,7 +220,7 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 	// Get IDs from form (comma-separated or multiple values)
 	idsStr := c.FormValue("ids")
 	if idsStr == "" {
-		return c.Status(400).SendString("No IDs provided")
+		return sendError(c, 400, "error.no_ids")
 	}
 
 	// Parse IDs
@@ -234,12 +234,12 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 	}
 
 	if len(ids) == 0 {
-		return c.Status(400).SendString("No valid IDs provided")
+		return sendError(c, 400, "error.no_valid_ids")
 	}
 
 	err := db.DeleteSections(ids)
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete sections")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -304,9 +304,9 @@ func returnSectionsForModal(c *fiber.Ctx) error {
 	sections, err := getSectionsForList(c)
 	if err != nil {
 		if errors.Is(err, ErrInvalidListID) {
-			return c.Status(400).SendString("Invalid list_id parameter")
+			return sendError(c, 400, "error.invalid_list_id")
 		}
-		return c.Status(500).SendString("Failed to fetch sections")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	return c.Render("partials/manage_sections_list", fiber.Map{

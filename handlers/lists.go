@@ -24,7 +24,7 @@ const (
 func GetListsPage(c *fiber.Ctx) error {
 	lists, err := db.GetAllLists()
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch lists")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	templates, _ := db.GetAllTemplates()
@@ -53,7 +53,7 @@ func GetListView(c *fiber.Ctx) error {
 		}
 		// Database error - log and show error
 		log.Printf("Error fetching list %d: %v", id, err)
-		return c.Status(500).SendString("Database error")
+		return sendError(c, 500, "error.database_error")
 	}
 
 	// Set this list as active
@@ -61,7 +61,7 @@ func GetListView(c *fiber.Ctx) error {
 
 	sections, err := db.GetSectionsByList(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch sections")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	stats := db.GetListStats(id)
@@ -83,7 +83,7 @@ func GetListView(c *fiber.Ctx) error {
 func GetLists(c *fiber.Ctx) error {
 	lists, err := db.GetAllLists()
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch lists")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	// Check if JSON format is requested
@@ -99,22 +99,22 @@ func GetLists(c *fiber.Ctx) error {
 func CreateList(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 	if len(name) > MaxListNameLength {
-		return c.Status(400).SendString("Name too long (max 100 characters)")
+		return sendError(c, 400, "error.name_too_long")
 	}
 	if name == "[HISTORY]" {
-		return c.Status(400).SendString("This name is reserved for system use")
+		return sendError(c, 400, "common.reserved_name")
 	}
 
 	// Check for duplicate name
 	exists, err := db.ListNameExists(name, 0)
 	if err != nil {
-		return c.Status(500).SendString("Failed to check list name")
+		return sendError(c, 500, "error.check_failed")
 	}
 	if exists {
-		return c.Status(400).SendString("list_name_exists")
+		return sendError(c, 409, "list.name_exists")
 	}
 
 	icon := c.FormValue("icon")
@@ -122,12 +122,12 @@ func CreateList(c *fiber.Ctx) error {
 		icon = "🛒"
 	}
 	if len(icon) > MaxIconLength {
-		return c.Status(400).SendString("Icon too long")
+		return sendError(c, 400, "error.icon_too_long")
 	}
 
 	list, err := db.CreateList(name, icon)
 	if err != nil {
-		return c.Status(500).SendString("Failed to create list")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -143,37 +143,37 @@ func CreateList(c *fiber.Ctx) error {
 func UpdateList(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 	if len(name) > MaxListNameLength {
-		return c.Status(400).SendString("Name too long (max 100 characters)")
+		return sendError(c, 400, "error.name_too_long")
 	}
 	if name == "[HISTORY]" {
-		return c.Status(400).SendString("This name is reserved for system use")
+		return sendError(c, 400, "common.reserved_name")
 	}
 
 	// Check for duplicate name (excluding current list)
 	exists, err := db.ListNameExists(name, id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to check list name")
+		return sendError(c, 500, "error.check_failed")
 	}
 	if exists {
-		return c.Status(400).SendString("list_name_exists")
+		return sendError(c, 409, "list.name_exists")
 	}
 
 	icon := c.FormValue("icon")
 	if len(icon) > MaxIconLength {
-		return c.Status(400).SendString("Icon too long")
+		return sendError(c, 400, "error.icon_too_long")
 	}
 
 	list, err := db.UpdateList(id, name, icon)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update list")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -189,7 +189,7 @@ func UpdateList(c *fiber.Ctx) error {
 func DeleteList(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.DeleteList(id)
@@ -208,12 +208,12 @@ func DeleteList(c *fiber.Ctx) error {
 func SetActiveList(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.SetActiveList(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to activate list")
+		return sendError(c, 500, "error.check_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -243,12 +243,12 @@ func SetActiveList(c *fiber.Ctx) error {
 func MoveListUp(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveListUp(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move list")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	BroadcastUpdate("lists_reordered", nil)
@@ -259,12 +259,12 @@ func MoveListUp(c *fiber.Ctx) error {
 func MoveListDown(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.MoveListDown(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to move list")
+		return sendError(c, 500, "error.move_failed")
 	}
 
 	BroadcastUpdate("lists_reordered", nil)
@@ -275,7 +275,7 @@ func MoveListDown(c *fiber.Ctx) error {
 func returnAllLists(c *fiber.Ctx) error {
 	lists, err := db.GetAllLists()
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch lists")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	activeList, _ := db.GetActiveList()

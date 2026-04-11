@@ -188,7 +188,7 @@ async function listPageStrategy(request) {
         }
 
         // List not cached - show offline message
-        return new Response('<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafaf9"><div style="text-align:center"><h1 style="color:#78716c">Koffan Offline</h1><p style="color:#a8a29e">Ta lista nie jest zapisana offline.</p><a href="/" style="color:#f472b6;text-decoration:none">Wróć do strony głównej</a></div></body></html>', {
+        return new Response('<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafaf9"><div style="text-align:center"><h1 style="color:#78716c">Koffan Offline</h1><p style="color:#a8a29e">This list is not saved offline.</p><a href="/" style="color:#f472b6;text-decoration:none">Back to home page</a></div></body></html>', {
             headers: { 'Content-Type': 'text/html' }
         });
     }

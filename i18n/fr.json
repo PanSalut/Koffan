@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Paramètres",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "back_to_lists": "Retour aux listes"
   },
   "list": {
     "title": "Koffan Liste de courses",
@@ -35,6 +36,7 @@
     "note": "Note...",
     "note_optional": "Note (facultatif)...",
     "name": "Nom...",
+    "quantity": "Quantité (ex. 2)",
     "new_product": "Nouveau produit",
     "select_section": "Choisir un rayon...",
     "section": "Rayon...",
@@ -48,7 +50,9 @@
     "sort_mode": "Tri",
     "sort_manual": "Manuel",
     "sort_alphabetical": "A à Z",
-    "sort_alphabetical_desc": "Z à A"
+    "sort_alphabetical_desc": "Z à A",
+    "search_found": "Trouvé :",
+    "search_no_results": "Aucun résultat pour \"{{query}}\""
   },
   "sections": {
     "title": "Rayons",
@@ -90,7 +94,8 @@
     "use_first_section_desc": "Si la section n'existe pas, ajouter à la première disponible",
     "auto_create_section": "Créer la section automatiquement",
     "auto_create_section_desc": "Si la section n'existe pas, en créer une nouvelle avec le même nom",
-    "update_available": "Nouvelle version disponible"
+    "update_available": "Nouvelle version disponible",
+    "delete_completed_count": "Achetés supprimés : {{count}}"
   },
   "login": {
     "title": "Connexion - Koffan",
@@ -105,7 +110,8 @@
     "delete_item": "Supprimer \"{{name}}\" ?",
     "delete_sections": "Supprimer {{count}} rayons sélectionnés ?",
     "delete_section": "Supprimer le rayon '{{name}}' ?",
-    "delete_completed_items": "Supprimer tous les articles achetés ?"
+    "delete_completed_items": "Supprimer tous les articles achetés ?",
+    "delete_template": "Supprimer le modèle \"{{name}}\" ?"
   },
   "stats": {
     "progress": "Progrès"
@@ -115,7 +121,37 @@
   },
   "error": {
     "generic": "Erreur",
-    "delete_items": "Erreur de suppression"
+    "delete_items": "Erreur de suppression",
+    "invalid_id": "ID invalide",
+    "invalid_section_id": "ID de rayon invalide",
+    "invalid_list_id": "ID de liste invalide",
+    "invalid_position": "Position invalide",
+    "name_required": "Le nom est requis",
+    "name_too_long": "Nom trop long (max 100 caractères)",
+    "icon_too_long": "Icône trop longue",
+    "sort_mode_required": "Mode de tri requis",
+    "no_ids": "Aucun ID fourni",
+    "no_valid_ids": "Aucun ID valide",
+    "not_found": "Non trouvé",
+    "section_not_found": "Rayon non trouvé",
+    "item_not_found": "Produit non trouvé",
+    "template_not_found": "Modèle non trouvé",
+    "no_active_list": "Aucune liste active",
+    "section_name_required": "Nom du rayon requis",
+    "item_name_required": "Nom du produit requis",
+    "template_name_required": "Nom du modèle requis",
+    "create_failed": "Échec de la création",
+    "update_failed": "Échec de la mise à jour",
+    "delete_failed": "Échec de la suppression",
+    "move_failed": "Échec du déplacement",
+    "fetch_failed": "Échec du chargement",
+    "toggle_failed": "Échec du changement",
+    "reorder_failed": "Échec du réordonnancement",
+    "check_failed": "Opération échouée",
+    "apply_failed": "Échec de l'application",
+    "session_failed": "Échec de création de session",
+    "database_unavailable": "Base de données temporairement indisponible, veuillez réessayer",
+    "database_error": "Erreur de base de données"
   },
   "offline": {
     "title": "Mode hors ligne",
@@ -128,7 +164,10 @@
     "can_edit": "Modifier des produits",
     "can_uncertain": "Marquer comme incertain",
     "back_online": "Tu es de retour en ligne. Tout est synchronisé !",
-    "queued": "Enregistré pour synchronisation"
+    "queued": "Enregistré pour synchronisation",
+    "check_connection": "Vérifiez votre connexion",
+    "not_saved_offline": "Cette liste n'est pas enregistrée hors ligne.",
+    "back_to_home": "Retour à l'accueil"
   },
   "history": {
     "title": "Historique des produits",
@@ -164,7 +203,9 @@
     "items": "articles",
     "section": "Rayon",
     "add_item": "Ajouter un article",
-    "empty": "Le modèle est vide"
+    "empty": "Le modèle est vide",
+    "no_templates": "Aucun modèle",
+    "no_templates_hint": "Créez un modèle pour ajouter rapidement des produits"
   },
   "onboarding": {
     "welcome": "Bienvenue sur Koffan !",

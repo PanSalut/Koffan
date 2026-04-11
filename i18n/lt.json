@@ -18,7 +18,8 @@
 	},
 	"nav": {
 		"settings": "Nustatymai",
-		"logout": "Atsijungti"
+		"logout": "Atsijungti",
+		"back_to_lists": "Grįžti į sąrašus"
 	},
 	"list": {
 		"title": "Koffan pirkinių sąrašas",
@@ -48,7 +49,9 @@
 		"sort_mode": "Rūšiavimas",
 		"sort_manual": "Rankinis",
 		"sort_alphabetical": "A iki Z",
-		"sort_alphabetical_desc": "Z iki A"
+		"sort_alphabetical_desc": "Z iki A",
+		"search_found": "Rasta:",
+		"search_no_results": "Nėra rezultatų \u201e{{query}}\u201c"
 	},
 	"sections": {
 		"title": "Skyriai",
@@ -90,7 +93,8 @@
 		"use_first_section_desc": "Jei skyrius neegzistuoja, pridėti prie pirmo galimo",
 		"auto_create_section": "Automatiškai kurti skyrių",
 		"auto_create_section_desc": "Jei skyrius neegzistuoja, sukurti naują su tuo pačiu pavadinimu",
-		"update_available": "Galima nauja versija"
+		"update_available": "Galima nauja versija",
+		"delete_completed_count": "Ištrinta nupirktų: {{count}}"
 	},
 	"login": {
 		"title": "Prisijungimas – Koffan",
@@ -105,7 +109,8 @@
 		"delete_item": "Ištrinti \"{{name}}\"?",
 		"delete_sections": "Ištrinti {{count}} pasirinktus skyrius?",
 		"delete_section": "Ištrinti skyrių '{{name}}'?",
-		"delete_completed_items": "Ištrinti visus nupirktus elementus?"
+		"delete_completed_items": "Ištrinti visus nupirktus elementus?",
+		"delete_template": "Ištrinti šabloną \"{{name}}\"?"
 	},
 	"stats": {
 		"progress": "Pažanga"
@@ -115,7 +120,37 @@
 	},
 	"error": {
 		"generic": "Klaida",
-		"delete_items": "Klaida trinant elementus"
+		"delete_items": "Klaida trinant elementus",
+		"invalid_id": "Neteisingas ID",
+		"invalid_section_id": "Neteisingas skyriaus ID",
+		"invalid_list_id": "Neteisingas sąrašo ID",
+		"invalid_position": "Neteisinga pozicija",
+		"name_required": "Pavadinimas yra privalomas",
+		"name_too_long": "Pavadinimas per ilgas (maks. 100 simbolių)",
+		"icon_too_long": "Piktograma per ilga",
+		"sort_mode_required": "Rūšiavimo būdas privalomas",
+		"no_ids": "Nepateikti jokie ID",
+		"no_valid_ids": "Nėra teisingų ID",
+		"not_found": "Nerasta",
+		"section_not_found": "Skyrius nerastas",
+		"item_not_found": "Produktas nerastas",
+		"template_not_found": "Šablonas nerastas",
+		"no_active_list": "Nėra aktyvaus sąrašo",
+		"section_name_required": "Skyriaus pavadinimas privalomas",
+		"item_name_required": "Produkto pavadinimas privalomas",
+		"template_name_required": "Šablono pavadinimas privalomas",
+		"create_failed": "Nepavyko sukurti",
+		"update_failed": "Nepavyko atnaujinti",
+		"delete_failed": "Nepavyko ištrinti",
+		"move_failed": "Nepavyko perkelti",
+		"fetch_failed": "Nepavyko įkelti",
+		"toggle_failed": "Nepavyko perjungti",
+		"reorder_failed": "Nepavyko pertvarkyti",
+		"check_failed": "Operacija nepavyko",
+		"apply_failed": "Nepavyko pritaikyti",
+		"session_failed": "Nepavyko sukurti sesijos",
+		"database_unavailable": "Duomenų bazė laikinai nepasiekiama, bandykite dar kartą",
+		"database_error": "Duomenų bazės klaida"
 	},
 	"offline": {
 		"title": "Neprisijungęs rėžimas",
@@ -128,7 +163,10 @@
 		"can_edit": "Redaguoti produktus",
 		"can_uncertain": "Pažymėti kaip neaišku",
 		"back_online": "Vėl prisijungėte. Viskas sinchronizuota!",
-		"queued": "Išsaugota sinchronizavimui"
+		"queued": "Išsaugota sinchronizavimui",
+		"check_connection": "Patikrinkite ryšį",
+		"not_saved_offline": "Šis sąrašas nėra išsaugotas neprisijungus.",
+		"back_to_home": "Grįžti į pagrindinį puslapį"
 	},
 	"history": {
 		"title": "Produktų istorija",
@@ -164,7 +202,9 @@
 		"items": "elementai",
 		"section": "Skyrius",
 		"add_item": "Pridėti elementą",
-		"empty": "Šablonas tuščias"
+		"empty": "Šablonas tuščias",
+		"no_templates": "Nėra šablonų",
+		"no_templates_hint": "Sukurkite šabloną, kad greitai pridėtumėte produktus"
 	},
 	"onboarding": {
 		"welcome": "Sveiki atvykę į Koffan!",

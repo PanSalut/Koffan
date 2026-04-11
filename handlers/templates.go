@@ -11,7 +11,7 @@ import (
 func GetTemplates(c *fiber.Ctx) error {
 	templates, err := db.GetAllTemplates()
 	if err != nil {
-		return c.Status(500).SendString("Failed to fetch templates")
+		return sendError(c, 500, "error.fetch_failed")
 	}
 
 	// Check if JSON format is requested
@@ -28,12 +28,12 @@ func GetTemplates(c *fiber.Ctx) error {
 func GetTemplate(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	template, err := db.GetTemplateByID(id)
 	if err != nil {
-		return c.Status(404).SendString("Template not found")
+		return sendError(c, 404, "error.template_not_found")
 	}
 
 	// Check if JSON format is requested
@@ -50,14 +50,14 @@ func GetTemplate(c *fiber.Ctx) error {
 func CreateTemplate(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 
 	description := c.FormValue("description")
 
 	template, err := db.CreateTemplate(name, description)
 	if err != nil {
-		return c.Status(500).SendString("Failed to create template")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -73,19 +73,19 @@ func CreateTemplate(c *fiber.Ctx) error {
 func UpdateTemplate(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Name is required")
+		return sendError(c, 400, "error.name_required")
 	}
 
 	description := c.FormValue("description")
 
 	template, err := db.UpdateTemplate(id, name, description)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update template")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -101,12 +101,12 @@ func UpdateTemplate(c *fiber.Ctx) error {
 func DeleteTemplate(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.DeleteTemplate(id)
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete template")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -119,24 +119,24 @@ func DeleteTemplate(c *fiber.Ctx) error {
 func AddTemplateItem(c *fiber.Ctx) error {
 	templateID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid template ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	sectionName := c.FormValue("section_name")
 	if sectionName == "" {
-		return c.Status(400).SendString("Section name is required")
+		return sendError(c, 400, "error.section_name_required")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Item name is required")
+		return sendError(c, 400, "error.item_name_required")
 	}
 
 	description := c.FormValue("description")
 
 	item, err := db.AddTemplateItem(templateID, sectionName, name, description)
 	if err != nil {
-		return c.Status(500).SendString("Failed to add item to template")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Return the template item partial
@@ -149,24 +149,24 @@ func AddTemplateItem(c *fiber.Ctx) error {
 func UpdateTemplateItem(c *fiber.Ctx) error {
 	itemID, err := strconv.ParseInt(c.Params("itemId"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid item ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	sectionName := c.FormValue("section_name")
 	if sectionName == "" {
-		return c.Status(400).SendString("Section name is required")
+		return sendError(c, 400, "error.section_name_required")
 	}
 
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Item name is required")
+		return sendError(c, 400, "error.item_name_required")
 	}
 
 	description := c.FormValue("description")
 
 	item, err := db.UpdateTemplateItem(itemID, sectionName, name, description)
 	if err != nil {
-		return c.Status(500).SendString("Failed to update template item")
+		return sendError(c, 500, "error.update_failed")
 	}
 
 	return c.Render("partials/template_item_row", fiber.Map{
@@ -178,12 +178,12 @@ func UpdateTemplateItem(c *fiber.Ctx) error {
 func DeleteTemplateItem(c *fiber.Ctx) error {
 	itemID, err := strconv.ParseInt(c.Params("itemId"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid item ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	err = db.DeleteTemplateItem(itemID)
 	if err != nil {
-		return c.Status(500).SendString("Failed to delete template item")
+		return sendError(c, 500, "error.delete_failed")
 	}
 
 	return c.SendString("")
@@ -193,17 +193,17 @@ func DeleteTemplateItem(c *fiber.Ctx) error {
 func ApplyTemplate(c *fiber.Ctx) error {
 	templateID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(400).SendString("Invalid template ID")
+		return sendError(c, 400, "error.invalid_id")
 	}
 
 	activeList, err := db.GetActiveList()
 	if err != nil {
-		return c.Status(500).SendString("No active list found")
+		return sendError(c, 500, "error.no_active_list")
 	}
 
 	err = db.ApplyTemplateToList(templateID, activeList.ID)
 	if err != nil {
-		return c.Status(500).SendString("Failed to apply template")
+		return sendError(c, 500, "error.apply_failed")
 	}
 
 	// Broadcast to WebSocket clients
@@ -221,19 +221,19 @@ func ApplyTemplate(c *fiber.Ctx) error {
 func CreateTemplateFromList(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	if name == "" {
-		return c.Status(400).SendString("Template name is required")
+		return sendError(c, 400, "error.template_name_required")
 	}
 
 	description := c.FormValue("description")
 
 	activeList, err := db.GetActiveList()
 	if err != nil {
-		return c.Status(500).SendString("No active list found")
+		return sendError(c, 500, "error.no_active_list")
 	}
 
 	template, err := db.CreateTemplateFromList(activeList.ID, name, description)
 	if err != nil {
-		return c.Status(500).SendString("Failed to create template from list")
+		return sendError(c, 500, "error.create_failed")
 	}
 
 	// Broadcast to WebSocket clients

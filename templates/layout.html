@@ -78,6 +78,7 @@
         // Language change helper
         function changeLanguage(lang) {
             localStorage.setItem('language', lang);
+            document.cookie = 'lang=' + lang + ';path=/;max-age=31536000;SameSite=Lax';
             window.location.reload();
         }
 

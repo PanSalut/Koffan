@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Ρυθμίσεις",
-    "logout": "Αποσύνδεση"
+    "logout": "Αποσύνδεση",
+    "back_to_lists": "Επιστροφή στις λίστες"
   },
   "list": {
     "title": "Λίστα αγορών Koffan",
@@ -48,7 +49,9 @@
     "sort_mode": "Ταξινόμηση",
     "sort_manual": "Χειροκίνητη",
     "sort_alphabetical": "Α έως Ω",
-    "sort_alphabetical_desc": "Ω έως Α"
+    "sort_alphabetical_desc": "Ω έως Α",
+    "search_found": "Βρέθηκαν:",
+    "search_no_results": "Κανένα αποτέλεσμα για \"{{query}}\""
   },
   "sections": {
     "title": "Ενότητες",
@@ -90,7 +93,8 @@
     "use_first_section_desc": "Αν η ενότητα δεν υπάρχει, προσθήκη στην πρώτη διαθέσιμη",
     "auto_create_section": "Αυτόματη δημιουργία ενότητας",
     "auto_create_section_desc": "Αν η ενότητα δεν υπάρχει, δημιουργία νέας με το ίδιο όνομα",
-    "update_available": "Διαθέσιμη νέα έκδοση"
+    "update_available": "Διαθέσιμη νέα έκδοση",
+    "delete_completed_count": "Διαγράφηκαν αγορασμένα: {{count}}"
   },
   "login": {
     "title": "Σύνδεση - Koffan",
@@ -105,7 +109,8 @@
     "delete_item": "Διαγραφή \"{{name}}\";",
     "delete_sections": "Διαγραφή {{count}} επιλεγμένων ενοτήτων;",
     "delete_section": "Διαγραφή ενότητας '{{name}}';",
-    "delete_completed_items": "Διαγραφή όλων των αγορασμένων προϊόντων;"
+    "delete_completed_items": "Διαγραφή όλων των αγορασμένων προϊόντων;",
+    "delete_template": "Διαγραφή προτύπου \"{{name}}\";"
   },
   "stats": {
     "progress": "Πρόοδος"
@@ -115,7 +120,37 @@
   },
   "error": {
     "generic": "Σφάλμα",
-    "delete_items": "Σφάλμα κατά τη διαγραφή προϊόντων"
+    "delete_items": "Σφάλμα κατά τη διαγραφή προϊόντων",
+    "invalid_id": "Μη έγκυρο ID",
+    "invalid_section_id": "Μη έγκυρο ID ενότητας",
+    "invalid_list_id": "Μη έγκυρο ID λίστας",
+    "invalid_position": "Μη έγκυρη θέση",
+    "name_required": "Το όνομα είναι υποχρεωτικό",
+    "name_too_long": "Όνομα πολύ μεγάλο (μέγ. 100 χαρακτήρες)",
+    "icon_too_long": "Εικονίδιο πολύ μεγάλο",
+    "sort_mode_required": "Απαιτείται τρόπος ταξινόμησης",
+    "no_ids": "Δεν δόθηκαν ID",
+    "no_valid_ids": "Κανένα έγκυρο ID",
+    "not_found": "Δεν βρέθηκε",
+    "section_not_found": "Η ενότητα δεν βρέθηκε",
+    "item_not_found": "Το προϊόν δεν βρέθηκε",
+    "template_not_found": "Το πρότυπο δεν βρέθηκε",
+    "no_active_list": "Δεν υπάρχει ενεργή λίστα",
+    "section_name_required": "Απαιτείται όνομα ενότητας",
+    "item_name_required": "Απαιτείται όνομα προϊόντος",
+    "template_name_required": "Απαιτείται όνομα προτύπου",
+    "create_failed": "Αποτυχία δημιουργίας",
+    "update_failed": "Αποτυχία ενημέρωσης",
+    "delete_failed": "Αποτυχία διαγραφής",
+    "move_failed": "Αποτυχία μετακίνησης",
+    "fetch_failed": "Αποτυχία φόρτωσης",
+    "toggle_failed": "Αποτυχία εναλλαγής",
+    "reorder_failed": "Αποτυχία αναδιάταξης",
+    "check_failed": "Η λειτουργία απέτυχε",
+    "apply_failed": "Αποτυχία εφαρμογής",
+    "session_failed": "Αποτυχία δημιουργίας συνεδρίας",
+    "database_unavailable": "Η βάση δεδομένων είναι προσωρινά μη διαθέσιμη, δοκιμάστε ξανά",
+    "database_error": "Σφάλμα βάσης δεδομένων"
   },
   "offline": {
     "title": "Λειτουργία εκτός σύνδεσης",
@@ -128,7 +163,10 @@
     "can_edit": "Επεξεργασία προϊόντων",
     "can_uncertain": "Σήμανση ως αβέβαιο",
     "back_online": "Είστε πάλι online. Όλα συγχρονίστηκαν!",
-    "queued": "Αποθηκεύτηκε για συγχρονισμό"
+    "queued": "Αποθηκεύτηκε για συγχρονισμό",
+    "check_connection": "Ελέγξτε τη σύνδεσή σας",
+    "not_saved_offline": "Αυτή η λίστα δεν είναι αποθηκευμένη εκτός σύνδεσης.",
+    "back_to_home": "Επιστροφή στην αρχική"
   },
   "history": {
     "title": "Ιστορικό προϊόντων",
@@ -164,7 +202,9 @@
     "items": "προϊόντα",
     "section": "Ενότητα",
     "add_item": "Προσθήκη προϊόντος",
-    "empty": "Το πρότυπο είναι κενό"
+    "empty": "Το πρότυπο είναι κενό",
+    "no_templates": "Κανένα πρότυπο",
+    "no_templates_hint": "Δημιουργήστε ένα πρότυπο για γρήγορη προσθήκη προϊόντων"
   },
   "onboarding": {
     "welcome": "Καλώς ήρθατε στο Koffan!",

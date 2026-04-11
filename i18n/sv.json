@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Inställningar",
-    "logout": "Logga ut"
+    "logout": "Logga ut",
+    "back_to_lists": "Tillbaka till listor"
   },
   "list": {
     "title": "Koffan Shopping List",
@@ -48,7 +49,9 @@
     "sort_mode": "Sortering",
     "sort_manual": "Manuell",
     "sort_alphabetical": "A till Ö",
-    "sort_alphabetical_desc": "Ö till A"
+    "sort_alphabetical_desc": "Ö till A",
+    "search_found": "Hittade:",
+    "search_no_results": "Inga resultat för \"{{query}}\""
   },
   "sections": {
     "title": "Avdelning",
@@ -90,7 +93,8 @@
     "use_first_section_desc": "Om avdelningen inte finns, använd första tillgängliga",
     "auto_create_section": "Autoskapa avdelning",
     "auto_create_section_desc": "Om avdelning inte finns, skapa en ny med samma namn",
-    "update_available": "Ny version tillgänglig"
+    "update_available": "Ny version tillgänglig",
+    "delete_completed_count": "Borttagna köpta: {{count}}"
   },
   "login": {
     "title": "Logga in - Koffan",
@@ -105,7 +109,8 @@
     "delete_item": "Radera \"{{name}}\"?",
     "delete_sections": "Radera {{count}} valda avdelningar?",
     "delete_section": "Radera avdelning '{{name}}'?",
-    "delete_completed_items": "Radera alla köpta?"
+    "delete_completed_items": "Radera alla köpta?",
+    "delete_template": "Ta bort mall \"{{name}}\"?"
   },
   "stats": {
     "progress": "Pågående"
@@ -115,7 +120,37 @@
   },
   "error": {
     "generic": "Fel",
-    "delete_items": "Fel vid borttagning"
+    "delete_items": "Fel vid borttagning",
+    "invalid_id": "Ogiltigt ID",
+    "invalid_section_id": "Ogiltigt avdelnings-ID",
+    "invalid_list_id": "Ogiltigt list-ID",
+    "invalid_position": "Ogiltig position",
+    "name_required": "Namn krävs",
+    "name_too_long": "Namn för långt (max 100 tecken)",
+    "icon_too_long": "Ikon för lång",
+    "sort_mode_required": "Sorteringsläge krävs",
+    "no_ids": "Inga ID angivna",
+    "no_valid_ids": "Inga giltiga ID",
+    "not_found": "Hittades inte",
+    "section_not_found": "Avdelning hittades inte",
+    "item_not_found": "Produkt hittades inte",
+    "template_not_found": "Mall hittades inte",
+    "no_active_list": "Ingen aktiv lista",
+    "section_name_required": "Avdelningsnamn krävs",
+    "item_name_required": "Produktnamn krävs",
+    "template_name_required": "Mallnamn krävs",
+    "create_failed": "Kunde inte skapa",
+    "update_failed": "Kunde inte uppdatera",
+    "delete_failed": "Kunde inte ta bort",
+    "move_failed": "Kunde inte flytta",
+    "fetch_failed": "Kunde inte ladda",
+    "toggle_failed": "Kunde inte växla",
+    "reorder_failed": "Kunde inte ordna om",
+    "check_failed": "Åtgärden misslyckades",
+    "apply_failed": "Kunde inte tillämpa",
+    "session_failed": "Kunde inte skapa session",
+    "database_unavailable": "Databasen är tillfälligt otillgänglig, försök igen",
+    "database_error": "Databasfel"
   },
   "offline": {
     "title": "Offline-läge",
@@ -128,7 +163,10 @@
     "can_edit": "Redigera varor",
     "can_uncertain": "Markera som osäker",
     "back_online": "Du är åter online. Allt har synkroniserats!",
-    "queued": "Sparad för synkronisering"
+    "queued": "Sparad för synkronisering",
+    "check_connection": "Kontrollera din anslutning",
+    "not_saved_offline": "Den här listan är inte sparad offline.",
+    "back_to_home": "Tillbaka till startsidan"
   },
   "history": {
     "title": "Varuhistorik",
@@ -164,7 +202,9 @@
     "items": "varor",
     "section": "Avdelning",
     "add_item": "Lägg till vara",
-    "empty": "Mallen är tom"
+    "empty": "Mallen är tom",
+    "no_templates": "Inga mallar",
+    "no_templates_hint": "Skapa en mall för att snabbt lägga till produkter"
   },
   "onboarding": {
     "welcome": "Välkommen till Koffan!",

@@ -18,7 +18,8 @@
   },
   "nav": {
     "settings": "Налаштування",
-    "logout": "Вийти"
+    "logout": "Вийти",
+    "back_to_lists": "Назад до списків"
   },
   "list": {
     "title": "Список покупок Koffan",
@@ -48,7 +49,9 @@
     "sort_mode": "Сортування",
     "sort_manual": "Вручну",
     "sort_alphabetical": "А до Я",
-    "sort_alphabetical_desc": "Я до А"
+    "sort_alphabetical_desc": "Я до А",
+    "search_found": "Знайдено:",
+    "search_no_results": "Немає результатів для \"{{query}}\""
   },
   "sections": {
     "title": "Секції",
@@ -90,7 +93,8 @@
     "use_first_section_desc": "Якщо секція не існує, додати до першої доступної",
     "auto_create_section": "Автоматично створювати секцію",
     "auto_create_section_desc": "Якщо секція не існує, створити нову з такою ж назвою",
-    "update_available": "Доступна нова версія"
+    "update_available": "Доступна нова версія",
+    "delete_completed_count": "Видалено куплених: {{count}}"
   },
   "login": {
     "title": "Вхід - Koffan",
@@ -105,7 +109,8 @@
     "delete_item": "Видалити \"{{name}}\"?",
     "delete_sections": "Видалити {{count}} обраних секцій?",
     "delete_section": "Видалити секцію '{{name}}'?",
-    "delete_completed_items": "Видалити всі куплені товари?"
+    "delete_completed_items": "Видалити всі куплені товари?",
+    "delete_template": "Видалити шаблон \"{{name}}\"?"
   },
   "stats": {
     "progress": "Прогрес"
@@ -115,7 +120,37 @@
   },
   "error": {
     "generic": "Помилка",
-    "delete_items": "Помилка видалення товарів"
+    "delete_items": "Помилка видалення товарів",
+    "invalid_id": "Недійсний ID",
+    "invalid_section_id": "Недійсний ID секції",
+    "invalid_list_id": "Недійсний ID списку",
+    "invalid_position": "Недійсна позиція",
+    "name_required": "Назва обов'язкова",
+    "name_too_long": "Назва занадто довга (макс. 100 символів)",
+    "icon_too_long": "Іконка занадто довга",
+    "sort_mode_required": "Режим сортування обов'язковий",
+    "no_ids": "Не вказано жодного ID",
+    "no_valid_ids": "Немає дійсних ID",
+    "not_found": "Не знайдено",
+    "section_not_found": "Секцію не знайдено",
+    "item_not_found": "Продукт не знайдено",
+    "template_not_found": "Шаблон не знайдено",
+    "no_active_list": "Немає активного списку",
+    "section_name_required": "Назва секції обов'язкова",
+    "item_name_required": "Назва продукту обов'язкова",
+    "template_name_required": "Назва шаблону обов'язкова",
+    "create_failed": "Не вдалося створити",
+    "update_failed": "Не вдалося оновити",
+    "delete_failed": "Не вдалося видалити",
+    "move_failed": "Не вдалося перемістити",
+    "fetch_failed": "Не вдалося завантажити",
+    "toggle_failed": "Не вдалося перемкнути",
+    "reorder_failed": "Не вдалося змінити порядок",
+    "check_failed": "Операція не вдалася",
+    "apply_failed": "Не вдалося застосувати",
+    "session_failed": "Не вдалося створити сесію",
+    "database_unavailable": "База даних тимчасово недоступна, спробуйте знову",
+    "database_error": "Помилка бази даних"
   },
   "offline": {
     "title": "Офлайн-режим",
@@ -128,7 +163,10 @@
     "can_edit": "Редагувати продукти",
     "can_uncertain": "Позначати як «під питанням»",
     "back_online": "Ти знову онлайн. Усе синхронізовано!",
-    "queued": "Збережено для синхронізації"
+    "queued": "Збережено для синхронізації",
+    "check_connection": "Перевірте з'єднання",
+    "not_saved_offline": "Цей список не збережено офлайн.",
+    "back_to_home": "Повернутися на головну"
   },
   "history": {
     "title": "Історія товарів",
@@ -164,7 +202,9 @@
     "items": "товарів",
     "section": "Секція",
     "add_item": "Додати товар",
-    "empty": "Шаблон порожній"
+    "empty": "Шаблон порожній",
+    "no_templates": "Немає шаблонів",
+    "no_templates_hint": "Створіть шаблон для швидкого додавання продуктів"
   },
   "onboarding": {
     "welcome": "Ласкаво просимо до Koffan!",

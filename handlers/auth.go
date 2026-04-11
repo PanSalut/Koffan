@@ -93,7 +93,7 @@ func Login(c *fiber.Ctx) error {
 
 	err := db.CreateSession(sessionID, expiresAt)
 	if err != nil {
-		return c.Status(500).SendString("Session creation failed")
+		return sendError(c, 500, "error.session_failed")
 	}
 	log.Printf("[AUTH] New session created: %s... (expires: %d)", sessionID[:8], expiresAt)
 
@@ -165,7 +165,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 			// Database error (e.g., locked) - don't delete session, just log and retry
 			log.Printf("[AUTH] Database error for %s %s: %v", c.Method(), path, err)
 			// Return 503 Service Unavailable for temporary DB issues
-			return c.Status(503).SendString("Database temporarily unavailable, please retry")
+			return sendError(c, 503, "error.database_unavailable")
 		}
 		c.Cookie(&fiber.Cookie{
 			Name:     SessionCookieName,
