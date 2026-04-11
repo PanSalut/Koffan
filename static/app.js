@@ -295,6 +295,12 @@ function shoppingList() {
         _suppressOverlayUntil: 0, // Timestamp until which overlay should be suppressed
         _fullRefreshInProgress: false, // Flag to suppress WS-driven refreshes during full refresh
 
+        // Return the current list ID extracted from the page URL (e.g. /lists/5 → 5), or null if not on a list page.
+        currentListId() {
+            const match = window.location.pathname.match(/^\/lists\/(\d+)/);
+            return match ? match[1] : null;
+        },
+
         // Check if add-item form is currently active (to prevent dropdown updates during form use)
         _isAddFormActive() {
             // Check if mobile add-item modal is open
@@ -982,7 +988,9 @@ function shoppingList() {
 
                 try {
                     // Fetch current sections list as JSON
-                    const resp = await fetch('/sections/list?format=json');
+                    const listId = this.currentListId();
+                    const sectionsUrl = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                    const resp = await fetch(sectionsUrl);
                     if (!resp.ok) { this._isRefreshing = false; return; }
                     const sections = await resp.json();
                     const sectionsList = document.getElementById('sections-list');
@@ -1186,7 +1194,9 @@ function shoppingList() {
 
         async refreshSectionSelectsFromServer() {
             try {
-                const r = await fetch('/sections/list?format=json');
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                const r = await fetch(url);
                 if (r.ok) {
                     const sections = await r.json();
                     this.updateSectionSelects(sections);
@@ -1200,7 +1210,9 @@ function shoppingList() {
         refreshManageSectionsModal() {
             const manageSectionsList = document.getElementById('manage-sections-list');
             if (manageSectionsList) {
-                fetch('/sections/list').then(r => {
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?list_id=${listId}` : '/sections/list';
+                fetch(url).then(r => {
                     if (r.ok) return r.text();
                 }).then(html => {
                     if (html) {
@@ -1213,7 +1225,9 @@ function shoppingList() {
 
         async reorderSections() {
             try {
-                const response = await fetch('/sections/list?format=json');
+                const listId = this.currentListId();
+                const url = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                const response = await fetch(url);
                 if (!response.ok) return;
                 const sections = await response.json();
                 const sectionsList = document.getElementById('sections-list');
@@ -1750,6 +1764,10 @@ function shoppingList() {
                 const resp = await fetch(`/items/${itemId}/html`);
                 if (!resp.ok) { this.refreshSection(sectionId); return; }
                 const html = await resp.text();
+                // Guard against race condition: a concurrent refreshSection() may have already
+                // inserted this item into the refreshed section HTML while the fetch above was
+                // in-flight.  Don't insert a second copy.
+                if (document.getElementById(`item-${itemId}`)) return;
                 const section = document.getElementById(`section-${sectionId}`);
                 if (!section) return;
                 const container = section.querySelector('.active-items');
@@ -2046,7 +2064,9 @@ function shoppingList() {
 
                         if (createResponse.ok) {
                             // Fetch updated sections list to get the new ID
-                            const listResponse = await fetch('/sections/list?format=json');
+                            const listId = this.currentListId();
+                            const sectionsListUrl = listId ? `/sections/list?format=json&list_id=${listId}` : '/sections/list?format=json';
+                            const listResponse = await fetch(sectionsListUrl);
                             if (listResponse.ok) {
                                 const sections = await listResponse.json();
                                 // Find the newly created section by name
@@ -3486,6 +3506,7 @@ window.getCompletedSectionState = function(sectionId) {
         if (pullWithResistance >= threshold && !isRefreshing) {
             // Trigger refresh - keep spinner visible at current position
             isRefreshing = true;
+            if (navigator.vibrate) { navigator.vibrate(30); }
             spinner.classList.add('refreshing');
 
             doRefresh().finally(() => {
@@ -3502,6 +3523,20 @@ window.getCompletedSectionState = function(sectionId) {
         startY = 0;
         currentY = 0;
         isPulling = false;
+    }, { passive: true });
+
+    // Handle touch cancellation (e.g. browser takes over gesture for native pull-to-refresh)
+    document.addEventListener('touchcancel', () => {
+        if (!isPulling) {
+            startY = 0;
+            return;
+        }
+        spinner.classList.remove('visible', 'refreshing');
+        spinner.style.top = '0';
+        startY = 0;
+        currentY = 0;
+        isPulling = false;
+        isRefreshing = false;
     }, { passive: true });
 
     async function doRefresh() {
