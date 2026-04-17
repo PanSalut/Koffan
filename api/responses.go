@@ -118,6 +118,14 @@ type MoveItemRequest struct {
 	SectionID int64 `json:"section_id"`
 }
 
+// AdjustQuantityRequest for adjusting item quantity via delta or absolute value.
+// If Quantity is non-nil, it overrides Delta and sets the absolute value (clamped to >= 0).
+// Otherwise Delta is applied to the current quantity (clamped to >= 0).
+type AdjustQuantityRequest struct {
+	Delta    int  `json:"delta,omitempty"`
+	Quantity *int `json:"quantity,omitempty"`
+}
+
 // iconAliases maps string aliases to emoji icons
 var iconAliases = map[string]string{
 	"cart":      "🛒",

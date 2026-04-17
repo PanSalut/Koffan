@@ -258,6 +258,48 @@ func ToggleUncertain(c *fiber.Ctx) error {
 	}, "")
 }
 
+// AdjustItemQuantity adjusts an item's quantity via delta or absolute value.
+// Body: {"delta": 1} | {"delta": -1} | {"quantity": 5}. Clamped to >= 0.
+func AdjustItemQuantity(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return sendError(c, 400, "error.invalid_id")
+	}
+
+	var req struct {
+		Delta    int  `json:"delta,omitempty"`
+		Quantity *int `json:"quantity,omitempty"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return sendError(c, 400, "error.invalid_request")
+	}
+
+	if req.Quantity == nil && req.Delta == 0 {
+		return sendError(c, 400, "error.invalid_request")
+	}
+
+	item, err := db.AdjustItemQuantity(id, req.Delta, req.Quantity)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return sendError(c, 404, "error.item_not_found")
+		}
+		return sendError(c, 500, "error.update_failed")
+	}
+
+	BroadcastUpdate("item_updated", item)
+
+	if item.Completed {
+		return c.Render("partials/item_completed", fiber.Map{
+			"Item":     item,
+			"Sections": getSectionsForDropdown(),
+		}, "")
+	}
+	return c.Render("partials/item", fiber.Map{
+		"Item":     item,
+		"Sections": getSectionsForDropdown(),
+	}, "")
+}
+
 // MoveItemToSection moves an item to a different section
 // Optional parameter: position (index among active items in target section)
 func MoveItemToSection(c *fiber.Ctx) error {

@@ -440,7 +440,34 @@
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="mobileActionItem = null"></div>
         <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl w-full p-6">
             <div class="w-10 h-1 bg-stone-200 dark:bg-stone-600 rounded-full mx-auto mb-4"></div>
-            <h3 class="font-medium text-stone-800 dark:text-stone-100 mb-4 truncate" x-text="mobileActionItem?.name"></h3>
+            <h3 class="font-medium text-stone-800 dark:text-stone-100 truncate" x-text="mobileActionItem?.name"></h3>
+            <p x-show="mobileActionItem?.description" x-cloak
+                class="text-sm text-stone-500 dark:text-stone-400 mt-1 mb-4 break-words"
+                x-text="mobileActionItem?.description"></p>
+            <div x-show="!mobileActionItem?.description" class="mb-4"></div>
+
+            <!-- Quantity stepper -->
+            <div class="flex items-center justify-center gap-6 py-3 mb-4 bg-stone-50 dark:bg-stone-700/50 rounded-xl">
+                <button type="button"
+                    @click="adjustQuantity(-1)"
+                    :disabled="(mobileActionItem?.quantity || 0) <= 0"
+                    :class="(mobileActionItem?.quantity || 0) <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-200 dark:hover:bg-stone-600 active:scale-95'"
+                    class="w-12 h-12 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 text-2xl font-medium text-stone-700 dark:text-stone-200 transition-all flex items-center justify-center"
+                    :aria-label="t('items.quantity')">
+                    &minus;
+                </button>
+                <span class="text-2xl font-semibold text-stone-800 dark:text-stone-100 w-12 text-center tabular-nums"
+                    x-text="mobileActionItem?.quantity || 0"></span>
+                <button type="button"
+                    @click="adjustQuantity(1)"
+                    :disabled="(mobileActionItem?.quantity || 0) >= 999"
+                    :class="(mobileActionItem?.quantity || 0) >= 999 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-200 dark:hover:bg-stone-600 active:scale-95'"
+                    class="w-12 h-12 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-600 text-2xl font-medium text-stone-700 dark:text-stone-200 transition-all flex items-center justify-center"
+                    :aria-label="t('items.quantity')">
+                    +
+                </button>
+            </div>
+
             <div class="space-y-2">
                 <button @click="editItem(mobileActionItem); mobileActionItem = null"
                     class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
@@ -502,10 +529,28 @@
                     class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
                 <textarea x-model="editItemDescription" :placeholder="t('items.note')" rows="2"
                     class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500"></textarea>
-                <div class="relative">
-                    <input type="number" x-model="editItemQuantity" :placeholder="t('items.quantity')" min="0" max="999"
-                        class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500 pointer-events-none" x-show="editItemQuantity > 0" x-cloak x-text="'×'"></span>
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                        @click="editItemQuantity = Math.max(0, (parseInt(editItemQuantity) || 0) - 1)"
+                        :disabled="(parseInt(editItemQuantity) || 0) <= 0"
+                        :class="(parseInt(editItemQuantity) || 0) <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-50 dark:hover:bg-stone-700 active:scale-95'"
+                        class="w-12 h-12 flex-shrink-0 rounded-lg border border-stone-200 dark:border-stone-600 text-xl font-medium text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-700 transition-all flex items-center justify-center"
+                        :aria-label="t('items.quantity')">
+                        &minus;
+                    </button>
+                    <div class="relative flex-1">
+                        <input type="number" x-model="editItemQuantity" :placeholder="t('items.quantity')" min="0" max="999"
+                            class="w-full border border-stone-200 dark:border-stone-600 rounded-lg px-4 py-3 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 dark:text-stone-500 pointer-events-none" x-show="editItemQuantity > 0" x-cloak x-text="'×'"></span>
+                    </div>
+                    <button type="button"
+                        @click="editItemQuantity = Math.min(999, (parseInt(editItemQuantity) || 0) + 1)"
+                        :disabled="(parseInt(editItemQuantity) || 0) >= 999"
+                        :class="(parseInt(editItemQuantity) || 0) >= 999 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-stone-50 dark:hover:bg-stone-700 active:scale-95'"
+                        class="w-12 h-12 flex-shrink-0 rounded-lg border border-stone-200 dark:border-stone-600 text-xl font-medium text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-700 transition-all flex items-center justify-center"
+                        :aria-label="t('items.quantity')">
+                        +
+                    </button>
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="editingItem = null"

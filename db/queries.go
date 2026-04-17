@@ -687,6 +687,31 @@ func UpdateItem(id int64, name, description string, quantity int) (*Item, error)
 	return GetItemByID(id)
 }
 
+// AdjustItemQuantity changes an item's quantity atomically.
+// If absolute is non-nil, it sets quantity to MAX(0, *absolute).
+// Otherwise, it adjusts by delta and clamps the result to MAX(0, current+delta).
+// Returns the refreshed item.
+func AdjustItemQuantity(id int64, delta int, absolute *int) (*Item, error) {
+	var err error
+	if absolute != nil {
+		value := *absolute
+		if value < 0 {
+			value = 0
+		}
+		_, err = DB.Exec(`
+			UPDATE items SET quantity = ?, updated_at = strftime('%s', 'now') WHERE id = ?
+		`, value, id)
+	} else {
+		_, err = DB.Exec(`
+			UPDATE items SET quantity = MAX(0, COALESCE(quantity, 0) + ?), updated_at = strftime('%s', 'now') WHERE id = ?
+		`, delta, id)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return GetItemByID(id)
+}
+
 func DeleteItem(id int64) error {
 	_, err := DB.Exec(`DELETE FROM items WHERE id = ?`, id)
 	return err

@@ -54,6 +54,7 @@ func Register(app *fiber.App) {
 	v1.Delete("/items/:id", DeleteItem)
 	v1.Post("/items/:id/toggle", ToggleItemCompleted)
 	v1.Post("/items/:id/uncertain", ToggleItemUncertain)
+	v1.Post("/items/:id/quantity", AdjustItemQuantity)
 	v1.Post("/items/:id/move", MoveItem)
 	v1.Post("/items/:id/move-up", MoveItemUp)
 	v1.Post("/items/:id/move-down", MoveItemDown)

@@ -216,6 +216,7 @@ func main() {
 	app.Put("/items/:id", handlers.UpdateItem)
 	app.Delete("/items/:id", handlers.DeleteItem)
 	app.Post("/items/:id/toggle", handlers.ToggleItem)
+	app.Post("/items/:id/quantity", handlers.AdjustItemQuantity)
 	app.Post("/items/:id/uncertain", handlers.ToggleUncertain)
 	app.Post("/items/:id/move", handlers.MoveItemToSection)
 	app.Post("/items/:id/move-up", handlers.MoveItemUp)

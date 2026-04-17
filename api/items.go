@@ -333,6 +333,51 @@ func ToggleItemUncertain(c *fiber.Ctx) error {
 	return c.JSON(item)
 }
 
+// AdjustItemQuantity adjusts an item's quantity via delta or absolute value.
+// Body: {"delta": 1} | {"delta": -1} | {"quantity": 5}
+// Quantity is always clamped to >= 0 at the SQL level.
+func AdjustItemQuantity(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_id",
+			Message: "Invalid item ID",
+		})
+	}
+
+	var req AdjustQuantityRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "invalid_json",
+			Message: "Failed to parse request body",
+		})
+	}
+
+	if req.Quantity == nil && req.Delta == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "validation_error",
+			Message: "Either 'delta' (non-zero) or 'quantity' must be provided",
+		})
+	}
+
+	item, err := db.AdjustItemQuantity(int64(id), req.Delta, req.Quantity)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
+				Error:   "not_found",
+				Message: "Item not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "update_failed",
+			Message: "Failed to adjust quantity",
+		})
+	}
+
+	handlers.BroadcastUpdate("item_updated", item)
+	return c.JSON(item)
+}
+
 // MoveItem moves an item to a different section
 func MoveItem(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")

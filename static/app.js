@@ -1420,6 +1420,52 @@ function shoppingList() {
             this.mobileActionItem = null;
         },
 
+        async adjustQuantity(delta) {
+            if (!this.mobileActionItem) return;
+            const itemId = this.mobileActionItem.id;
+            const current = parseInt(this.mobileActionItem.quantity) || 0;
+            const next = Math.max(0, Math.min(999, current + delta));
+            if (next === current) return;
+
+            this.mobileActionItem.quantity = next;
+
+            // Prevent WebSocket echo from clobbering our local update
+            this.markLocalAction('item_updated');
+
+            try {
+                const response = await this.offlineFetch(
+                    `/items/${itemId}/quantity`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ delta })
+                    },
+                    'adjust_quantity'
+                );
+
+                if (response.offline) return;
+
+                if (!response.ok) {
+                    console.error('[Quantity] Server error:', response.status);
+                    if (this.mobileActionItem) this.mobileActionItem.quantity = current;
+                    return;
+                }
+
+                const html = await response.text();
+                if (html && html.trim()) {
+                    const oldItem = document.getElementById(`item-${itemId}`);
+                    if (oldItem) {
+                        oldItem.insertAdjacentHTML('afterend', html.trim());
+                        Alpine.destroyTree(oldItem);
+                        oldItem.remove();
+                    }
+                }
+            } catch (error) {
+                console.error('[Quantity] Failed:', error);
+                if (this.mobileActionItem) this.mobileActionItem.quantity = current;
+            }
+        },
+
         async toggleUncertain() {
             if (!this.mobileActionItem) return;
             const itemId = this.mobileActionItem.id;
