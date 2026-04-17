@@ -7,6 +7,7 @@ import (
 	"shopping-list/db"
 	"shopping-list/i18n"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -228,7 +229,7 @@ func SetActiveList(c *fiber.Ctx) error {
 	// Check if this is from the lists management page or main page
 	currentURL := c.Get("HX-Current-URL")
 	referer := c.Get("Referer")
-	isListsPage := contains(currentURL, "/lists") || contains(referer, "/lists")
+	isListsPage := strings.Contains(currentURL, "/lists") || strings.Contains(referer, "/lists")
 
 	if !isListsPage {
 		c.Set("HX-Redirect", fmt.Sprintf("/lists/%d", id))
@@ -284,16 +285,6 @@ func returnAllLists(c *fiber.Ctx) error {
 		"Lists":      lists,
 		"ActiveList": activeList,
 	}, "")
-}
-
-// Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // ToggleShowCompleted toggles the show_completed setting for a list

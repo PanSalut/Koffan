@@ -77,12 +77,39 @@ type TemplateItem struct {
 
 // ==================== LISTS ====================
 
-// GetAllLists returns all shopping lists with their stats
+// listSelectWithStats is a shared SELECT that joins lists with aggregated item stats in a single query.
+const listSelectWithStats = `
+	SELECT l.id, l.name, COALESCE(l.icon, '🛒'), l.sort_order, l.is_active,
+	       COALESCE(l.show_completed, TRUE), l.created_at, COALESCE(l.updated_at, 0),
+	       COALESCE(COUNT(i.id), 0) AS total_items,
+	       COALESCE(SUM(CASE WHEN i.completed = TRUE THEN 1 ELSE 0 END), 0) AS completed_items
+	FROM lists l
+	LEFT JOIN sections s ON s.list_id = l.id
+	LEFT JOIN items i ON i.section_id = s.id
+`
+
+// scanListWithStats scans one row produced by listSelectWithStats and populates stats.
+func scanListWithStats(scanner interface {
+	Scan(dest ...interface{}) error
+}) (List, error) {
+	var l List
+	var total, completed int
+	if err := scanner.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt, &total, &completed); err != nil {
+		return l, err
+	}
+	l.Stats.TotalItems = total
+	l.Stats.CompletedItems = completed
+	if total > 0 {
+		l.Stats.Percentage = (completed * 100) / total
+	}
+	return l, nil
+}
+
+// GetAllLists returns all shopping lists with their stats (single query with GROUP BY).
 func GetAllLists() ([]List, error) {
-	rows, err := DB.Query(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
-		FROM lists
-		ORDER BY sort_order ASC
+	rows, err := DB.Query(listSelectWithStats + `
+		GROUP BY l.id
+		ORDER BY l.sort_order ASC
 	`)
 	if err != nil {
 		return nil, err
@@ -91,43 +118,39 @@ func GetAllLists() ([]List, error) {
 
 	var lists []List
 	for rows.Next() {
-		var l List
-		err := rows.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
+		l, err := scanListWithStats(rows)
 		if err != nil {
 			return nil, err
 		}
-		l.Stats = GetListStats(l.ID)
 		lists = append(lists, l)
 	}
 	return lists, nil
 }
 
-// GetListByID returns a single list by ID
+// GetListByID returns a single list by ID with stats.
 func GetListByID(id int64) (*List, error) {
-	var l List
-	err := DB.QueryRow(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
-		FROM lists WHERE id = ?
-	`, id).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
+	row := DB.QueryRow(listSelectWithStats+`
+		WHERE l.id = ?
+		GROUP BY l.id
+	`, id)
+	l, err := scanListWithStats(row)
 	if err != nil {
 		return nil, err
 	}
-	l.Stats = GetListStats(l.ID)
 	return &l, nil
 }
 
-// GetActiveList returns the currently active list
+// GetActiveList returns the currently active list with stats.
 func GetActiveList() (*List, error) {
-	var l List
-	err := DB.QueryRow(`
-		SELECT id, name, COALESCE(icon, '🛒'), sort_order, is_active, COALESCE(show_completed, TRUE), created_at, COALESCE(updated_at, 0)
-		FROM lists WHERE is_active = TRUE
+	row := DB.QueryRow(listSelectWithStats + `
+		WHERE l.is_active = TRUE
+		GROUP BY l.id
 		LIMIT 1
-	`).Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt)
+	`)
+	l, err := scanListWithStats(row)
 	if err != nil {
 		return nil, err
 	}
-	l.Stats = GetListStats(l.ID)
 	return &l, nil
 }
 
@@ -312,19 +335,15 @@ func MoveListDown(id int64) error {
 	return tx.Commit()
 }
 
-// GetListStats returns stats for a specific list
+// GetListStats returns stats for a specific list using a single aggregated query.
 func GetListStats(listID int64) Stats {
 	var stats Stats
 	DB.QueryRow(`
-		SELECT COUNT(*) FROM items i
+		SELECT COUNT(i.id), COALESCE(SUM(CASE WHEN i.completed = TRUE THEN 1 ELSE 0 END), 0)
+		FROM items i
 		JOIN sections s ON i.section_id = s.id
 		WHERE s.list_id = ?
-	`, listID).Scan(&stats.TotalItems)
-	DB.QueryRow(`
-		SELECT COUNT(*) FROM items i
-		JOIN sections s ON i.section_id = s.id
-		WHERE s.list_id = ? AND i.completed = TRUE
-	`, listID).Scan(&stats.CompletedItems)
+	`, listID).Scan(&stats.TotalItems, &stats.CompletedItems)
 	if stats.TotalItems > 0 {
 		stats.Percentage = (stats.CompletedItems * 100) / stats.TotalItems
 	}
@@ -342,7 +361,25 @@ func GetAllSections() ([]Section, error) {
 	return GetSectionsByList(activeList.ID)
 }
 
-// GetSectionsByList returns all sections for a specific list
+// scanSectionRows reads all section rows into memory, then closes the result set.
+// Must be called before any nested queries (required because MaxOpenConns=1).
+func scanSectionRows(rows *sql.Rows) ([]Section, error) {
+	defer rows.Close()
+	var sections []Section
+	for rows.Next() {
+		var s Section
+		if err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, err
+		}
+		sections = append(sections, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return sections, nil
+}
+
+// GetSectionsByList returns all sections for a specific list along with their items.
 func GetSectionsByList(listID int64) ([]Section, error) {
 	rows, err := DB.Query(`
 		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
@@ -353,25 +390,23 @@ func GetSectionsByList(listID int64) ([]Section, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var sections []Section
-	for rows.Next() {
-		var s Section
-		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
+	sections, err := scanSectionRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// Nested queries run AFTER the outer Rows are closed (MaxOpenConns=1 requires this).
+	for i := range sections {
+		sections[i].Items, err = getItemsBySectionWithMode(sections[i].ID, sections[i].SortMode)
 		if err != nil {
 			return nil, err
 		}
-		s.Items, err = GetItemsBySection(s.ID)
-		if err != nil {
-			return nil, err
-		}
-		sections = append(sections, s)
 	}
 	return sections, nil
 }
 
-// getAllSectionsGlobal returns all sections (fallback, used during migration)
+// getAllSectionsGlobal returns all sections (fallback, used during migration).
 func getAllSectionsGlobal() ([]Section, error) {
 	rows, err := DB.Query(`
 		SELECT id, list_id, name, sort_order, COALESCE(sort_mode, 'manual'), created_at, COALESCE(updated_at, 0)
@@ -381,20 +416,17 @@ func getAllSectionsGlobal() ([]Section, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var sections []Section
-	for rows.Next() {
-		var s Section
-		err := rows.Scan(&s.ID, &s.ListID, &s.Name, &s.SortOrder, &s.SortMode, &s.CreatedAt, &s.UpdatedAt)
+	sections, err := scanSectionRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range sections {
+		sections[i].Items, err = getItemsBySectionWithMode(sections[i].ID, sections[i].SortMode)
 		if err != nil {
 			return nil, err
 		}
-		s.Items, err = GetItemsBySection(s.ID)
-		if err != nil {
-			return nil, err
-		}
-		sections = append(sections, s)
 	}
 	return sections, nil
 }
@@ -408,7 +440,7 @@ func GetSectionByID(id int64) (*Section, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.Items, err = GetItemsBySection(s.ID)
+	s.Items, err = getItemsBySectionWithMode(s.ID, s.SortMode)
 	if err != nil {
 		return nil, err
 	}
@@ -579,12 +611,17 @@ func ReactivateItem(id int64, description string, quantity int) (*Item, error) {
 }
 
 func GetItemsBySection(sectionID int64) ([]Item, error) {
-	// Check section sort mode
+	// Look up sort_mode and delegate. Prefer getItemsBySectionWithMode when sort_mode is already known.
 	var sortMode string
 	if err := DB.QueryRow("SELECT COALESCE(sort_mode, 'manual') FROM sections WHERE id = ?", sectionID).Scan(&sortMode); err != nil {
 		sortMode = "manual"
 	}
+	return getItemsBySectionWithMode(sectionID, sortMode)
+}
 
+// getItemsBySectionWithMode returns items for a section using an already-known sort_mode,
+// avoiding the extra QueryRow that GetItemsBySection performs.
+func getItemsBySectionWithMode(sectionID int64, sortMode string) ([]Item, error) {
 	var query string
 	switch sortMode {
 	case "alphabetical":
@@ -1070,11 +1107,10 @@ func GetStats() Stats {
 	return GetListStats(activeList.ID)
 }
 
-// getGlobalStats returns stats for all items (fallback)
+// getGlobalStats returns stats for all items (fallback) using a single aggregated query.
 func getGlobalStats() Stats {
 	var stats Stats
-	DB.QueryRow("SELECT COUNT(*) FROM items").Scan(&stats.TotalItems)
-	DB.QueryRow("SELECT COUNT(*) FROM items WHERE completed = TRUE").Scan(&stats.CompletedItems)
+	DB.QueryRow(`SELECT COUNT(*), COALESCE(SUM(CASE WHEN completed = TRUE THEN 1 ELSE 0 END), 0) FROM items`).Scan(&stats.TotalItems, &stats.CompletedItems)
 	if stats.TotalItems > 0 {
 		stats.Percentage = (stats.CompletedItems * 100) / stats.TotalItems
 	}
@@ -1091,8 +1127,10 @@ type SectionStats struct {
 
 func GetSectionStats(sectionID int64) SectionStats {
 	var stats SectionStats
-	DB.QueryRow("SELECT COUNT(*) FROM items WHERE section_id = ?", sectionID).Scan(&stats.TotalItems)
-	DB.QueryRow("SELECT COUNT(*) FROM items WHERE section_id = ? AND completed = TRUE", sectionID).Scan(&stats.CompletedItems)
+	DB.QueryRow(`
+		SELECT COUNT(*), COALESCE(SUM(CASE WHEN completed = TRUE THEN 1 ELSE 0 END), 0)
+		FROM items WHERE section_id = ?
+	`, sectionID).Scan(&stats.TotalItems, &stats.CompletedItems)
 	if stats.TotalItems > 0 {
 		stats.Percentage = (stats.CompletedItems * 100) / stats.TotalItems
 	}
@@ -1166,7 +1204,8 @@ func SaveItemHistoryWithCountTx(tx *sql.Tx, name string, sectionID int64, usageC
 	return err
 }
 
-// levenshteinDistance calculates the edit distance between two strings
+// levenshteinDistance calculates the edit distance between two strings using
+// a rolling two-row buffer: O(min(len(s1), len(s2))) memory instead of O(n*m).
 func levenshteinDistance(s1, s2 string) int {
 	s1 = strings.ToLower(s1)
 	s2 = strings.ToLower(s2)
@@ -1178,32 +1217,34 @@ func levenshteinDistance(s1, s2 string) int {
 		return len(s1)
 	}
 
-	// Create matrix
-	matrix := make([][]int, len(s1)+1)
-	for i := range matrix {
-		matrix[i] = make([]int, len(s2)+1)
-		matrix[i][0] = i
-	}
-	for j := range matrix[0] {
-		matrix[0][j] = j
+	// Ensure s2 is the shorter string so the rolling rows are as small as possible.
+	if len(s1) < len(s2) {
+		s1, s2 = s2, s1
 	}
 
-	// Fill matrix
+	prev := make([]int, len(s2)+1)
+	curr := make([]int, len(s2)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+
 	for i := 1; i <= len(s1); i++ {
+		curr[0] = i
 		for j := 1; j <= len(s2); j++ {
 			cost := 1
 			if s1[i-1] == s2[j-1] {
 				cost = 0
 			}
-			matrix[i][j] = min(
-				matrix[i-1][j]+1,      // deletion
-				matrix[i][j-1]+1,      // insertion
-				matrix[i-1][j-1]+cost, // substitution
+			curr[j] = min(
+				prev[j]+1,      // deletion
+				curr[j-1]+1,    // insertion
+				prev[j-1]+cost, // substitution
 			)
 		}
+		prev, curr = curr, prev
 	}
 
-	return matrix[len(s1)][len(s2)]
+	return prev[len(s2)]
 }
 
 // scoreSuggestion calculates a match score (higher is better)
@@ -1405,7 +1446,7 @@ func DeleteItemHistoryBatch(ids []int64) (int64, error) {
 
 // ==================== TEMPLATES ====================
 
-// GetAllTemplates returns all templates with their items
+// GetAllTemplates returns all templates with their items.
 func GetAllTemplates() ([]Template, error) {
 	rows, err := DB.Query(`
 		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
@@ -1415,20 +1456,29 @@ func GetAllTemplates() ([]Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var templates []Template
-	for rows.Next() {
-		var t Template
-		err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt)
+	func() {
+		defer rows.Close()
+		for rows.Next() {
+			var t Template
+			if err = rows.Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt); err != nil {
+				return
+			}
+			templates = append(templates, t)
+		}
+		err = rows.Err()
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	// Nested queries run after the outer result set is closed (MaxOpenConns=1).
+	for i := range templates {
+		templates[i].Items, err = GetTemplateItems(templates[i].ID)
 		if err != nil {
 			return nil, err
 		}
-		t.Items, err = GetTemplateItems(t.ID)
-		if err != nil {
-			return nil, err
-		}
-		templates = append(templates, t)
 	}
 	return templates, nil
 }

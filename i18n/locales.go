@@ -25,10 +25,21 @@ type Locale struct {
 }
 
 var (
-	locales     = make(map[string]*Locale)
-	localesMu   sync.RWMutex
-	defaultLang = "en"
+	locales           = make(map[string]*Locale)
+	localesMu         sync.RWMutex
+	defaultLang       = "en"
+	cachedAllLocales  map[string]map[string]interface{}
 )
+
+// rebuildCachedAllLocales rebuilds the cached map returned by GetAllLocales.
+// Caller MUST hold localesMu write lock.
+func rebuildCachedAllLocales() {
+	result := make(map[string]map[string]interface{}, len(locales))
+	for code, locale := range locales {
+		result[code] = locale.Raw
+	}
+	cachedAllLocales = result
+}
 
 // SetDefaultLang sets the default language (must be called after Init)
 func SetDefaultLang(lang string) {
@@ -87,6 +98,11 @@ func Init() error {
 		locales[locale.Meta.Code] = locale
 		localesMu.Unlock()
 	}
+
+	// Build cached all-locales map once after initial load.
+	localesMu.Lock()
+	rebuildCachedAllLocales()
+	localesMu.Unlock()
 
 	return nil
 }
@@ -153,16 +169,12 @@ func GetAll(lang string) map[string]interface{} {
 	return nil
 }
 
-// GetAllLocales returns all translations for all languages
+// GetAllLocales returns all translations for all languages.
+// Returns a cached map built once during Init (read-only; do not mutate).
 func GetAllLocales() map[string]map[string]interface{} {
 	localesMu.RLock()
 	defer localesMu.RUnlock()
-
-	result := make(map[string]map[string]interface{})
-	for code, locale := range locales {
-		result[code] = locale.Raw
-	}
-	return result
+	return cachedAllLocales
 }
 
 // AvailableLocales returns a list of available languages

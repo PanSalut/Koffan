@@ -14,6 +14,7 @@ import (
 	"shopping-list/i18n"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -120,6 +121,7 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 
 	// Service Worker at root path
 	app.Get("/sw.js", func(c *fiber.Ctx) error {
@@ -137,6 +139,7 @@ func main() {
 	app.Use("/static", filesystem.New(filesystem.Config{
 		Root:   http.FS(staticRootFS),
 		Browse: false,
+		MaxAge: 86400 * 30, // 30 days - files are embedded and versioned at build time
 	}))
 
 	// Auth routes (before middleware)

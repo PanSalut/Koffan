@@ -37,6 +37,12 @@ func Init() {
 		log.Fatal("Failed to ping database:", err)
 	}
 
+	// SQLite serializes writes; limit pool to 1 to avoid SQLITE_BUSY errors
+	// and eliminate the need for retry logic on concurrent writes.
+	DB.SetMaxOpenConns(1)
+	DB.SetMaxIdleConns(1)
+	DB.SetConnMaxLifetime(0)
+
 	// Enable WAL mode explicitly (in case pragma wasn't applied via connection string)
 	_, err = DB.Exec("PRAGMA journal_mode=WAL")
 	if err != nil {
