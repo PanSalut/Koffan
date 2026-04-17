@@ -415,12 +415,12 @@
 
     {{embed}}
 
-    <script src="/static/offline-storage.js?v=13"></script>
-    <script src="/static/app.js?v=16"></script>
+    <script src="{{asset "offline-storage.js"}}"></script>
+    <script src="{{asset "app.js"}}"></script>
     <script>
         // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw.js?v=14')
+            navigator.serviceWorker.register('{{asset "sw.js"}}')
                 .then(reg => {
                     console.log('[App] Service Worker registered:', reg.scope);
                     // Force update check

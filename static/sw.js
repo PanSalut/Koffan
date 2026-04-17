@@ -1,5 +1,7 @@
 // Koffan Service Worker - Offline Support
-const CACHE_VERSION = 'koffan-v24';
+// __CACHE_VERSION__ and __ASSET_HASH__ are replaced at serve time by
+// handlers.ServeServiceWorker using the startup-computed asset hash.
+const CACHE_VERSION = 'koffan-__CACHE_VERSION__';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
 
@@ -8,8 +10,8 @@ const LIST_PAGE_PATTERN = /^\/lists\/\d+$/;
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
-    '/static/app.js',
-    '/static/offline-storage.js',
+    '/static/app.js?v=__ASSET_HASH__',
+    '/static/offline-storage.js?v=__ASSET_HASH__',
     '/static/manifest.json',
     '/static/koffan-logo.webp',
     '/static/icon-192.png',
@@ -17,12 +19,12 @@ const STATIC_ASSETS = [
     '/static/favicon.ico',
     '/static/favicon-96.png',
     '/static/apple-touch-icon.png',
-    '/static/tailwind.min.js',
-    '/static/htmx.min.js',
-    '/static/htmx-ws.js',
-    '/static/alpine-collapse.min.js',
-    '/static/alpine.min.js',
-    '/static/sortable.min.js'
+    '/static/tailwind.min.js?v=__ASSET_HASH__',
+    '/static/htmx.min.js?v=__ASSET_HASH__',
+    '/static/htmx-ws.js?v=__ASSET_HASH__',
+    '/static/alpine-collapse.min.js?v=__ASSET_HASH__',
+    '/static/alpine.min.js?v=__ASSET_HASH__',
+    '/static/sortable.min.js?v=__ASSET_HASH__'
 ];
 
 // Install event - cache static assets

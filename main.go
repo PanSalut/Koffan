@@ -110,6 +110,9 @@ func main() {
 			}
 			return template.JS(b)
 		},
+		"asset": func(path string) string {
+			return "/static/" + path + "?v=" + handlers.AssetHash
+		},
 	})
 
 	// Initialize Fiber app
@@ -123,18 +126,32 @@ func main() {
 	app.Use(recover.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 
-	// Service Worker at root path
-	app.Get("/sw.js", func(c *fiber.Ctx) error {
-		c.Set("Content-Type", "application/javascript")
-		c.Set("Cache-Control", "no-cache")
-		return c.SendFile("./static/sw.js")
-	})
-
 	// Static files
 	staticRootFS, err := fs.Sub(embeddedStaticFS, "static")
 	if err != nil {
 		log.Fatalf("Embedded static directory missing: %v", err)
 	}
+
+	// Compute content hash across embedded static FS. Used as ?v=<hash>
+	// cache-buster in templates and injected into sw.js placeholders so
+	// any change to static/ automatically invalidates browser + SW caches.
+	hash, err := handlers.ComputeAssetHash(staticRootFS)
+	if err != nil {
+		log.Fatalf("Failed to compute asset hash: %v", err)
+	}
+	handlers.AssetHash = hash
+	log.Printf("Asset hash: %s", hash)
+
+	swBytes, err := handlers.BuildServiceWorker(staticRootFS, hash)
+	if err != nil {
+		log.Fatalf("Failed to build service worker: %v", err)
+	}
+	handlers.ServiceWorkerBytes = swBytes
+
+	// SW must be served by a dedicated handler (not the filesystem middleware)
+	// so placeholders get replaced and Cache-Control is no-cache instead of
+	// the 30-day max-age applied to other static assets.
+	app.Get("/static/sw.js", handlers.ServeServiceWorker)
 
 	app.Use("/static", filesystem.New(filesystem.Config{
 		Root:   http.FS(staticRootFS),
