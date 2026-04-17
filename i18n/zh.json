@@ -52,7 +52,7 @@
     "sort_alphabetical": "A 到 Z",
     "sort_alphabetical_desc": "Z 到 A",
     "search_found": "找到：",
-    "search_no_results": "未找到"{{query}}"的结果"
+    "search_no_results": "未找到 \"{{query}}\" 的结果"
   },
   "sections": {
     "title": "分类",
@@ -107,11 +107,11 @@
     "error_rate_limited": "登录尝试次数过多，请稍后再试。"
   },
   "confirm": {
-    "delete_item": "删除"{{name}}"？",
+    "delete_item": "删除 \"{{name}}\"？",
     "delete_sections": "删除选中的 {{count}} 个分类？",
-    "delete_section": "删除分类"{{name}}"？",
+    "delete_section": "删除分类 \"{{name}}\"？",
     "delete_completed_items": "删除所有已购商品？",
-    "delete_template": "删除模板"{{name}}"？"
+    "delete_template": "删除模板 \"{{name}}\"？"
   },
   "stats": {
     "progress": "进度"
@@ -176,7 +176,7 @@
     "search_placeholder": "搜索历史...",
     "empty": "暂无保存的商品",
     "delete_selected": "删除选中项",
-    "confirm_delete": "从历史中删除"{{name}}"？",
+    "confirm_delete": "从历史中删除 \"{{name}}\"？",
     "confirm_delete_batch": "从历史中删除选中的 {{count}} 个商品？",
     "deleted": "已删除 {{count}} 个商品"
   },
@@ -189,7 +189,7 @@
     "switch": "切换到",
     "active": "当前",
     "icon": "图标",
-    "delete_confirm": "删除列表"{{name}}"？所有商品将丢失。"
+    "delete_confirm": "删除列表 \"{{name}}\"？所有商品将丢失。"
   },
   "templates": {
     "title": "模板",
