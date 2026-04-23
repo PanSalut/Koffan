@@ -107,6 +107,15 @@ APP_PASSWORD=yourpassword go run main.go
 
 ## Docker
 
+> **Upgrading from 2.9.x or earlier?** The default container port changed from `80` to `8080` in 2.10.0 so the image can run as a non-root user. If you are upgrading, update your port mappings and any reverse proxy upstreams accordingly:
+>
+> - `docker run -p 80:80` → `docker run -p 80:8080`
+> - `docker run -p 3000:80` → `docker run -p 3000:8080`
+> - Reverse proxies (nginx / Caddy / Traefik): point the upstream to the container's port `8080`
+> - If you previously overrode `PORT` via env to work around the privileged port, you can drop that override
+>
+> Coolify and other auto-discovery setups that read the image's `EXPOSE` will pick up the new port on redeploy without any manual change.
+
 ### Quick Start (recommended)
 
 ```bash
