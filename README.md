@@ -110,7 +110,7 @@ APP_PASSWORD=yourpassword go run main.go
 ### Quick Start (recommended)
 
 ```bash
-docker run -d -p 3000:80 -e APP_PASSWORD=yourpassword -v koffan-data:/data ghcr.io/pansalut/koffan:latest
+docker run -d -p 3000:8080 -e APP_PASSWORD=yourpassword -v koffan-data:/data ghcr.io/pansalut/koffan:latest
 ```
 
 App available at http://localhost:3000
@@ -119,7 +119,7 @@ App available at http://localhost:3000
 
 ```bash
 docker-compose up -d
-# App available at http://localhost:80
+# App available at http://localhost:8080
 ```
 
 ## Environment Variables
@@ -129,7 +129,7 @@ docker-compose up -d
 | `APP_ENV` | `development` | Set to `production` for secure cookies |
 | `APP_PASSWORD` | `shopping123` | Login password |
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
-| `PORT` | `80` (Docker) / `3000` (local) | Server port |
+| `PORT` | `8080` (Docker) / `3000` (local) | Server port |
 | `DB_PATH` | `./shopping.db` | Database file path |
 | `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt, uk, no, lt, el, sk, ru) |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |
@@ -145,7 +145,7 @@ docker-compose up -d
 git clone https://github.com/PanSalut/Koffan.git
 cd Koffan
 docker build -t koffan .
-docker run -d -p 80:80 -e APP_PASSWORD=your-password -v koffan-data:/data koffan
+docker run -d -p 80:8080 -e APP_PASSWORD=your-password -v koffan-data:/data koffan
 ```
 
 ### Coolify

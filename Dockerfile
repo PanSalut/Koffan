@@ -37,15 +37,15 @@ RUN mkdir -p /data
 
 # Set environment variables
 ENV APP_ENV=production
-ENV PORT=80
+ENV PORT=8080
 ENV DB_PATH=/data/shopping.db
 
 # Expose port
-EXPOSE 80
+EXPOSE 8080
 
-# Health check
+# Health check (uses $PORT so custom port overrides still report healthy)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/login || exit 1
+    CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT}/login" || exit 1
 
 # Run the application
 CMD ["./shopping-list"]
