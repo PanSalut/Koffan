@@ -137,6 +137,11 @@
     <script src="/static/sortable.min.js"></script>
 
     <style>
+        :root {
+            --app-viewport-height: 100vh;
+            --mobile-sheet-offset: 1rem;
+        }
+
         [x-cloak] { display: none !important; }
         .htmx-request .htmx-indicator { display: inline-block; }
         .htmx-indicator { display: none; }
@@ -298,6 +303,17 @@
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
 
+        @media (max-width: 767px) {
+            .mobile-sheet {
+                max-height: calc(var(--app-viewport-height, 100vh) - var(--mobile-sheet-offset));
+            }
+
+            .mobile-sheet-scroll {
+                overflow-y: auto;
+                padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+            }
+        }
+
         /* Custom scrollbar for dark mode */
         .dark ::-webkit-scrollbar {
             width: 8px;
@@ -415,8 +431,12 @@
 
     {{embed}}
 
+    <script src="{{asset "viewport.js"}}"></script>
     <script src="{{asset "offline-storage.js"}}"></script>
     <script src="{{asset "app.js"}}"></script>
+    <script>
+        window.ViewportHeight?.initViewportHeightSync(window, document);
+    </script>
     <script>
         // Register Service Worker with update handling
         if ('serviceWorker' in navigator) {

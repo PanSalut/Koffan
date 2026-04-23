@@ -289,7 +289,7 @@
          x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', currentVersion: '', updateAvailable: false, releaseUrl: '' }"
          x-init="fetch('/api/version').then(r => r.json()).then(d => { currentVersion = d.current || 'unknown'; updateAvailable = d.update_available || false; releaseUrl = d.release_url || ''; }).catch(() => currentVersion = 'unknown')">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
-        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+        <div class="mobile-sheet mobile-sheet-scroll relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
@@ -496,7 +496,7 @@
     <!-- Import Preview Modal -->
     <div x-show="showImportPreview" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showImportPreview = false"></div>
-        <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6 max-h-[90vh] overflow-y-auto"
+        <div class="mobile-sheet mobile-sheet-scroll relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-95 opacity-0"
              x-transition:enter-end="translate-y-0 md:scale-100 opacity-100">
