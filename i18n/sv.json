@@ -35,6 +35,7 @@
     "what_to_buy": "Vad skall köpas?",
     "note": "Notis...",
     "note_optional": "Notis (valfri)...",
+    "quantity": "Antal (t.ex. 2)",
     "name": "Namn...",
     "new_product": "Ny vara",
     "select_section": "Välj avdelning...",

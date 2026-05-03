@@ -120,7 +120,7 @@
     "syncing": "sincronizzazione"
   },
   "error": {
-    "generico": "Errore",
+    "generic": "Errore",
     "delete_items": "Errore durante l'eliminazione degli elementi",
     "invalid_id": "ID non valido",
     "invalid_section_id": "ID sezione non valido",

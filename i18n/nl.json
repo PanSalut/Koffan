@@ -27,7 +27,9 @@
     "shopping_list": "Boodschappenlijst",
     "completed": "Voltooid",
     "bought": "Gekocht",
-    "name_exists": "Een lijst met deze naam bestaat al"
+    "name_exists": "Een lijst met deze naam bestaat al",
+    "show_completed": "Gekochte items tonen",
+    "hide_completed": "Gekochte items verbergen"
   },
   "items": {
     "what_to_buy": "Wat kopen?",
