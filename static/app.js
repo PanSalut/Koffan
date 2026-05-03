@@ -222,6 +222,8 @@ function shoppingList() {
         showManageSections: false,
         showAddItem: false,
         addMore: false,
+        addItemQuantity: 0,
+        addItemQuantityEditing: false,
         showEditModal: false,
         showSettings: false,
         showOfflineModal: false,
@@ -2649,6 +2651,7 @@ function shoppingList() {
                     const descInput = form.querySelector('input[name="description"]');
                     if (descInput) descInput.value = '';
                     form.querySelector('select[name="section_id"]').value = sectionValue;
+                    this.addItemQuantity = 0;
                     setTimeout(() => form.querySelector('input[name="name"]')?.focus(), 50);
 
                     this.refreshStats();
@@ -2707,6 +2710,7 @@ function shoppingList() {
                         }
                     }
 
+                    this.addItemQuantity = 0;
                     if (!this.addMore) {
                         form.reset();
                         this.showAddItem = false;
