@@ -155,6 +155,8 @@ docker-compose up -d
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
 | `API_TOKEN` | *(disabled)* | Enable REST API with this token ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
+| `DISABLE_CHECK_ALL` | `false` | Set to `true` to disable and hide the "Check all" feature in the UI (does not affect API endpoint) |
+| `DISABLE_UNCHECK_ALL` | `false` | Set to `true` to disable and hide the "Uncheck all" feature in the UI (does not affect API endpoint) |
 
 ## Deploy to Your Server
 

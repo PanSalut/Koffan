@@ -317,8 +317,10 @@ func ToggleShowCompleted(c *fiber.Ctx) error {
 // sectionRenderMap builds the template data map for rendering a single section partial
 func sectionRenderMap(section *db.Section) fiber.Map {
 	return fiber.Map{
-		"Section":       section,
-		"Sections":      getSectionsForDropdown(),
-		"ShowCompleted": db.GetShowCompletedForSection(section.ID),
+		"Section":           section,
+		"Sections":          getSectionsForDropdown(),
+		"ShowCompleted":     db.GetShowCompletedForSection(section.ID),
+		"DisableCheckAll":   IsCheckAllDisabled(),
+		"DisableUncheckAll": IsUncheckAllDisabled(),
 	}
 }
