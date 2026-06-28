@@ -34,6 +34,10 @@
     <script src="{{asset "ui-scale.js"}}"></script>
     <script>
         (function() {
+            function apply(resolved) {
+                document.documentElement.style.fontSize = window.UIScale.scaleToFontSize(resolved);
+                document.documentElement.setAttribute('data-ui-scale', resolved);
+            }
             window.getUIScale = function() {
                 var mod = window.UIScale;
                 return mod ? mod.resolveScale(localStorage.getItem('uiScale')) : 'normal';
@@ -43,11 +47,10 @@
                 if (!mod) return;
                 var resolved = mod.resolveScale(scale);
                 localStorage.setItem('uiScale', resolved);
-                document.documentElement.style.fontSize = mod.scaleToFontSize(resolved);
+                apply(resolved);
             };
             if (window.UIScale) {
-                document.documentElement.style.fontSize =
-                    window.UIScale.scaleToFontSize(window.getUIScale());
+                apply(window.getUIScale());
             }
         })();
     </script>
@@ -259,6 +262,27 @@
            scaling up with the UI size setting at larger presets */
         input, textarea, select {
             font-size: max(1rem, 16px) !important;
+        }
+
+        /* Logo counter-scaling: the rest of the UI scales up with the UI size
+           setting, but the logo should shrink at larger presets so it stops
+           crowding the header text (e.g. the list name on the list page).
+           --logo-scale is multiplied into rem-based heights: at large/huge it
+           dips below the level that would merely keep the logo constant, making
+           it visibly smaller than at Normal. */
+        :root { --logo-scale: 1; }
+        html[data-ui-scale="large"] { --logo-scale: 0.82; }
+        html[data-ui-scale="huge"]  { --logo-scale: 0.7; }
+        .app-logo-home {
+            height: calc(3rem * var(--logo-scale));
+        }
+        .app-logo-header {
+            height: calc(2rem * var(--logo-scale));
+        }
+        @media (min-width: 768px) {
+            .app-logo-header {
+                height: calc(2.5rem * var(--logo-scale));
+            }
         }
 
         /* Pull to refresh */
