@@ -30,6 +30,23 @@
         })();
     </script>
 
+    <!-- UI scale initialization (must run before body renders to prevent flash) -->
+    <script src="{{asset "ui-scale.js"}}"></script>
+    <script>
+        (function() {
+            function getUIScale() {
+                return window.UIScale.resolveScale(localStorage.getItem('uiScale'));
+            }
+            document.documentElement.style.fontSize = window.UIScale.scaleToFontSize(getUIScale());
+            window.getUIScale = getUIScale;
+            window.setUIScale = function(scale) {
+                const resolved = window.UIScale.resolveScale(scale);
+                localStorage.setItem('uiScale', resolved);
+                document.documentElement.style.fontSize = window.UIScale.scaleToFontSize(resolved);
+            };
+        })();
+    </script>
+
     <!-- i18n translations -->
     <script>
         window.translations = {{.Translations | toJSON}};
@@ -233,9 +250,10 @@
             touch-action: manipulation;
         }
 
-        /* Prevent iOS zoom on input focus (requires 16px minimum) */
+        /* Prevent iOS zoom on input focus (requires 16px minimum), while still
+           scaling up with the UI size setting at larger presets */
         input, textarea, select {
-            font-size: 16px !important;
+            font-size: max(1rem, 16px) !important;
         }
 
         /* Pull to refresh */
