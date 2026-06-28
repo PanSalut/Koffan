@@ -7,12 +7,12 @@
 
     root.UIScale = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function() {
-    const SCALES = {
+    const SCALES = Object.freeze({
         small: '14px',
         normal: '16px',
         large: '18px',
         huge: '20px'
-    };
+    });
     const DEFAULT_SCALE = 'normal';
 
     function resolveScale(stored) {

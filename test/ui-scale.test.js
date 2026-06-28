@@ -5,13 +5,18 @@ const { resolveScale, scaleToFontSize, DEFAULT_SCALE } = require('../static/ui-s
 
 test('resolveScale returns the stored value when it is a known preset', () => {
     assert.equal(resolveScale('small'), 'small');
+    assert.equal(resolveScale('normal'), 'normal');
     assert.equal(resolveScale('large'), 'large');
+    assert.equal(resolveScale('huge'), 'huge');
 });
 
 test('resolveScale falls back to the default for unknown or missing values', () => {
     assert.equal(resolveScale('gigantic'), DEFAULT_SCALE);
     assert.equal(resolveScale(null), DEFAULT_SCALE);
     assert.equal(resolveScale(undefined), DEFAULT_SCALE);
+});
+
+test('DEFAULT_SCALE is normal', () => {
     assert.equal(DEFAULT_SCALE, 'normal');
 });
 
