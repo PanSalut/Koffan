@@ -1098,7 +1098,10 @@ function homePage() {
                         const match = html.match(/id="list-(\d+)"/);
                         const newId = match ? match[1] : Date.now();
                         const container = document.getElementById('lists-container');
-                        if (container) {
+                        // Guard against duplicate insertion: the WebSocket 'list_created'
+                        // broadcast may have already added this card (race between the
+                        // fetch response and the WS message). Only insert if absent.
+                        if (container && !document.getElementById(`home-list-${newId}`)) {
                             container.insertAdjacentHTML('beforeend', this.buildListCardHtml(newId, name, icon));
                         }
                     }
