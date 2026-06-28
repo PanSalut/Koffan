@@ -34,6 +34,7 @@
     <script src="{{asset "ui-scale.js"}}"></script>
     <script>
         (function() {
+            if (!window.UIScale) return;
             function getUIScale() {
                 return window.UIScale.resolveScale(localStorage.getItem('uiScale'));
             }

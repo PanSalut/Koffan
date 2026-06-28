@@ -12,6 +12,7 @@ const LIST_PAGE_PATTERN = /^\/lists\/\d+$/;
 const STATIC_ASSETS = [
     '/static/app.js?v=__ASSET_HASH__',
     '/static/offline-storage.js?v=__ASSET_HASH__',
+    '/static/ui-scale.js?v=__ASSET_HASH__',
     '/static/manifest.json',
     '/static/koffan-logo.webp',
     '/static/icon-192.png',
