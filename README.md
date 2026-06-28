@@ -105,6 +105,16 @@ To set a custom password:
 APP_PASSWORD=yourpassword go run main.go
 ```
 
+## Arch Linux (AUR)
+
+Arch Linux users can install Koffan from the [AUR](https://aur.archlinux.org/packages/koffan) using an AUR helper:
+
+```bash
+yay -S koffan
+```
+
+> The AUR package is community-maintained by [@SergeantBiggs](https://github.com/SergeantBiggs), not by the Koffan project.
+
 ## Docker
 
 > **Upgrading from 2.9.x or earlier?** The default container port changed from `80` to `8080` in 2.10.0 so the image can run as a non-root user. If you are upgrading, update your port mappings and any reverse proxy upstreams accordingly:
