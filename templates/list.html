@@ -691,7 +691,7 @@
 
     <!-- Settings Modal -->
     <div x-show="showSettings" x-cloak class="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', currentVersion: '', updateAvailable: false, releaseUrl: '' }"
+         x-data="{ settingsTab: 'account', currentTheme: localStorage.getItem('theme') || 'system', currentScale: getUIScale(), currentVersion: '', updateAvailable: false, releaseUrl: '' }"
          x-init="fetch('/api/version').then(r => r.json()).then(d => { currentVersion = d.current || 'unknown'; updateAvailable = d.update_available || false; releaseUrl = d.release_url || ''; }).catch(() => currentVersion = 'unknown')">
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showSettings = false"></div>
         <div class="mobile-sheet mobile-sheet-scroll relative bg-white dark:bg-stone-800 rounded-t-2xl md:rounded-2xl w-full md:max-w-md p-6"
@@ -768,6 +768,21 @@
                             </svg>
                             <span x-text="t('settings.theme_system')"></span>
                         </button>
+                    </div>
+                </div>
+
+                <!-- UI Size Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.ui_size')"></label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <template x-for="scale in ['small', 'normal', 'large', 'huge']" :key="scale">
+                            <button
+                                @click="setUIScale(scale); currentScale = scale"
+                                :class="currentScale === scale ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                                class="px-2 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center"
+                                x-text="t('settings.size_' + scale)"
+                            ></button>
+                        </template>
                     </div>
                 </div>
 
