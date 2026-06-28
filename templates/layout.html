@@ -34,17 +34,21 @@
     <script src="{{asset "ui-scale.js"}}"></script>
     <script>
         (function() {
-            if (!window.UIScale) return;
-            function getUIScale() {
-                return window.UIScale.resolveScale(localStorage.getItem('uiScale'));
-            }
-            document.documentElement.style.fontSize = window.UIScale.scaleToFontSize(getUIScale());
-            window.getUIScale = getUIScale;
-            window.setUIScale = function(scale) {
-                const resolved = window.UIScale.resolveScale(scale);
-                localStorage.setItem('uiScale', resolved);
-                document.documentElement.style.fontSize = window.UIScale.scaleToFontSize(resolved);
+            window.getUIScale = function() {
+                var mod = window.UIScale;
+                return mod ? mod.resolveScale(localStorage.getItem('uiScale')) : 'normal';
             };
+            window.setUIScale = function(scale) {
+                var mod = window.UIScale;
+                if (!mod) return;
+                var resolved = mod.resolveScale(scale);
+                localStorage.setItem('uiScale', resolved);
+                document.documentElement.style.fontSize = mod.scaleToFontSize(resolved);
+            };
+            if (window.UIScale) {
+                document.documentElement.style.fontSize =
+                    window.UIScale.scaleToFontSize(window.getUIScale());
+            }
         })();
     </script>
 
