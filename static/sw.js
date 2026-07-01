@@ -28,18 +28,31 @@ const STATIC_ASSETS = [
     '/static/sortable.min.js?v=__ASSET_HASH__'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets and the app shell
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing service worker...');
     event.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then(cache => {
-                console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS).catch(err => {
-                    console.warn('[SW] Some static assets failed to cache:', err);
-                });
-            })
-            .then(() => self.skipWaiting())
+        Promise.all([
+            caches.open(STATIC_CACHE)
+                .then(cache => {
+                    console.log('[SW] Caching static assets');
+                    return cache.addAll(STATIC_ASSETS).catch(err => {
+                        console.warn('[SW] Some static assets failed to cache:', err);
+                    });
+                }),
+            // Precache the app shell so the installed PWA can cold-start offline.
+            // Without this, launching offline hits the networkFirst fallback because
+            // "/" is otherwise only cached lazily after a successful online load.
+            caches.open(DYNAMIC_CACHE)
+                .then(cache => fetch('/', { credentials: 'same-origin' })
+                    .then(response => {
+                        // Skip login redirects and errors so we never cache a non-shell page.
+                        if (response.ok && !response.redirected) {
+                            return cache.put('/', response);
+                        }
+                    })
+                    .catch(err => console.warn('[SW] App shell precache failed:', err)))
+        ]).then(() => self.skipWaiting())
     );
 });
 
@@ -147,7 +160,9 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
     try {
         const response = await fetch(request);
-        if (response.ok) {
+        // Skip redirected responses (e.g. an expired session bouncing to /login) so we
+        // never cache a login page under the requested URL and poison the offline shell.
+        if (response.ok && !response.redirected) {
             const cache = await caches.open(DYNAMIC_CACHE);
             cache.put(request, response.clone());
         }
@@ -178,7 +193,9 @@ async function networkFirst(request) {
 async function listPageStrategy(request) {
     try {
         const response = await fetch(request);
-        if (response.ok) {
+        // Skip redirected responses (e.g. an expired session bouncing to /login) so we
+        // never cache a login page under the list URL.
+        if (response.ok && !response.redirected) {
             const cache = await caches.open(DYNAMIC_CACHE);
             cache.put(request, response.clone());
         }

@@ -68,9 +68,13 @@ func BuildServiceWorker(fsys fs.FS, hash string) ([]byte, error) {
 
 // ServeServiceWorker serves the pre-built ServiceWorkerBytes. SW must not be
 // hard-cached by the browser because it controls all other caches; use
-// no-cache so browsers revalidate on every navigation.
+// no-cache so browsers revalidate on every navigation. The Service-Worker-Allowed
+// header widens the max scope to "/" even though the script is served from
+// /static/, so the worker can control navigations (and serve the app shell
+// offline) rather than only /static/ subresources.
 func ServeServiceWorker(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/javascript; charset=utf-8")
 	c.Set("Cache-Control", "no-cache")
+	c.Set("Service-Worker-Allowed", "/")
 	return c.Send(ServiceWorkerBytes)
 }
