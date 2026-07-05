@@ -209,6 +209,7 @@ I'm incredibly grateful to these amazing people for supporting Koffan:
 - [@nathan-synfo](https://github.com/nathan-synfo)
 - [@van-nutno](https://github.com/van-nutno)
 - [@kazoob](https://github.com/kazoob)
+- [@monkyOfTheSCC](https://github.com/monkyOfTheSCC)
 
 ## License
 
