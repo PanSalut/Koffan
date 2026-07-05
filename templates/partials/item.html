@@ -35,13 +35,13 @@
             {{if .Item.Uncertain}}
             <span class="text-amber-500 dark:text-amber-400 text-xs">?</span>
             {{end}}
-            <p class="item-name text-sm text-stone-700 dark:text-stone-200 truncate">{{.Item.Name}}</p>
+            <p class="item-name text-sm text-stone-700 dark:text-stone-200 line-clamp-2 break-words">{{.Item.Name}}</p>
             {{if gt .Item.Quantity 0}}
             <span class="px-1.5 py-0.5 text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full flex-shrink-0">{{.Item.Quantity}}x</span>
             {{end}}
         </div>
         {{if .Item.Description}}
-        <p class="text-xs text-stone-400 dark:text-stone-500 truncate mt-0.5">{{.Item.Description}}</p>
+        <p class="text-xs text-stone-400 dark:text-stone-500 line-clamp-2 break-words mt-0.5">{{.Item.Description}}</p>
         {{end}}
     </div>
 

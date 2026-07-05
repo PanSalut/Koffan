@@ -2296,7 +2296,7 @@ function shoppingList() {
                         const contentDiv = itemEl.querySelector('.flex-1.min-w-0');
                         if (contentDiv) {
                             const newDescEl = document.createElement('p');
-                            newDescEl.className = 'text-xs text-stone-400 truncate mt-0.5';
+                            newDescEl.className = 'text-xs text-stone-400 line-clamp-2 break-words mt-0.5';
                             newDescEl.textContent = description;
                             contentDiv.appendChild(newDescEl);
                         }

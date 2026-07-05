@@ -500,7 +500,7 @@
         <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="mobileActionItem = null"></div>
         <div class="relative bg-white dark:bg-stone-800 rounded-t-2xl w-full p-6">
             <div class="w-10 h-1 bg-stone-200 dark:bg-stone-600 rounded-full mx-auto mb-4"></div>
-            <h3 class="font-medium text-stone-800 dark:text-stone-100 truncate" x-text="mobileActionItem?.name"></h3>
+            <h3 class="font-medium text-stone-800 dark:text-stone-100 break-words" x-text="mobileActionItem?.name"></h3>
             <p x-show="mobileActionItem?.description" x-cloak
                 class="text-sm text-stone-500 dark:text-stone-400 mt-1 mb-4 break-words"
                 x-text="mobileActionItem?.description"></p>

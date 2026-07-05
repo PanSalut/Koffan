@@ -24,13 +24,13 @@
         @click="toggleItem({{.Item.ID}}, {{.Item.SectionID}})"
     >
         <div class="flex items-center gap-2">
-            <p class="item-name text-sm text-stone-400 dark:text-stone-500 line-through truncate">{{.Item.Name}}</p>
+            <p class="item-name text-sm text-stone-400 dark:text-stone-500 line-through line-clamp-2 break-words">{{.Item.Name}}</p>
             {{if gt .Item.Quantity 0}}
             <span class="px-1.5 py-0.5 text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-400 dark:text-stone-500 rounded-full flex-shrink-0 line-through">{{.Item.Quantity}}x</span>
             {{end}}
         </div>
         {{if .Item.Description}}
-        <p class="text-xs text-stone-300 dark:text-stone-500 line-through truncate">{{.Item.Description}}</p>
+        <p class="text-xs text-stone-300 dark:text-stone-500 line-through line-clamp-2 break-words">{{.Item.Description}}</p>
         {{end}}
     </div>
 
