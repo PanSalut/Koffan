@@ -2429,99 +2429,10 @@ function shoppingList() {
 
             // Offline: optimistic UI without refresh (like standard add)
             if (!this.isOnline) {
-                const tempId = 'offline-' + Date.now();
-
-                // Check if item already exists in completed items - reactivate instead of duplicate
-                const sectionEl = document.getElementById(`section-${sectionId}`);
-                if (sectionEl) {
-                    const completedItems = sectionEl.querySelectorAll('.completed-items [id^="item-"]');
-                    for (const el of completedItems) {
-                        const nameEl = el.querySelector('.item-name, [data-item-name]');
-                        const itemName = nameEl?.textContent?.trim() || nameEl?.dataset?.itemName || '';
-                        if (itemName.toLowerCase() === name.toLowerCase()) {
-                            // Move from completed to active optimistically
-                            const activeContainer = sectionEl.querySelector('.active-items');
-                            if (activeContainer) {
-                                el.remove();
-                                const html = createOfflineItemHtml(tempId, name, '', sectionId);
-                                activeContainer.insertAdjacentHTML('afterbegin', html);
-                                this.markLocalAction('item_toggled');
-
-                                // Update section counter (completed - 1, total stays the same)
-                                const counter = sectionEl.querySelector('.section-counter');
-                                if (counter) {
-                                    const parts = counter.textContent.split('/');
-                                    const completed = Math.max(0, (parseInt(parts[0]) || 0) - 1);
-                                    const total = parseInt(parts[1]) || 0;
-                                    counter.textContent = `${completed}/${total}`;
-                                }
-
-                                // Update completed count and hide wrapper if empty
-                                const completedContainer = sectionEl.querySelector('.completed-items');
-                                const newCompletedCount = completedContainer
-                                    ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
-                                const countSpan = sectionEl.querySelector('.completed-count');
-                                if (countSpan) countSpan.textContent = newCompletedCount;
-                                const completedWrapper = sectionEl.querySelector('.completed-wrapper');
-                                if (completedWrapper) {
-                                    completedWrapper.style.display = newCompletedCount === 0 ? 'none' : '';
-                                }
-                            }
-                            // Queue toggle for sync
-                            await window.offlineStorage.queueAction({
-                                type: 'create_item',
-                                url: '/items',
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`,
-                                tempId: tempId
-                            });
-                            this.closeQuickAdd();
-                            window.Toast?.show(t('offline.queued'), 'info', 2000);
-                            return;
-                        }
-                    }
-                }
-
-                // Create optimistic item HTML
-                const itemHtml = createOfflineItemHtml(tempId, name, '', sectionId);
-
-                // Find section and add item
-                document.getElementById('empty-no-products')?.remove();
-                const offlineSectionEl = document.getElementById(`section-${sectionId}`);
-                if (offlineSectionEl) {
-                    offlineSectionEl.classList.remove('hidden');
-                    const itemsContainer = offlineSectionEl.querySelector('.active-items');
-                    if (itemsContainer) {
-                        itemsContainer.insertAdjacentHTML('afterbegin', itemHtml);
-                    }
-
-                    // Update section counter
-                    const counter = offlineSectionEl.querySelector('.section-counter');
-                    if (counter) {
-                        const parts = counter.textContent.split('/');
-                        const completed = parseInt(parts[0]) || 0;
-                        const total = (parseInt(parts[1]) || 0) + 1;
-                        counter.textContent = `${completed}/${total}`;
-                    }
-                }
-
-                // Queue for sync
-                await window.offlineStorage.queueAction({
-                    type: 'create_item',
-                    url: '/items',
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`,
-                    tempId: tempId
-                });
-
-                // Close quick add (no refresh!)
+                this.addItemOffline(sectionId, name, '',
+                    `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`);
                 this.closeQuickAdd();
-
-                // Confirmation toast
                 window.Toast?.show(t('offline.queued'), 'info', 2000);
-
                 return;
             }
 
@@ -2588,8 +2499,97 @@ function shoppingList() {
                     }
                 }
             } catch (error) {
-                console.error('[QuickAdd] Failed to add item:', error);
+                // Network failed mid-request: fall back to the offline path so the item
+                // is optimistically shown and queued rather than silently dropped.
+                console.error('[QuickAdd] Failed, queuing offline:', error);
+                this.addItemOffline(sectionId, name, '',
+                    `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=`);
+                this.closeQuickAdd();
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
             }
+        },
+
+        // Shared offline add: optimistic row + queue for sync. Used by the desktop,
+        // mobile and quick-add flows so their offline behavior can't drift apart.
+        // Returns the temporary id of the inserted row.
+        addItemOffline(sectionId, name, description, queueBody) {
+            const desc = description || '';
+            const tempId = 'offline-' + Date.now();
+            const sectionEl = document.getElementById(`section-${sectionId}`);
+
+            // If a matching item exists in the completed list, reactivate it instead of
+            // creating a duplicate (mirrors the server-side dedup on reconnect).
+            if (sectionEl) {
+                const completedItems = sectionEl.querySelectorAll('.completed-items [id^="item-"]');
+                for (const el of completedItems) {
+                    const nameEl = el.querySelector('.item-name, [data-item-name]');
+                    const itemName = nameEl?.textContent?.trim() || nameEl?.dataset?.itemName || '';
+                    if (itemName.toLowerCase() === name.toLowerCase()) {
+                        const activeContainer = sectionEl.querySelector('.active-items');
+                        if (activeContainer) {
+                            el.remove();
+                            activeContainer.insertAdjacentHTML('afterbegin', createOfflineItemHtml(tempId, name, desc, sectionId));
+                            this.markLocalAction('item_toggled');
+
+                            // Completed count drops by one; total is unchanged.
+                            const counter = sectionEl.querySelector('.section-counter');
+                            if (counter) {
+                                const parts = counter.textContent.split('/');
+                                const completed = Math.max(0, (parseInt(parts[0]) || 0) - 1);
+                                const total = parseInt(parts[1]) || 0;
+                                counter.textContent = `${completed}/${total}`;
+                            }
+
+                            const completedContainer = sectionEl.querySelector('.completed-items');
+                            const newCompletedCount = completedContainer
+                                ? completedContainer.querySelectorAll('[id^="item-"]').length : 0;
+                            const countSpan = sectionEl.querySelector('.completed-count');
+                            if (countSpan) countSpan.textContent = newCompletedCount;
+                            const completedWrapper = sectionEl.querySelector('.completed-wrapper');
+                            if (completedWrapper) {
+                                completedWrapper.style.display = newCompletedCount === 0 ? 'none' : '';
+                            }
+                        }
+                        this.queueOfflineAction({
+                            type: 'create_item',
+                            url: '/items',
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: queueBody || `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=${encodeURIComponent(desc)}`,
+                            tempId: tempId
+                        });
+                        return tempId;
+                    }
+                }
+            }
+
+            // New item: insert an optimistic pending-sync row at the top of the section.
+            document.getElementById('empty-no-products')?.remove();
+            if (sectionEl) {
+                sectionEl.classList.remove('hidden');
+                const itemsContainer = sectionEl.querySelector('.active-items');
+                if (itemsContainer) {
+                    itemsContainer.insertAdjacentHTML('afterbegin', createOfflineItemHtml(tempId, name, desc, sectionId));
+                }
+
+                const counter = sectionEl.querySelector('.section-counter');
+                if (counter) {
+                    const parts = counter.textContent.split('/');
+                    const completed = parseInt(parts[0]) || 0;
+                    const total = (parseInt(parts[1]) || 0) + 1;
+                    counter.textContent = `${completed}/${total}`;
+                }
+            }
+
+            this.queueOfflineAction({
+                type: 'create_item',
+                url: '/items',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: queueBody || `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=${encodeURIComponent(desc)}`,
+                tempId: tempId
+            });
+            return tempId;
         },
 
         // Desktop add item form (full form with section select)
@@ -2597,9 +2597,18 @@ function shoppingList() {
             const formData = new FormData(form);
             const sectionId = formData.get('section_id');
             const name = formData.get('name')?.trim();
+            const description = formData.get('description')?.trim() || '';
             if (!name) return;
 
             this.markLocalAction('item_created');
+
+            // Offline: optimistic insert + queue, then clear the form like the online path.
+            if (!this.isOnline) {
+                this.addItemOffline(sectionId, name, description, new URLSearchParams(formData).toString());
+                this._resetDesktopAddForm(form);
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
+                return;
+            }
 
             try {
                 const response = await fetch('/items', {
@@ -2646,20 +2655,30 @@ function shoppingList() {
                         }
                     }
                     // Clear form but keep section selected
-                    const sectionValue = form.querySelector('select[name="section_id"]').value;
-                    form.querySelector('input[name="name"]').value = '';
-                    const descInput = form.querySelector('input[name="description"]');
-                    if (descInput) descInput.value = '';
-                    form.querySelector('select[name="section_id"]').value = sectionValue;
-                    this.addItemQuantity = 0;
-                    setTimeout(() => form.querySelector('input[name="name"]')?.focus(), 50);
+                    this._resetDesktopAddForm(form);
 
                     this.refreshStats();
                     this.$nextTick(() => this.initMobileSortable());
                 }
             } catch (error) {
-                console.error('[AddItem] Failed:', error);
+                // Network failed mid-request: fall back to the offline path so the item
+                // is optimistically shown and queued rather than silently dropped.
+                console.error('[AddItem] Failed, queuing offline:', error);
+                this.addItemOffline(sectionId, name, description, new URLSearchParams(formData).toString());
+                this._resetDesktopAddForm(form);
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
             }
+        },
+
+        // Clear the desktop add form after a submit, keeping the section selected.
+        _resetDesktopAddForm(form) {
+            const sectionValue = form.querySelector('select[name="section_id"]').value;
+            form.querySelector('input[name="name"]').value = '';
+            const descInput = form.querySelector('input[name="description"]');
+            if (descInput) descInput.value = '';
+            form.querySelector('select[name="section_id"]').value = sectionValue;
+            this.addItemQuantity = 0;
+            setTimeout(() => form.querySelector('input[name="name"]')?.focus(), 50);
         },
 
         // Mobile add item form (modal with add-more toggle)
@@ -2667,9 +2686,18 @@ function shoppingList() {
             const formData = new FormData(form);
             const sectionId = formData.get('section_id');
             const name = formData.get('name')?.trim();
+            const description = formData.get('description')?.trim() || '';
             if (!name) return;
 
             this.markLocalAction('item_created');
+
+            // Offline: optimistic insert + queue, then reset the modal like the online path.
+            if (!this.isOnline) {
+                this.addItemOffline(sectionId, name, description, new URLSearchParams(formData).toString());
+                this._resetMobileAddForm(form);
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
+                return;
+            }
 
             try {
                 const response = await fetch('/items', {
@@ -2710,22 +2738,31 @@ function shoppingList() {
                         }
                     }
 
-                    this.addItemQuantity = 0;
-                    if (!this.addMore) {
-                        form.reset();
-                        this.showAddItem = false;
-                    } else {
-                        form.querySelector('[name=name]').value = '';
-                        const descInput = form.querySelector('[name=description]');
-                        if (descInput) descInput.value = '';
-                        setTimeout(() => form.querySelector('[name=name]')?.focus(), 150);
-                    }
+                    this._resetMobileAddForm(form);
 
                     this.refreshStats();
                     this.$nextTick(() => this.initMobileSortable());
                 }
             } catch (error) {
-                console.error('[AddItemMobile] Failed:', error);
+                // Network failed mid-request: fall back to the offline path.
+                console.error('[AddItemMobile] Failed, queuing offline:', error);
+                this.addItemOffline(sectionId, name, description, new URLSearchParams(formData).toString());
+                this._resetMobileAddForm(form);
+                window.Toast?.show(t('offline.queued'), 'info', 2000);
+            }
+        },
+
+        // Reset the mobile add modal after a submit, honoring the add-more toggle.
+        _resetMobileAddForm(form) {
+            this.addItemQuantity = 0;
+            if (!this.addMore) {
+                form.reset();
+                this.showAddItem = false;
+            } else {
+                form.querySelector('[name=name]').value = '';
+                const descInput = form.querySelector('[name=description]');
+                if (descInput) descInput.value = '';
+                setTimeout(() => form.querySelector('[name=name]')?.focus(), 150);
             }
         },
 
@@ -3188,107 +3225,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Track existing items before swap to animate only new ones
     let existingItemIds = new Set();
 
-    // Counter for temporary offline IDs
-    let offlineItemCounter = Date.now();
-
     // Intercept HTMX requests when offline
     document.body.addEventListener('htmx:beforeRequest', function(event) {
         if (navigator.onLine) return; // Online - let HTMX handle it
 
         const path = event.detail.requestConfig?.path || '';
         const verb = event.detail.requestConfig?.verb?.toUpperCase() || 'GET';
-
-        // Handle POST /items (add item) offline
-        if (verb === 'POST' && path === '/items') {
-            event.preventDefault();
-
-            const form = event.detail.elt;
-            const formData = new FormData(form);
-            const sectionId = formData.get('section_id');
-            const name = formData.get('name');
-            const description = formData.get('description') || '';
-
-            if (!sectionId || !name) return;
-
-            // Generate temporary ID
-            const tempId = 'offline-' + (++offlineItemCounter);
-
-            // Create optimistic item HTML
-            const itemHtml = createOfflineItemHtml(tempId, name, description, sectionId);
-
-            // Find the section by exact ID and add item to it
-            const sectionEl = document.getElementById(`section-${sectionId}`);
-            if (sectionEl) {
-                // Show section if it was hidden (empty section)
-                sectionEl.classList.remove('hidden');
-
-                // Find the active items container (not completed items)
-                const itemsContainer = sectionEl.querySelector('.active-items');
-                if (itemsContainer) {
-                    // Insert at the beginning (newest first based on sort_order)
-                    itemsContainer.insertAdjacentHTML('afterbegin', itemHtml);
-
-                    // Add animation
-                    const newItem = document.getElementById(`item-${tempId}`);
-                    if (newItem) {
-                        newItem.classList.add('item-enter');
-                        setTimeout(() => newItem.classList.remove('item-enter'), 300);
-                    }
-
-                    // Update section counter
-                    const counter = sectionEl.querySelector('.section-counter');
-                    if (counter) {
-                        const text = counter.textContent;
-                        const match = text.match(/(\d+)\/(\d+)/);
-                        if (match) {
-                            const completed = parseInt(match[1]);
-                            const total = parseInt(match[2]) + 1;
-                            counter.textContent = `${completed}/${total}`;
-                        } else {
-                            counter.textContent = '0/1';
-                        }
-                    }
-                }
-            } else {
-                console.warn('[Offline] Section not found in DOM:', sectionId);
-            }
-
-            // Queue action for sync
-            window.offlineStorage.queueAction({
-                type: 'create_item',
-                url: '/items',
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `section_id=${sectionId}&name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`,
-                tempId: tempId
-            }).then(() => {
-                console.log('[Offline] Item queued:', name);
-            });
-
-            // Update stats and handle modal
-            const alpineData = Alpine.$data(document.querySelector('[x-data="shoppingList()"]'));
-            if (alpineData) {
-                alpineData.stats.total++;
-                // Close mobile add item modal if open (unless addMore is enabled)
-                if (!alpineData.addMore) {
-                    form.reset();
-                    alpineData.showAddItem = false;
-                } else {
-                    // Keep modal open, clear only name and description
-                    form.querySelector('[name=name]').value = '';
-                    form.querySelector('[name=description]').value = '';
-                    setTimeout(() => {
-                        const nameInput = form.querySelector('[name=name]');
-                        if (nameInput) nameInput.focus();
-                    }, 100);
-                }
-            } else {
-                // Fallback if no Alpine data
-                form.reset();
-            }
-
-            return false;
-        }
 
         // Handle POST /items/:id/toggle offline
         if (verb === 'POST' && path.match(/\/items\/\d+\/toggle/)) {
