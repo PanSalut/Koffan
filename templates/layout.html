@@ -505,14 +505,41 @@
                 })
                 .catch(err => console.error('[App] Service Worker registration failed:', err));
 
-            // Reload page when new SW takes control
+            // Reload page when new SW takes control. Skip the very first claim
+            // (page was loaded uncontrolled, its content is already fresh) and
+            // defer the reload while the user is typing so unsubmitted input
+            // is not lost on deploy.
+            let wasControlled = !!navigator.serviceWorker.controller;
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
+                if (!wasControlled) {
+                    wasControlled = true;
+                    return;
+                }
+                if (refreshing) return;
+                refreshing = true;
+                const el = document.activeElement;
+                const isTyping = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value;
+                if (isTyping) {
+                    document.addEventListener('visibilitychange', function onHidden() {
+                        if (document.hidden) {
+                            document.removeEventListener('visibilitychange', onHidden);
+                            window.location.reload();
+                        }
+                    });
+                } else {
                     window.location.reload();
                 }
             });
+
+            // Clear SW caches on logout so the cached authenticated app shell
+            // is not served offline to the next user of a shared device.
+            document.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (form.matches?.('form[action="/logout"]')) {
+                    navigator.serviceWorker.controller?.postMessage({ type: 'CLEAR_CACHE' });
+                }
+            }, true);
         }
     </script>
 </body>
