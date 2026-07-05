@@ -98,9 +98,11 @@ func createTables() {
 		UNIQUE(name COLLATE NOCASE)
 	);
 
-	CREATE INDEX IF NOT EXISTS idx_items_section ON items(section_id, sort_order);
+	DROP INDEX IF EXISTS idx_items_section;
+	CREATE INDEX IF NOT EXISTS idx_items_section_completed ON items(section_id, completed, sort_order);
 	CREATE INDEX IF NOT EXISTS idx_sections_order ON sections(sort_order);
 	CREATE INDEX IF NOT EXISTS idx_item_history_name ON item_history(name COLLATE NOCASE);
+	CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 	`
 
 	_, err := DB.Exec(schema)
