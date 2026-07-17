@@ -41,8 +41,14 @@ func CreateItem(c *fiber.Ctx) error {
 	if name == "" {
 		return sendError(c, 400, "error.name_required")
 	}
+	if len(name) > MaxItemNameLength {
+		return c.Status(fiber.StatusBadRequest).SendString("Item name too long (max 200 characters)")
+	}
 
 	description := c.FormValue("description")
+	if len(description) > MaxDescriptionLength {
+		return c.Status(fiber.StatusBadRequest).SendString("Item description too long (max 500 characters)")
+	}
 
 	// Parse quantity (default to 0)
 	quantity := 0
@@ -127,8 +133,14 @@ func UpdateItem(c *fiber.Ctx) error {
 	if name == "" {
 		return sendError(c, 400, "error.name_required")
 	}
+	if len(name) > MaxItemNameLength {
+		return c.Status(fiber.StatusBadRequest).SendString("Item name too long (max 200 characters)")
+	}
 
 	description := c.FormValue("description")
+	if len(description) > MaxDescriptionLength {
+		return c.Status(fiber.StatusBadRequest).SendString("Item description too long (max 500 characters)")
+	}
 
 	// Get existing item to preserve quantity if not provided
 	existing, err := db.GetItemByID(id)

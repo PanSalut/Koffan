@@ -391,6 +391,14 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid JSON format"})
 	}
 
+	// Read conflict data before opening a transaction. The SQLite pool is
+	// intentionally limited to one connection, so querying through db.DB while
+	// a transaction owns that connection would deadlock the whole application.
+	existingLists, err := db.GetAllLists()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
+	}
+
 	// Start transaction
 	tx, err := db.DB.Begin()
 	if err != nil {
@@ -398,8 +406,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	}
 	defer tx.Rollback()
 
-	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	// Build existing list names for conflict detection.
 	existingNames := make(map[string]int64)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = list.ID
@@ -509,13 +516,13 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 
 	// Import templates
 	for _, exportTemplate := range exportData.Data.Templates {
-		template, err := db.CreateTemplate(exportTemplate.Name, exportTemplate.Description)
+		template, err := db.CreateTemplateTx(tx, exportTemplate.Name, exportTemplate.Description)
 		if err != nil {
 			continue
 		}
 
 		for _, item := range exportTemplate.Items {
-			db.AddTemplateItem(template.ID, item.SectionName, item.Name, item.Description)
+			_, _ = db.AddTemplateItemTx(tx, template.ID, item.SectionName, item.Name, item.Description)
 		}
 		importedTemplates++
 	}
@@ -569,6 +576,13 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 		return c.Status(400).JSON(fiber.Map{"error": "CSV file is empty"})
 	}
 
+	// Read conflict data before opening a transaction. See importJSON for why
+	// this must not use db.DB after the single SQLite connection is checked out.
+	existingLists, err := db.GetAllLists()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
+	}
+
 	// Start transaction
 	tx, err := db.DB.Begin()
 	if err != nil {
@@ -576,8 +590,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	}
 	defer tx.Rollback()
 
-	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	// Build existing list names for conflict detection.
 	existingNames := make(map[string]int64)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = list.ID

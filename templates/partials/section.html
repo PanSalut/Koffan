@@ -121,6 +121,7 @@
                         type="text"
                         id="quick-add-input-{{.Section.ID}}"
                         x-model="quickAddName"
+                        maxlength="200"
                         x-init="$nextTick(() => $el.focus())"
                         @input.debounce.150ms="fetchQuickAddSuggestions($event.target.value)"
                         @keydown="handleQuickAddKeydown($event, {{.Section.ID}})"

@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"log"
 	"os"
 	"shopping-list/db"
@@ -46,6 +48,14 @@ func generateSessionID() string {
 		log.Fatal("Failed to generate secure random bytes:", err)
 	}
 	return hex.EncodeToString(bytes)
+}
+
+func sessionIDPrefix(sessionID string) string {
+	const prefixLength = 8
+	if len(sessionID) <= prefixLength {
+		return sessionID
+	}
+	return sessionID[:prefixLength]
 }
 
 // LoginPage renders the login page
@@ -95,7 +105,7 @@ func Login(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.session_failed")
 	}
-	log.Printf("[AUTH] New session created: %s... (expires: %d)", sessionID[:8], expiresAt)
+	log.Printf("[AUTH] New session created: %s... (expires: %d)", sessionIDPrefix(sessionID), expiresAt)
 
 	// Set cookie
 	c.Cookie(&fiber.Cookie{
@@ -157,8 +167,8 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	session, err := db.GetSession(sessionID)
 	if err != nil {
 		// Check if it's a "not found" error vs database error
-		if err.Error() == "sql: no rows in result set" {
-			log.Printf("[AUTH] Session not found in DB for %s %s (sessionID: %s...)", c.Method(), path, sessionID[:8])
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Printf("[AUTH] Session not found in DB for %s %s (sessionID: %s...)", c.Method(), path, sessionIDPrefix(sessionID))
 			// Only delete if session truly doesn't exist
 			db.DeleteSession(sessionID)
 		} else {

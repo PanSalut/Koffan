@@ -1726,6 +1726,86 @@ func CreateTemplateFromList(listID int64, templateName, templateDescription stri
 
 // ==================== TRANSACTION HELPERS (for batch API) ====================
 
+// CreateTemplateTx creates a template within an existing transaction.
+func CreateTemplateTx(tx *sql.Tx, name, description string) (*Template, error) {
+	var maxOrder int
+	if err := tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM templates").Scan(&maxOrder); err != nil {
+		return nil, err
+	}
+
+	result, err := tx.Exec(`
+		INSERT INTO templates (name, description, sort_order) VALUES (?, ?, ?)
+	`, name, description, maxOrder+1)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	var template Template
+	err = tx.QueryRow(`
+		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
+		FROM templates WHERE id = ?
+	`, id).Scan(
+		&template.ID,
+		&template.Name,
+		&template.Description,
+		&template.SortOrder,
+		&template.CreatedAt,
+		&template.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	template.Items = []TemplateItem{}
+	return &template, nil
+}
+
+// AddTemplateItemTx adds an item to a template within an existing transaction.
+func AddTemplateItemTx(tx *sql.Tx, templateID int64, sectionName, name, description string) (*TemplateItem, error) {
+	var maxOrder int
+	if err := tx.QueryRow(
+		"SELECT COALESCE(MAX(sort_order), -1) FROM template_items WHERE template_id = ?",
+		templateID,
+	).Scan(&maxOrder); err != nil {
+		return nil, err
+	}
+
+	result, err := tx.Exec(`
+		INSERT INTO template_items (template_id, section_name, name, description, sort_order)
+		VALUES (?, ?, ?, ?, ?)
+	`, templateID, sectionName, name, description, maxOrder+1)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	var item TemplateItem
+	err = tx.QueryRow(`
+		SELECT id, template_id, section_name, name, description, sort_order, created_at
+		FROM template_items WHERE id = ?
+	`, id).Scan(
+		&item.ID,
+		&item.TemplateID,
+		&item.SectionName,
+		&item.Name,
+		&item.Description,
+		&item.SortOrder,
+		&item.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // CreateListTx creates a list within a transaction
 func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
 	var maxOrder int
