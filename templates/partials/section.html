@@ -35,7 +35,7 @@
             <span x-show="!editingSection" class="text-xs text-stone-400 dark:text-stone-500 section-counter flex-shrink-0">{{$completedItems}}/{{$totalItems}}</span>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-            {{if eq $percentage 100}}
+            {{if and .DisableUncheckAll (eq $percentage 100)}}
             <!-- Completed checkmark icon - clickable to uncheck all -->
             <button @click="toggleAllItems({{.Section.ID}})"
                 x-show="!editingSection"
@@ -47,7 +47,7 @@
             </button>
             {{end}}
             <!-- Check all button - only when there are active items -->
-            {{if gt $activeItems 0}}
+            {{if and .DisableCheckAll (gt $activeItems 0)}}
             <button
                 @click="toggleAllItems({{.Section.ID}})"
                 x-show="!editingSection"

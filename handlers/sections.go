@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"os"
 	"shopping-list/db"
 	"shopping-list/i18n"
 	"strconv"
@@ -10,6 +11,18 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 )
+
+// IsCheckAllDisabled returns true, if the DISABLE_CHECK_ALL environment variable is set to "true".
+// Then, the "Check All" feature will be disabled in the UI.
+func IsCheckAllDisabled() bool {
+	return os.Getenv("DISABLE_CHECK_ALL") == "true"
+}
+
+// IsUncheckAllDisabled returns true, if the DISABLE_UNCHECK_ALL environment variable is set to "true".
+// Then, the "Uncheck All" feature will be disabled in the UI.
+func IsUncheckAllDisabled() bool {
+	return os.Getenv("DISABLE_UNCHECK_ALL") == "true"
+}
 
 var ErrInvalidListID = errors.New("invalid list_id")
 
