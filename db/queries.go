@@ -22,35 +22,86 @@ type Section struct {
 
 // Item represents a shopping list item
 type Item struct {
-	ID          int64     `json:"id"`
-	SectionID   int64     `json:"section_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Completed   bool      `json:"completed"`
-	Uncertain   bool      `json:"uncertain"`
-	Quantity    int       `json:"quantity"`
-	SortOrder   int       `json:"sort_order"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   int64     `json:"updated_at"`
+	ID              int64     `json:"id"`
+	SectionID       int64     `json:"section_id"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	Completed       bool      `json:"completed"`
+	Uncertain       bool      `json:"uncertain"`
+	Quantity        int       `json:"quantity"`
+	SortOrder       int       `json:"sort_order"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       int64     `json:"updated_at"`
+	CreatedByUserID *int64    `json:"-"`
+	UpdatedByUserID *int64    `json:"-"`
+	CreatedByName   string    `json:"-"`
+	UpdatedByName   string    `json:"-"`
+	CreatedBy       *ItemUser `json:"created_by,omitempty"`
+	UpdatedBy       *ItemUser `json:"updated_by,omitempty"`
+}
+
+// ItemUser is the deliberately minimal user identity exposed in item REST and
+// WebSocket payloads. Usernames, email addresses and authentication details are
+// not part of the attribution contract.
+type ItemUser struct {
+	ID          int64  `json:"id"`
+	DisplayName string `json:"display_name"`
+}
+
+const itemSelectColumns = `
+	i.id, i.section_id, i.name, i.description, i.completed, i.uncertain,
+	COALESCE(i.quantity, 0), i.sort_order, i.created_at, COALESCE(i.updated_at, 0),
+	i.created_by_user_id, i.updated_by_user_id,
+	COALESCE(creator.display_name, ''), COALESCE(modifier.display_name, '')`
+
+func scanItem(scanner interface{ Scan(...interface{}) error }) (Item, error) {
+	var i Item
+	err := scanner.Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed,
+		&i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt,
+		&i.CreatedByUserID, &i.UpdatedByUserID, &i.CreatedByName, &i.UpdatedByName)
+	if i.CreatedByUserID != nil {
+		i.CreatedBy = &ItemUser{ID: *i.CreatedByUserID, DisplayName: i.CreatedByName}
+	}
+	if i.UpdatedByUserID != nil {
+		i.UpdatedBy = &ItemUser{ID: *i.UpdatedByUserID, DisplayName: i.UpdatedByName}
+	}
+	return i, err
+}
+
+func SetItemCreatedBy(itemID, userID int64) error {
+	_, err := DB.Exec(`UPDATE items SET created_by_user_id=COALESCE(created_by_user_id,?),updated_by_user_id=? WHERE id=?`, userID, userID, itemID)
+	return err
+}
+func SetItemUpdatedBy(itemID, userID int64) error {
+	_, err := DB.Exec(`UPDATE items SET updated_by_user_id=? WHERE id=?`, userID, itemID)
+	return err
 }
 
 // Session represents a user session
 type Session struct {
-	ID        string
-	ExpiresAt int64
+	ID         string
+	ExpiresAt  int64
+	UserID     int64
+	CreatedAt  int64
+	LastSeenAt int64
+	CSRFToken  string
 }
 
 // List represents a shopping list
 type List struct {
-	ID            int64     `json:"id"`
-	Name          string    `json:"name"`
-	Icon          string    `json:"icon"`
-	SortOrder     int       `json:"sort_order"`
-	IsActive      bool      `json:"is_active"`
-	ShowCompleted bool      `json:"show_completed"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     int64     `json:"updated_at"`
-	Stats         Stats     `json:"stats,omitempty"`
+	ID               int64     `json:"id"`
+	Name             string    `json:"name"`
+	Icon             string    `json:"icon"`
+	SortOrder        int       `json:"sort_order"`
+	IsActive         bool      `json:"is_active"`
+	ShowCompleted    bool      `json:"show_completed"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        int64     `json:"updated_at"`
+	OwnerUserID      int64     `json:"owner_user_id"`
+	CanManage        bool      `json:"can_manage,omitempty"`
+	OwnerDisplayName string    `json:"owner_display_name,omitempty"`
+	AccessRole       string    `json:"access_role,omitempty"`
+	Stats            Stats     `json:"stats,omitempty"`
 }
 
 // Template represents a reusable template
@@ -61,6 +112,7 @@ type Template struct {
 	SortOrder   int            `json:"sort_order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   int64          `json:"updated_at"`
+	OwnerUserID int64          `json:"owner_user_id"`
 	Items       []TemplateItem `json:"items,omitempty"`
 }
 
@@ -80,10 +132,11 @@ type TemplateItem struct {
 // listSelectWithStats is a shared SELECT that joins lists with aggregated item stats in a single query.
 const listSelectWithStats = `
 	SELECT l.id, l.name, COALESCE(l.icon, '🛒'), l.sort_order, l.is_active,
-	       COALESCE(l.show_completed, TRUE), l.created_at, COALESCE(l.updated_at, 0),
+	       COALESCE(l.show_completed, TRUE), l.created_at, COALESCE(l.updated_at, 0), COALESCE(l.owner_user_id,0), COALESCE(owner.display_name,'Unknown'),
 	       COALESCE(COUNT(i.id), 0) AS total_items,
 	       COALESCE(SUM(CASE WHEN i.completed = TRUE THEN 1 ELSE 0 END), 0) AS completed_items
 	FROM lists l
+	LEFT JOIN users owner ON owner.id=l.owner_user_id
 	LEFT JOIN sections s ON s.list_id = l.id
 	LEFT JOIN items i ON i.section_id = s.id
 `
@@ -94,7 +147,7 @@ func scanListWithStats(scanner interface {
 }) (List, error) {
 	var l List
 	var total, completed int
-	if err := scanner.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt, &total, &completed); err != nil {
+	if err := scanner.Scan(&l.ID, &l.Name, &l.Icon, &l.SortOrder, &l.IsActive, &l.ShowCompleted, &l.CreatedAt, &l.UpdatedAt, &l.OwnerUserID, &l.OwnerDisplayName, &total, &completed); err != nil {
 		return l, err
 	}
 	l.Stats.TotalItems = total
@@ -582,13 +635,13 @@ func MoveSectionDown(id int64) error {
 
 // FindItemByNameInSection finds an existing item by name in a section (case-insensitive)
 func FindItemByNameInSection(sectionID int64, name string) (*Item, error) {
-	var i Item
-	err := DB.QueryRow(`
-		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-		FROM items
-		WHERE section_id = ? AND LOWER(name) = LOWER(?)
+	i, err := scanItem(DB.QueryRow(`SELECT `+itemSelectColumns+`
+		FROM items i
+		LEFT JOIN users creator ON creator.id=i.created_by_user_id
+		LEFT JOIN users modifier ON modifier.id=i.updated_by_user_id
+		WHERE i.section_id = ? AND LOWER(i.name) = LOWER(?)
 		LIMIT 1
-	`, sectionID, name).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	`, sectionID, name))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -625,23 +678,11 @@ func getItemsBySectionWithMode(sectionID int64, sortMode string) ([]Item, error)
 	var query string
 	switch sortMode {
 	case "alphabetical":
-		query = `
-		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-		FROM items
-		WHERE section_id = ?
-		ORDER BY completed ASC, name COLLATE NOCASE ASC`
+		query = `SELECT ` + itemSelectColumns + ` FROM items i LEFT JOIN users creator ON creator.id=i.created_by_user_id LEFT JOIN users modifier ON modifier.id=i.updated_by_user_id WHERE i.section_id = ? ORDER BY i.completed ASC, i.name COLLATE NOCASE ASC`
 	case "alphabetical_desc":
-		query = `
-		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-		FROM items
-		WHERE section_id = ?
-		ORDER BY completed ASC, name COLLATE NOCASE DESC`
+		query = `SELECT ` + itemSelectColumns + ` FROM items i LEFT JOIN users creator ON creator.id=i.created_by_user_id LEFT JOIN users modifier ON modifier.id=i.updated_by_user_id WHERE i.section_id = ? ORDER BY i.completed ASC, i.name COLLATE NOCASE DESC`
 	default:
-		query = `
-		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-		FROM items
-		WHERE section_id = ?
-		ORDER BY completed ASC, sort_order ASC`
+		query = `SELECT ` + itemSelectColumns + ` FROM items i LEFT JOIN users creator ON creator.id=i.created_by_user_id LEFT JOIN users modifier ON modifier.id=i.updated_by_user_id WHERE i.section_id = ? ORDER BY i.completed ASC, i.sort_order ASC`
 	}
 
 	rows, err := DB.Query(query, sectionID)
@@ -652,8 +693,7 @@ func getItemsBySectionWithMode(sectionID int64, sortMode string) ([]Item, error)
 
 	var items []Item
 	for rows.Next() {
-		var i Item
-		err := rows.Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+		i, err := scanItem(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -664,10 +704,15 @@ func getItemsBySectionWithMode(sectionID int64, sortMode string) ([]Item, error)
 
 // CheckAllItems marks all active items in a section as completed
 func CheckAllItems(sectionID int64) (int64, error) {
+	return CheckAllItemsByUser(sectionID, 0)
+}
+
+func CheckAllItemsByUser(sectionID, userID int64) (int64, error) {
 	result, err := DB.Exec(`
-		UPDATE items SET completed = TRUE, updated_at = strftime('%s', 'now')
+		UPDATE items SET completed = TRUE, updated_at = strftime('%s', 'now'),
+		updated_by_user_id = CASE WHEN ? > 0 THEN ? ELSE updated_by_user_id END
 		WHERE section_id = ? AND completed = FALSE
-	`, sectionID)
+	`, userID, userID, sectionID)
 	if err != nil {
 		return 0, err
 	}
@@ -676,10 +721,15 @@ func CheckAllItems(sectionID int64) (int64, error) {
 
 // UncheckAllItems marks all completed items in a section as active
 func UncheckAllItems(sectionID int64) (int64, error) {
+	return UncheckAllItemsByUser(sectionID, 0)
+}
+
+func UncheckAllItemsByUser(sectionID, userID int64) (int64, error) {
 	result, err := DB.Exec(`
-		UPDATE items SET completed = FALSE, updated_at = strftime('%s', 'now')
+		UPDATE items SET completed = FALSE, updated_at = strftime('%s', 'now'),
+		updated_by_user_id = CASE WHEN ? > 0 THEN ? ELSE updated_by_user_id END
 		WHERE section_id = ? AND completed = TRUE
-	`, sectionID)
+	`, userID, userID, sectionID)
 	if err != nil {
 		return 0, err
 	}
@@ -687,11 +737,11 @@ func UncheckAllItems(sectionID int64) (int64, error) {
 }
 
 func GetItemByID(id int64) (*Item, error) {
-	var i Item
-	err := DB.QueryRow(`
-		SELECT id, section_id, name, description, completed, uncertain, COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
-		FROM items WHERE id = ?
-	`, id).Scan(&i.ID, &i.SectionID, &i.Name, &i.Description, &i.Completed, &i.Uncertain, &i.Quantity, &i.SortOrder, &i.CreatedAt, &i.UpdatedAt)
+	i, err := scanItem(DB.QueryRow(`SELECT `+itemSelectColumns+`
+		FROM items i
+		LEFT JOIN users creator ON creator.id=i.created_by_user_id
+		LEFT JOIN users modifier ON modifier.id=i.updated_by_user_id
+		WHERE i.id = ?`, id))
 	if err != nil {
 		return nil, err
 	}
@@ -766,6 +816,14 @@ func DeleteCompletedItems() (int64, error) {
 			SELECT id FROM sections WHERE list_id = ?
 		)
 	`, activeList.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+func DeleteCompletedItemsForList(listID int64) (int64, error) {
+	result, err := DB.Exec(`DELETE FROM items WHERE completed=TRUE AND section_id IN (SELECT id FROM sections WHERE list_id=?)`, listID)
 	if err != nil {
 		return 0, err
 	}
@@ -1067,13 +1125,19 @@ func MoveItemDown(id int64) error {
 // ==================== SESSIONS ====================
 
 func CreateSession(id string, expiresAt int64) error {
-	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at) VALUES (?, ?)`, id, expiresAt)
+	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at, created_at, last_seen_at) VALUES (?, ?, ?, ?)`, HashSessionToken(id), expiresAt, time.Now().Unix(), time.Now().Unix())
+	return err
+}
+
+func CreateUserSession(token string, userID int64, expiresAt int64, csrfToken string) error {
+	now := time.Now().Unix()
+	_, err := DB.Exec(`INSERT INTO sessions (id, expires_at, user_id, created_at, last_seen_at, csrf_token) VALUES (?, ?, ?, ?, ?, ?)`, HashSessionToken(token), expiresAt, userID, now, now, csrfToken)
 	return err
 }
 
 func GetSession(id string) (*Session, error) {
 	var s Session
-	err := DB.QueryRow(`SELECT id, expires_at FROM sessions WHERE id = ?`, id).Scan(&s.ID, &s.ExpiresAt)
+	err := DB.QueryRow(`SELECT id, expires_at, COALESCE(user_id,0), COALESCE(created_at,0), COALESCE(last_seen_at,0), COALESCE(csrf_token,'') FROM sessions WHERE id IN (?,?) ORDER BY CASE WHEN id=? THEN 0 ELSE 1 END LIMIT 1`, HashSessionToken(id), id, HashSessionToken(id)).Scan(&s.ID, &s.ExpiresAt, &s.UserID, &s.CreatedAt, &s.LastSeenAt, &s.CSRFToken)
 	if err != nil {
 		return nil, err
 	}
@@ -1081,7 +1145,7 @@ func GetSession(id string) (*Session, error) {
 }
 
 func DeleteSession(id string) error {
-	_, err := DB.Exec(`DELETE FROM sessions WHERE id = ?`, id)
+	_, err := DB.Exec(`DELETE FROM sessions WHERE id IN (?,?)`, HashSessionToken(id), id)
 	return err
 }
 
@@ -1167,40 +1231,58 @@ type ItemSuggestion struct {
 
 // SaveItemHistory saves or updates item name in history for auto-completion
 func SaveItemHistory(name string, sectionID int64) error {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return SaveItemHistoryForUser(userID, name, sectionID)
+}
+
+func SaveItemHistoryForUser(userID int64, name string, sectionID int64) error {
 	_, err := DB.Exec(`
-		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
-		VALUES (?, ?, 1, strftime('%s', 'now'))
-		ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
+		INSERT INTO item_history (user_id, name, last_section_id, usage_count, last_used_at)
+		VALUES (?, ?, NULLIF(?, 0), 1, strftime('%s', 'now'))
+		ON CONFLICT(user_id,name) DO UPDATE SET
 			last_section_id = excluded.last_section_id,
 			usage_count = usage_count + 1,
 			last_used_at = strftime('%s', 'now')
-	`, name, sectionID)
+	`, userID, name, sectionID)
 	return err
 }
 
 // SaveItemHistoryWithCount saves item history with a specific usage count (used for import)
 func SaveItemHistoryWithCount(name string, sectionID int64, usageCount int) error {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return SaveItemHistoryWithCountForUser(userID, name, sectionID, usageCount)
+}
+
+func SaveItemHistoryWithCountForUser(userID int64, name string, sectionID int64, usageCount int) error {
 	_, err := DB.Exec(`
-		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
-		VALUES (?, ?, ?, strftime('%s', 'now'))
-		ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
-			last_section_id = CASE WHEN excluded.last_section_id > 0 THEN excluded.last_section_id ELSE last_section_id END,
+		INSERT INTO item_history (user_id, name, last_section_id, usage_count, last_used_at)
+		VALUES (?, ?, NULLIF(?, 0), ?, strftime('%s', 'now'))
+		ON CONFLICT(user_id,name) DO UPDATE SET
+			last_section_id = COALESCE(excluded.last_section_id, last_section_id),
 			usage_count = CASE WHEN excluded.usage_count > usage_count THEN excluded.usage_count ELSE usage_count END,
 			last_used_at = strftime('%s', 'now')
-	`, name, sectionID, usageCount)
+	`, userID, name, sectionID, usageCount)
 	return err
 }
 
 // SaveItemHistoryWithCountTx saves item history with a specific usage count within a transaction
 func SaveItemHistoryWithCountTx(tx *sql.Tx, name string, sectionID int64, usageCount int) error {
+	var userID int64
+	_ = tx.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return SaveItemHistoryWithCountForUserTx(tx, userID, name, sectionID, usageCount)
+}
+
+func SaveItemHistoryWithCountForUserTx(tx *sql.Tx, userID int64, name string, sectionID int64, usageCount int) error {
 	_, err := tx.Exec(`
-		INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
-		VALUES (?, ?, ?, strftime('%s', 'now'))
-		ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
-			last_section_id = CASE WHEN excluded.last_section_id > 0 THEN excluded.last_section_id ELSE last_section_id END,
+		INSERT INTO item_history (user_id, name, last_section_id, usage_count, last_used_at)
+		VALUES (?, ?, NULLIF(?, 0), ?, strftime('%s', 'now'))
+		ON CONFLICT(user_id,name) DO UPDATE SET
+			last_section_id = COALESCE(excluded.last_section_id, last_section_id),
 			usage_count = CASE WHEN excluded.usage_count > usage_count THEN excluded.usage_count ELSE usage_count END,
 			last_used_at = strftime('%s', 'now')
-	`, name, sectionID, usageCount)
+	`, userID, name, sectionID, usageCount)
 	return err
 }
 
@@ -1292,6 +1374,12 @@ func scoreSuggestion(name, query string) int {
 
 // GetItemSuggestions returns item name suggestions matching the query with fuzzy matching
 func GetItemSuggestions(query string, limit int) ([]ItemSuggestion, error) {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return GetItemSuggestionsForUser(userID, query, limit)
+}
+
+func GetItemSuggestionsForUser(userID int64, query string, limit int) ([]ItemSuggestion, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -1301,9 +1389,10 @@ func GetItemSuggestions(query string, limit int) ([]ItemSuggestion, error) {
 		SELECT h.name, COALESCE(h.last_section_id, 0), COALESCE(s.name, ''), h.usage_count
 		FROM item_history h
 		LEFT JOIN sections s ON h.last_section_id = s.id
+		WHERE h.user_id=?
 		ORDER BY h.usage_count DESC, h.last_used_at DESC
 		LIMIT 200
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1348,6 +1437,12 @@ func GetItemSuggestions(query string, limit int) ([]ItemSuggestion, error) {
 
 // GetAllItemSuggestions returns all item suggestions for offline cache
 func GetAllItemSuggestions(limit int) ([]ItemSuggestion, error) {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return GetAllItemSuggestionsForUser(userID, limit)
+}
+
+func GetAllItemSuggestionsForUser(userID int64, limit int) ([]ItemSuggestion, error) {
 	if limit <= 0 {
 		limit = 100
 	}
@@ -1356,9 +1451,10 @@ func GetAllItemSuggestions(limit int) ([]ItemSuggestion, error) {
 		SELECT h.name, COALESCE(h.last_section_id, 0), COALESCE(s.name, ''), h.usage_count
 		FROM item_history h
 		LEFT JOIN sections s ON h.last_section_id = s.id
+		WHERE h.user_id=?
 		ORDER BY h.usage_count DESC, h.last_used_at DESC
 		LIMIT ?
-	`, limit)
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1386,13 +1482,20 @@ type HistoryItem struct {
 
 // GetItemHistoryList returns all history items for management UI
 func GetItemHistoryList() ([]HistoryItem, error) {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return GetItemHistoryListForUser(userID)
+}
+
+func GetItemHistoryListForUser(userID int64) ([]HistoryItem, error) {
 	rows, err := DB.Query(`
 		SELECT h.id, h.name, COALESCE(h.last_section_id, 0), COALESCE(s.name, ''), h.usage_count
 		FROM item_history h
 		LEFT JOIN sections s ON h.last_section_id = s.id
+		WHERE h.user_id=?
 		ORDER BY h.usage_count DESC, h.last_used_at DESC
 		LIMIT 100
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1411,7 +1514,13 @@ func GetItemHistoryList() ([]HistoryItem, error) {
 
 // DeleteItemHistory deletes a single item from history
 func DeleteItemHistory(id int64) error {
-	result, err := DB.Exec("DELETE FROM item_history WHERE id = ?", id)
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return DeleteItemHistoryForUser(userID, id)
+}
+
+func DeleteItemHistoryForUser(userID, id int64) error {
+	result, err := DB.Exec("DELETE FROM item_history WHERE id = ? AND user_id=?", id, userID)
 	if err != nil {
 		return err
 	}
@@ -1424,19 +1533,26 @@ func DeleteItemHistory(id int64) error {
 
 // DeleteItemHistoryBatch deletes multiple items from history
 func DeleteItemHistoryBatch(ids []int64) (int64, error) {
+	var userID int64
+	_ = DB.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	return DeleteItemHistoryBatchForUser(userID, ids)
+}
+
+func DeleteItemHistoryBatchForUser(userID int64, ids []int64) (int64, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
 
 	// Build placeholders
 	placeholders := make([]string, len(ids))
-	args := make([]interface{}, len(ids))
+	args := make([]interface{}, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
-		args[i] = id
+		args = append(args, id)
 	}
+	args = append(args, userID)
 
-	query := fmt.Sprintf("DELETE FROM item_history WHERE id IN (%s)", strings.Join(placeholders, ","))
+	query := fmt.Sprintf("DELETE FROM item_history WHERE id IN (%s) AND user_id=?", strings.Join(placeholders, ","))
 	result, err := DB.Exec(query, args...)
 	if err != nil {
 		return 0, err
@@ -1449,7 +1565,7 @@ func DeleteItemHistoryBatch(ids []int64) (int64, error) {
 // GetAllTemplates returns all templates with their items.
 func GetAllTemplates() ([]Template, error) {
 	rows, err := DB.Query(`
-		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0), COALESCE(owner_user_id,0)
 		FROM templates
 		ORDER BY sort_order ASC
 	`)
@@ -1462,7 +1578,7 @@ func GetAllTemplates() ([]Template, error) {
 		defer rows.Close()
 		for rows.Next() {
 			var t Template
-			if err = rows.Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			if err = rows.Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt, &t.OwnerUserID); err != nil {
 				return
 			}
 			templates = append(templates, t)
@@ -1483,13 +1599,42 @@ func GetAllTemplates() ([]Template, error) {
 	return templates, nil
 }
 
+func GetTemplatesForUser(userID int64, isAdmin bool) ([]Template, error) {
+	if isAdmin {
+		return GetAllTemplates()
+	}
+	rows, err := DB.Query(`SELECT id,name,description,sort_order,created_at,COALESCE(updated_at,0),COALESCE(owner_user_id,0) FROM templates WHERE owner_user_id=? ORDER BY sort_order`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var templates []Template
+	for rows.Next() {
+		var t Template
+		if err = rows.Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt, &t.OwnerUserID); err != nil {
+			return nil, err
+		}
+		templates = append(templates, t)
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+	for i := range templates {
+		templates[i].Items, err = GetTemplateItems(templates[i].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return templates, nil
+}
+
 // GetTemplateByID returns a single template by ID with items
 func GetTemplateByID(id int64) (*Template, error) {
 	var t Template
 	err := DB.QueryRow(`
-		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0), COALESCE(owner_user_id,0)
 		FROM templates WHERE id = ?
-	`, id).Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt)
+	`, id).Scan(&t.ID, &t.Name, &t.Description, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt, &t.OwnerUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1498,6 +1643,17 @@ func GetTemplateByID(id int64) (*Template, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+func CanManageTemplate(userID, templateID int64, isAdmin bool) (bool, error) {
+	if isAdmin {
+		var count int
+		err := DB.QueryRow(`SELECT COUNT(*) FROM templates WHERE id=?`, templateID).Scan(&count)
+		return count > 0, err
+	}
+	var count int
+	err := DB.QueryRow(`SELECT COUNT(*) FROM templates WHERE id=? AND owner_user_id=?`, templateID, userID).Scan(&count)
+	return count > 0, err
 }
 
 // GetTemplateItems returns all items for a template
@@ -1527,12 +1683,16 @@ func GetTemplateItems(templateID int64) ([]TemplateItem, error) {
 
 // CreateTemplate creates a new template
 func CreateTemplate(name, description string) (*Template, error) {
+	return CreateTemplateForUser(0, name, description)
+}
+
+func CreateTemplateForUser(userID int64, name, description string) (*Template, error) {
 	var maxOrder int
 	DB.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM templates").Scan(&maxOrder)
 
 	result, err := DB.Exec(`
-		INSERT INTO templates (name, description, sort_order) VALUES (?, ?, ?)
-	`, name, description, maxOrder+1)
+		INSERT INTO templates (name, description, sort_order, owner_user_id) VALUES (?, ?, ?, NULLIF(?,0))
+	`, name, description, maxOrder+1, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1607,6 +1767,10 @@ func DeleteTemplateItem(id int64) error {
 
 // ApplyTemplateToList applies a template to a list (adds items from template)
 func ApplyTemplateToList(templateID, listID int64) error {
+	return ApplyTemplateToListAsUser(templateID, listID, 0)
+}
+
+func ApplyTemplateToListAsUser(templateID, listID, actorUserID int64) error {
 	template, err := GetTemplateByID(templateID)
 	if err != nil {
 		return err
@@ -1652,22 +1816,22 @@ func ApplyTemplateToList(templateID, listID int64) error {
 			tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM items WHERE section_id = ?", sectionID).Scan(&maxItemOrder)
 
 			_, err := tx.Exec(`
-				INSERT INTO items (section_id, name, description, sort_order)
-				VALUES (?, ?, ?, ?)
-			`, sectionID, item.Name, item.Description, maxItemOrder+1)
+				INSERT INTO items (section_id, name, description, sort_order, created_by_user_id, updated_by_user_id)
+				VALUES (?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0))
+			`, sectionID, item.Name, item.Description, maxItemOrder+1, actorUserID, actorUserID)
 			if err != nil {
 				return err
 			}
 
 			// Save to item history
 			tx.Exec(`
-				INSERT INTO item_history (name, last_section_id, usage_count, last_used_at)
-				VALUES (?, ?, 1, strftime('%s', 'now'))
-				ON CONFLICT(name COLLATE NOCASE) DO UPDATE SET
+				INSERT INTO item_history (user_id, name, last_section_id, usage_count, last_used_at)
+				VALUES (NULLIF(?,0), ?, ?, 1, strftime('%s', 'now'))
+				ON CONFLICT(user_id,name) DO UPDATE SET
 					last_section_id = excluded.last_section_id,
 					usage_count = usage_count + 1,
 					last_used_at = strftime('%s', 'now')
-			`, item.Name, sectionID)
+			`, actorUserID, item.Name, sectionID)
 		}
 	}
 
@@ -1676,6 +1840,10 @@ func ApplyTemplateToList(templateID, listID int64) error {
 
 // CreateTemplateFromList creates a template from an existing list
 func CreateTemplateFromList(listID int64, templateName, templateDescription string) (*Template, error) {
+	return CreateTemplateFromListForUser(listID, 0, templateName, templateDescription)
+}
+
+func CreateTemplateFromListForUser(listID, ownerUserID int64, templateName, templateDescription string) (*Template, error) {
 	sections, err := GetSectionsByList(listID)
 	if err != nil {
 		return nil, err
@@ -1692,8 +1860,8 @@ func CreateTemplateFromList(listID int64, templateName, templateDescription stri
 	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM templates").Scan(&maxOrder)
 
 	result, err := tx.Exec(`
-		INSERT INTO templates (name, description, sort_order) VALUES (?, ?, ?)
-	`, templateName, templateDescription, maxOrder+1)
+		INSERT INTO templates (name, description, sort_order, owner_user_id) VALUES (?, ?, ?, NULLIF(?,0))
+	`, templateName, templateDescription, maxOrder+1, ownerUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1728,14 +1896,18 @@ func CreateTemplateFromList(listID int64, templateName, templateDescription stri
 
 // CreateTemplateTx creates a template within an existing transaction.
 func CreateTemplateTx(tx *sql.Tx, name, description string) (*Template, error) {
+	return CreateTemplateTxForUser(tx, 0, name, description)
+}
+
+func CreateTemplateTxForUser(tx *sql.Tx, ownerUserID int64, name, description string) (*Template, error) {
 	var maxOrder int
 	if err := tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM templates").Scan(&maxOrder); err != nil {
 		return nil, err
 	}
 
 	result, err := tx.Exec(`
-		INSERT INTO templates (name, description, sort_order) VALUES (?, ?, ?)
-	`, name, description, maxOrder+1)
+		INSERT INTO templates (name, description, sort_order, owner_user_id) VALUES (?, ?, ?, NULLIF(?,0))
+	`, name, description, maxOrder+1, ownerUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1747,7 +1919,7 @@ func CreateTemplateTx(tx *sql.Tx, name, description string) (*Template, error) {
 
 	var template Template
 	err = tx.QueryRow(`
-		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0)
+		SELECT id, name, description, sort_order, created_at, COALESCE(updated_at, 0), COALESCE(owner_user_id,0)
 		FROM templates WHERE id = ?
 	`, id).Scan(
 		&template.ID,
@@ -1756,6 +1928,7 @@ func CreateTemplateTx(tx *sql.Tx, name, description string) (*Template, error) {
 		&template.SortOrder,
 		&template.CreatedAt,
 		&template.UpdatedAt,
+		&template.OwnerUserID,
 	)
 	if err != nil {
 		return nil, err
@@ -1808,6 +1981,10 @@ func AddTemplateItemTx(tx *sql.Tx, templateID int64, sectionName, name, descript
 
 // CreateListTx creates a list within a transaction
 func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
+	return CreateListTxForUser(tx, 0, name, icon)
+}
+
+func CreateListTxForUser(tx *sql.Tx, ownerUserID int64, name, icon string) (*List, error) {
 	var maxOrder int
 	tx.QueryRow("SELECT COALESCE(MAX(sort_order), -1) FROM lists").Scan(&maxOrder)
 
@@ -1816,8 +1993,8 @@ func CreateListTx(tx *sql.Tx, name, icon string) (*List, error) {
 	}
 
 	result, err := tx.Exec(`
-		INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, FALSE)
-	`, name, icon, maxOrder+1)
+		INSERT INTO lists (name, icon, sort_order, is_active, owner_user_id) VALUES (?, ?, ?, FALSE, NULLIF(?,0))
+	`, name, icon, maxOrder+1, ownerUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1860,9 +2037,13 @@ func CreateSectionForListTx(tx *sql.Tx, listID int64, name string, sortOrder int
 
 // CreateItemTx creates an item within a transaction
 func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, quantity, sortOrder int) (*Item, error) {
+	return CreateItemTxForUser(tx, sectionID, 0, name, description, quantity, sortOrder)
+}
+
+func CreateItemTxForUser(tx *sql.Tx, sectionID, actorUserID int64, name, description string, quantity, sortOrder int) (*Item, error) {
 	result, err := tx.Exec(`
-		INSERT INTO items (section_id, name, description, quantity, sort_order) VALUES (?, ?, ?, ?, ?)
-	`, sectionID, name, description, quantity, sortOrder)
+		INSERT INTO items (section_id, name, description, quantity, sort_order, created_by_user_id, updated_by_user_id) VALUES (?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0))
+	`, sectionID, name, description, quantity, sortOrder, actorUserID, actorUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1882,13 +2063,19 @@ func CreateItemTx(tx *sql.Tx, sectionID int64, name, description string, quantit
 
 // SaveItemHistoryTx saves item name to history within a transaction
 func SaveItemHistoryTx(tx *sql.Tx, name string, sectionID int64) {
+	var userID int64
+	_ = tx.QueryRow(`SELECT id FROM users WHERE is_admin=TRUE ORDER BY id LIMIT 1`).Scan(&userID)
+	SaveItemHistoryForUserTx(tx, userID, name, sectionID)
+}
+
+func SaveItemHistoryForUserTx(tx *sql.Tx, userID int64, name string, sectionID int64) {
 	tx.Exec(`
-		INSERT INTO item_history (name, last_section_id, usage_count)
-		VALUES (?, ?, 1)
-		ON CONFLICT(name) DO UPDATE SET
+		INSERT INTO item_history (user_id, name, last_section_id, usage_count)
+		VALUES (?, ?, NULLIF(?, 0), 1)
+		ON CONFLICT(user_id,name) DO UPDATE SET
 			usage_count = usage_count + 1,
 			last_section_id = excluded.last_section_id
-	`, name, sectionID)
+	`, userID, name, sectionID)
 }
 
 // GetMaxSectionOrderTx gets max sort_order for sections in a list within a transaction
@@ -1987,4 +2174,32 @@ func ClearAllData() error {
 	// Note: sessions are NOT deleted - user remains logged in
 
 	return tx.Commit()
+}
+
+// ClearUserOwnedData deletes only lists and templates owned by userID. Related
+// sections, items, memberships and template items are removed by foreign-key
+// cascades. Users, groups, sessions, shared lists and global history remain.
+func ClearUserOwnedData(userID int64) (deletedLists, deletedTemplates int64, err error) {
+	tx, err := DB.Begin()
+	if err != nil {
+		return 0, 0, err
+	}
+	defer tx.Rollback()
+
+	templateResult, err := tx.Exec(`DELETE FROM templates WHERE owner_user_id=?`, userID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to delete owned templates: %w", err)
+	}
+	deletedTemplates, _ = templateResult.RowsAffected()
+
+	listResult, err := tx.Exec(`DELETE FROM lists WHERE owner_user_id=?`, userID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to delete owned lists: %w", err)
+	}
+	deletedLists, _ = listResult.RowsAffected()
+
+	if err = tx.Commit(); err != nil {
+		return 0, 0, err
+	}
+	return deletedLists, deletedTemplates, nil
 }

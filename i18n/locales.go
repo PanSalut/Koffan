@@ -25,10 +25,10 @@ type Locale struct {
 }
 
 var (
-	locales           = make(map[string]*Locale)
-	localesMu         sync.RWMutex
-	defaultLang       = "en"
-	cachedAllLocales  map[string]map[string]interface{}
+	locales          = make(map[string]*Locale)
+	localesMu        sync.RWMutex
+	defaultLang      = "en"
+	cachedAllLocales map[string]map[string]interface{}
 )
 
 // rebuildCachedAllLocales rebuilds the cached map returned by GetAllLocales.
@@ -126,6 +126,9 @@ func Get(lang, key string) string {
 	for i, part := range parts {
 		val, exists := current[part]
 		if !exists {
+			if lang != defaultLang {
+				return Get(defaultLang, key)
+			}
 			return key
 		}
 

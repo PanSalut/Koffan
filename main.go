@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"flag"
 	"html/template"
 	"io/fs"
 	"log"
@@ -12,10 +13,12 @@ import (
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
@@ -29,6 +32,26 @@ var embeddedTemplatesFS embed.FS
 var embeddedStaticFS embed.FS
 
 func main() {
+	adminRecovery := flag.Bool("admin-recovery", false, "run interactive administrator recovery and exit")
+	envFile := flag.String("env-file", "", "load missing environment variables from this file")
+	flag.Parse()
+	loadedFile, loadedCount, err := loadStartupEnvironment(*envFile)
+	if err != nil {
+		log.Fatalf("Failed to load environment file: %v", err)
+	}
+	if loadedFile != "" {
+		log.Printf("Loaded %d environment variable(s) from %s", loadedCount, loadedFile)
+	}
+	if *adminRecovery {
+		db.InitForAdminRecovery()
+		err := runAdminRecovery(os.Stdin, os.Stdout)
+		db.Close()
+		if err != nil {
+			log.Printf("Administrator recovery failed: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
 	// Initialize i18n first (before db, so migrations can use translations)
 	if err := i18n.Init(); err != nil {
 		log.Fatal("Failed to initialize i18n:", err)
@@ -42,6 +65,9 @@ func main() {
 	// Initialize database
 	db.Init()
 	defer db.Close()
+	if strings.EqualFold(os.Getenv("DISABLE_AUTH"), "true") {
+		log.Print("SECURITY WARNING: DISABLE_AUTH=true grants every request administrator access. Use only on an isolated, trusted network.")
+	}
 
 	// Clean expired sessions on startup
 	db.CleanExpiredSessions()
@@ -124,6 +150,18 @@ func main() {
 	// Middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
+	app.Use(helmet.New(helmet.Config{
+		ContentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'",
+		ReferrerPolicy:        "no-referrer",
+		PermissionPolicy:      "camera=(), microphone=(), geolocation=()",
+	}))
+	app.Use(func(c *fiber.Ctx) error {
+		secure := c.Protocol() == "https" || (strings.EqualFold(os.Getenv("TRUST_PROXY_HEADERS"), "true") && strings.EqualFold(strings.TrimSpace(strings.Split(c.Get("X-Forwarded-Proto"), ",")[0]), "https"))
+		if secure {
+			c.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		return c.Next()
+	})
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 
 	// Static files
@@ -162,7 +200,8 @@ func main() {
 	// Auth routes (before middleware)
 	app.Get("/login", handlers.LoginPage)
 	app.Post("/login", handlers.LoginRateLimitMiddleware, handlers.Login)
-	app.Post("/logout", handlers.Logout)
+	app.Get("/auth/oidc/login", handlers.OIDCLogin)
+	app.Get("/auth/oidc/callback", handlers.OIDCCallback)
 
 	// i18n API (before auth middleware - needed for login page)
 	app.Get("/locales", handlers.GetLocales)
@@ -175,12 +214,13 @@ func main() {
 
 	// Auth middleware for all other routes
 	app.Use(handlers.AuthMiddleware)
+	app.Use(handlers.CSRFMiddleware)
+	app.Post("/logout", handlers.Logout)
 
 	// WebSocket upgrade middleware
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("allowed", true)
-			return c.Next()
+			return handlers.ValidateWebSocketOrigin(c)
 		}
 		return fiber.ErrUpgradeRequired
 	})
@@ -192,30 +232,54 @@ func main() {
 	app.Get("/", handlers.GetListsPage)
 
 	// Single list view - shows items
-	app.Get("/lists/:id", handlers.GetListView)
+	app.Get("/lists/:id", handlers.RequireListView, handlers.GetListView)
 
 	// Sections API
 	app.Get("/sections/list", handlers.GetSectionsListForModal)
-	app.Get("/sections/:id/html", handlers.GetSectionHTML)
+	app.Get("/sections/:id/html", handlers.RequireSectionView, handlers.GetSectionHTML)
 	app.Post("/sections", handlers.CreateSection)
-	app.Put("/sections/:id", handlers.UpdateSection)
-	app.Delete("/sections/:id", handlers.DeleteSection)
-	app.Post("/sections/:id/move-up", handlers.MoveSectionUp)
-	app.Post("/sections/:id/move-down", handlers.MoveSectionDown)
-	app.Post("/sections/:id/check-all", handlers.CheckAllItems)
-	app.Post("/sections/:id/uncheck-all", handlers.UncheckAllItems)
-	app.Post("/sections/:id/sort-mode", handlers.UpdateSectionSortMode)
+	app.Put("/sections/:id", handlers.RequireSectionEdit, handlers.UpdateSection)
+	app.Delete("/sections/:id", handlers.RequireSectionEdit, handlers.DeleteSection)
+	app.Post("/sections/:id/move-up", handlers.RequireSectionEdit, handlers.MoveSectionUp)
+	app.Post("/sections/:id/move-down", handlers.RequireSectionEdit, handlers.MoveSectionDown)
+	app.Post("/sections/:id/check-all", handlers.RequireSectionEdit, handlers.CheckAllItems)
+	app.Post("/sections/:id/uncheck-all", handlers.RequireSectionEdit, handlers.UncheckAllItems)
+	app.Post("/sections/:id/sort-mode", handlers.RequireSectionEdit, handlers.UpdateSectionSortMode)
 
 	// Lists API
 	app.Get("/lists", handlers.GetLists)
 	app.Post("/lists", handlers.CreateList)
-	app.Put("/lists/:id", handlers.UpdateList)
-	app.Delete("/lists/:id", handlers.DeleteList)
-	app.Post("/lists/:id/activate", handlers.SetActiveList)
-	app.Get("/lists/:id/activate", handlers.SetActiveList)
-	app.Post("/lists/:id/move-up", handlers.MoveListUp)
-	app.Post("/lists/:id/move-down", handlers.MoveListDown)
-	app.Post("/lists/:id/toggle-completed", handlers.ToggleShowCompleted)
+	app.Put("/lists/:id", handlers.RequireListOwner, handlers.UpdateList)
+	app.Delete("/lists/:id", handlers.RequireListOwner, handlers.DeleteList)
+	app.Post("/lists/:id/activate", handlers.RequireListView, handlers.SetActiveList)
+	app.Post("/lists/:id/move-up", handlers.RequireListView, handlers.MoveListUp)
+	app.Post("/lists/:id/move-down", handlers.RequireListView, handlers.MoveListDown)
+	app.Post("/lists/:id/toggle-completed", handlers.RequireListOwner, handlers.ToggleShowCompleted)
+	app.Get("/lists/:id/members", handlers.RequireListManage, handlers.GetListMembers)
+	app.Get("/lists/:id/access", handlers.RequireListManage, handlers.ListAccessPage)
+	app.Put("/lists/:id/owner", handlers.RequireListOwner, handlers.TransferListOwnership)
+	app.Put("/lists/:id/groups/:groupId", handlers.RequireListManage, handlers.SetListGroupAccess)
+	app.Delete("/lists/:id/groups/:groupId", handlers.RequireListManage, handlers.DeleteListGroupAccess)
+	app.Post("/lists/:id/members", handlers.RequireListManage, handlers.AddListMember)
+	app.Put("/lists/:id/members/:userId", handlers.RequireListManage, handlers.UpdateListMember)
+	app.Delete("/lists/:id/members/:userId", handlers.RequireListManage, handlers.DeleteListMember)
+	app.Get("/users/search", handlers.SearchUsers)
+	app.Get("/admin/users", handlers.AdminUsersPage)
+	app.Get("/admin/users.json", handlers.GetUsers)
+	app.Post("/admin/users", handlers.CreateUser)
+	app.Get("/admin", handlers.AdminUsersPage)
+	app.Put("/admin/users/:id", handlers.UpdateUser)
+	app.Post("/admin/users/:id/invalidate-sessions", handlers.InvalidateUserSessions)
+	app.Delete("/admin/users/:id", handlers.DeleteUser)
+	app.Get("/admin/groups", handlers.GetGroups)
+	app.Post("/admin/groups", handlers.CreateGroup)
+	app.Put("/admin/groups/:id", handlers.UpdateGroupDetails)
+	app.Delete("/admin/groups/:id", handlers.DeleteGroup)
+	app.Put("/admin/groups/:id/admin", handlers.UpdateGroupAdmin)
+	app.Post("/admin/groups/:id/users/:userId", handlers.AddGroupUser)
+	app.Delete("/admin/groups/:id/users/:userId", handlers.RemoveGroupUser)
+	app.Put("/admin/groups/:id/lists/:listId", handlers.SetGroupListAccess)
+	app.Delete("/admin/groups/:id/lists/:listId", handlers.DeleteGroupListAccess)
 
 	// Templates API
 	app.Get("/templates", handlers.GetTemplates)
@@ -230,24 +294,25 @@ func main() {
 	app.Post("/templates/from-list", handlers.CreateTemplateFromList)
 
 	// Items API
-	app.Get("/items/:id/html", handlers.GetItemHTML)
+	app.Get("/items/:id/html", handlers.RequireItemView, handlers.GetItemHTML)
 	app.Post("/items", handlers.CreateItem)
 	app.Post("/items/delete-completed", handlers.DeleteCompletedItems)
-	app.Put("/items/:id", handlers.UpdateItem)
-	app.Delete("/items/:id", handlers.DeleteItem)
-	app.Post("/items/:id/toggle", handlers.ToggleItem)
-	app.Post("/items/:id/quantity", handlers.AdjustItemQuantity)
-	app.Post("/items/:id/uncertain", handlers.ToggleUncertain)
-	app.Post("/items/:id/move", handlers.MoveItemToSection)
-	app.Post("/items/:id/move-up", handlers.MoveItemUp)
-	app.Post("/items/:id/move-down", handlers.MoveItemDown)
+	app.Put("/items/:id", handlers.RequireItemEdit, handlers.UpdateItem)
+	app.Delete("/items/:id", handlers.RequireItemEdit, handlers.DeleteItem)
+	app.Post("/items/:id/toggle", handlers.RequireItemEdit, handlers.ToggleItem)
+	app.Post("/items/:id/quantity", handlers.RequireItemEdit, handlers.AdjustItemQuantity)
+	app.Post("/items/:id/uncertain", handlers.RequireItemEdit, handlers.ToggleUncertain)
+	app.Post("/items/:id/move", handlers.RequireItemEdit, handlers.MoveItemToSection)
+	app.Post("/items/:id/move-up", handlers.RequireItemEdit, handlers.MoveItemUp)
+	app.Post("/items/:id/move-down", handlers.RequireItemEdit, handlers.MoveItemDown)
 
 	// Stats API
 	app.Get("/stats", handlers.GetStats)
 
 	// Offline data API
 	app.Get("/api/data", handlers.GetAllData)
-	app.Get("/api/item/:id/version", handlers.GetItemVersion)
+	app.Get("/api/item/:id/version", handlers.RequireItemView, handlers.GetItemVersion)
+	app.Get("/lists/:id/activity", handlers.RequireListView, handlers.GetListActivity)
 	app.Get("/api/suggestions", handlers.GetSuggestions)
 
 	// History management API
@@ -260,7 +325,7 @@ func main() {
 
 	// Import/Export
 	app.Get("/export", handlers.ExportAllData)
-	app.Get("/export/list/:id", handlers.ExportSingleList)
+	app.Get("/export/list/:id", handlers.RequireListView, handlers.ExportSingleList)
 	app.Get("/export/preview", handlers.GetExportPreview)
 	app.Post("/import", handlers.ImportData)
 	app.Post("/import/preview", handlers.PreviewImport)

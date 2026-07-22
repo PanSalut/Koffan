@@ -129,6 +129,26 @@ class OfflineStorage {
         });
     }
 
+    async clearAllData() {
+		if (!this.db) await this.init();
+		return new Promise((resolve, reject) => {
+			const names = ['sections', 'offline_queue', 'sync_metadata', 'suggestions'];
+			const tx = this.db.transaction(names, 'readwrite');
+			for (const name of names) tx.objectStore(name).clear();
+			tx.oncomplete = () => resolve();
+			tx.onerror = () => reject(tx.error);
+		});
+	}
+
+	async ensureUser(userID) {
+		if (!userID) return;
+		const storedUserID = await this.getMetadata('user_id');
+		if (storedUserID !== undefined && String(storedUserID) !== String(userID)) {
+			await this.clearAllData();
+		}
+		await this.setMetadata('user_id', String(userID));
+	}
+
     // ===== SECTIONS CACHE METHODS =====
 
     async saveSections(sections) {

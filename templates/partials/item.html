@@ -43,6 +43,9 @@
         {{if .Item.Description}}
         <p class="text-xs text-stone-400 dark:text-stone-500 line-clamp-2 break-words mt-0.5">{{.Item.Description}}</p>
         {{end}}
+        <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">
+			{{if .Item.CreatedByName}}<span x-text="t('attribution.added_by',{name:'{{.Item.CreatedByName | js}}'})"></span>{{else}}<span x-text="t('attribution.legacy')"></span>{{end}}{{if .Item.UpdatedByName}} · <span x-text="t('attribution.modified_by',{name:'{{.Item.UpdatedByName | js}}'})"></span>{{end}}
+        </p>
     </div>
 
     <!-- Desktop Actions -->
@@ -81,7 +84,8 @@
         <!-- Move to section dropdown -->
         <div x-data="{ open: false }" class="relative">
             <button
-                @click="open = !open"
+				type="button"
+				@click.stop="open = !open; if (open) refreshSectionSelectsFromServer()"
                 class="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 dark:text-stone-500 transition-colors"
                 :title="t('actions.move')"
             >
@@ -99,13 +103,15 @@
                 {{range .Sections}}
                 {{if ne .ID $.Item.SectionID}}
                 <button
-                    @click="open = false; $data.moveItemDesktop({{$.Item.ID}}, {{$.Item.SectionID}}, {{.ID}})"
+					type="button"
+					@click.stop="open = false; moveItemDesktop({{$.Item.ID}}, {{$.Item.SectionID}}, {{.ID}})"
                     class="block w-full text-left px-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700"
                 >
                     {{.Name}}
                 </button>
                 {{end}}
                 {{end}}
+				{{if le (len .Sections) 1}}<div class="px-3 py-1.5 text-sm text-stone-400">No other sections</div>{{end}}
             </div>
         </div>
 

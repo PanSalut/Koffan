@@ -32,6 +32,9 @@
         {{if .Item.Description}}
         <p class="text-xs text-stone-300 dark:text-stone-500 line-through line-clamp-2 break-words">{{.Item.Description}}</p>
         {{end}}
+        <p class="text-[10px] text-stone-300 dark:text-stone-500 mt-0.5">
+			{{if .Item.CreatedByName}}<span x-text="t('attribution.added_by',{name:'{{.Item.CreatedByName | js}}'})"></span>{{else}}<span x-text="t('attribution.legacy')"></span>{{end}}{{if .Item.UpdatedByName}} · <span x-text="t('attribution.modified_by',{name:'{{.Item.UpdatedByName | js}}'})"></span>{{end}}
+        </p>
     </div>
 
     <!-- Delete button -->

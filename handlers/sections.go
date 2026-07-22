@@ -65,7 +65,19 @@ func CreateSection(c *fiber.Ctx) error {
 		return sendError(c, 400, "common.reserved_name")
 	}
 
-	section, err := db.CreateSection(name)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	active, err := db.GetActiveListForUser(u.ID, u.IsAdmin)
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+	allowed, err := db.CanEditList(u.ID, active.ID, u.IsAdmin)
+	if err != nil || !allowed {
+		return fiber.ErrForbidden
+	}
+	section, err := db.CreateSectionForList(active.ID, name)
 	if err != nil {
 		return sendError(c, 500, "error.create_failed")
 	}
@@ -118,6 +130,10 @@ func DeleteSection(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
 	}
+	listID, err := db.ListIDForSection(id)
+	if err != nil {
+		return sendError(c, 404, "error.invalid_section_id")
+	}
 
 	err = db.DeleteSection(id)
 	if err != nil {
@@ -125,7 +141,7 @@ func DeleteSection(c *fiber.Ctx) error {
 	}
 
 	// Broadcast to WebSocket clients
-	BroadcastUpdate("section_deleted", map[string]int64{"id": id})
+	BroadcastListUpdate(listID, "section_deleted", map[string]int64{"id": id, "list_id": listID})
 
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")
@@ -137,13 +153,14 @@ func MoveSectionUp(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
 	}
+	listID, _ := db.ListIDForSection(id)
 
 	err = db.MoveSectionUp(id)
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
 
-	BroadcastUpdate("sections_reordered", nil)
+	BroadcastListUpdate(listID, "sections_reordered", map[string]int64{"list_id": listID})
 
 	// Modal expects full list, main page handles reorder via WS
 	if c.Get("HX-Target") == "manage-sections-list" {
@@ -158,13 +175,14 @@ func MoveSectionDown(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 400, "error.invalid_id")
 	}
+	listID, _ := db.ListIDForSection(id)
 
 	err = db.MoveSectionDown(id)
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
 
-	BroadcastUpdate("sections_reordered", nil)
+	BroadcastListUpdate(listID, "sections_reordered", map[string]int64{"list_id": listID})
 
 	if c.Get("HX-Target") == "manage-sections-list" {
 		return returnSectionsForModal(c)
@@ -189,14 +207,15 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 		return sendError(c, 500, "error.update_failed")
 	}
 
-	BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode})
+	BroadcastListUpdate(section.ListID, "section_sort_changed", map[string]interface{}{"section_id": id, "sort_mode": sortMode, "list_id": section.ListID})
 
 	return c.Render("partials/section", sectionRenderMap(section), "")
 }
 
-// Helper to get sections for dropdown
-func getSectionsForDropdown() []db.Section {
-	sections, _ := db.GetAllSections()
+// getSectionsForDropdown returns only sections belonging to the current list.
+// Move menus must never expose sections from other users' lists.
+func getSectionsForDropdown(listID int64) []db.Section {
+	sections, _ := db.GetSectionsByList(listID)
 	return sections
 }
 
@@ -221,14 +240,32 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 	if len(ids) == 0 {
 		return sendError(c, 400, "error.no_valid_ids")
 	}
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	// Authorize the complete batch before deleting anything. A mixed batch must
+	// fail atomically rather than deleting the permitted subset.
+	checkedLists := make(map[int64]struct{})
+	for _, id := range ids {
+		listID, lookupErr := db.ListIDForSection(id)
+		if lookupErr != nil {
+			return fiber.ErrNotFound
+		}
+		if _, checked := checkedLists[listID]; checked {
+			continue
+		}
+		allowed, permissionErr := db.CanEditList(u.ID, listID, u.IsAdmin)
+		if permissionErr != nil || !allowed {
+			return fiber.ErrForbidden
+		}
+		checkedLists[listID] = struct{}{}
+	}
 
-	err := db.DeleteSections(ids)
+	err = db.DeleteSections(ids)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
-
-	// Broadcast to WebSocket clients
-	BroadcastUpdate("sections_deleted", map[string]interface{}{"ids": ids})
 
 	// Return updated sections list for modal
 	return returnSectionsForModal(c)
@@ -248,14 +285,26 @@ func splitAndTrimCSV(s string) []string {
 
 // getSectionsForList returns sections for a specific list (by list_id query param) or falls back to the active list.
 func getSectionsForList(c *fiber.Ctx) ([]db.Section, error) {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return nil, err
+	}
 	if listIDStr := c.Query("list_id"); listIDStr != "" {
 		listID, err := strconv.ParseInt(listIDStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s", ErrInvalidListID, listIDStr)
 		}
+		allowed, err := db.CanViewList(u.ID, listID, u.IsAdmin)
+		if err != nil || !allowed {
+			return nil, fiber.ErrNotFound
+		}
 		return db.GetSectionsByList(listID)
 	}
-	return db.GetAllSections()
+	list, err := db.GetActiveListForUser(u.ID, u.IsAdmin)
+	if err != nil {
+		return nil, err
+	}
+	return db.GetSectionsByList(list.ID)
 }
 
 // Helper to return sections for modal

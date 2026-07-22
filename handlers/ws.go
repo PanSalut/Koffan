@@ -3,10 +3,37 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"net/url"
+	"os"
+	"shopping-list/db"
+	"strings"
 	"sync"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
+
+func ValidateWebSocketOrigin(c *fiber.Ctx) error {
+	origin := c.Get("Origin")
+	parsed, err := url.Parse(origin)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" || parsed.User != nil || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return fiber.ErrForbidden
+	}
+	host := string(c.Context().Host())
+	scheme := c.Protocol()
+	if strings.EqualFold(os.Getenv("TRUST_PROXY_HEADERS"), "true") {
+		if forwardedHost := strings.TrimSpace(strings.Split(c.Get("X-Forwarded-Host"), ",")[0]); forwardedHost != "" {
+			host = forwardedHost
+		}
+		if forwardedProto := strings.TrimSpace(strings.Split(c.Get("X-Forwarded-Proto"), ",")[0]); forwardedProto != "" {
+			scheme = forwardedProto
+		}
+	}
+	if !strings.EqualFold(parsed.Host, host) || !strings.EqualFold(parsed.Scheme, scheme) {
+		return fiber.ErrForbidden
+	}
+	return c.Next()
+}
 
 // WebSocket client connections
 var (
@@ -20,6 +47,8 @@ var (
 type webSocketClient struct {
 	conn    webSocketWriter
 	writeMu sync.Mutex
+	userID  int64
+	isAdmin bool
 }
 
 type webSocketWriter interface {
@@ -54,7 +83,13 @@ type WebSocketMessage struct {
 
 // WebSocketHandler handles WebSocket connections
 func WebSocketHandler(c *websocket.Conn) {
-	client := &webSocketClient{conn: c}
+	userID, _ := c.Locals("userID").(int64)
+	isAdmin, _ := c.Locals("isAdmin").(bool)
+	if userID == 0 {
+		_ = c.Close()
+		return
+	}
+	client := &webSocketClient{conn: c, userID: userID, isAdmin: isAdmin}
 
 	// Register client
 	clientsMu.Lock()
@@ -101,6 +136,14 @@ func WebSocketHandler(c *websocket.Conn) {
 
 // BroadcastUpdate sends an update to all connected WebSocket clients
 func BroadcastUpdate(eventType string, data interface{}) {
+	broadcastUpdate(eventType, data, eventListID(data))
+}
+
+func BroadcastListUpdate(listID int64, eventType string, data interface{}) {
+	broadcastUpdate(eventType, data, listID)
+}
+
+func broadcastUpdate(eventType string, data interface{}, listID int64) {
 	message := WebSocketMessage{
 		Type: eventType,
 		Data: data,
@@ -127,6 +170,12 @@ func BroadcastUpdate(eventType string, data interface{}) {
 
 	successCount := 0
 	for _, client := range clientSnapshot {
+		if listID > 0 {
+			allowed, err := db.CanViewList(client.userID, listID, client.isAdmin)
+			if err != nil || !allowed {
+				continue
+			}
+		}
 		err := client.writeMessage(websocket.TextMessage, messageBytes)
 		if err != nil {
 			log.Printf("Failed to send WebSocket message to client: %v", err)
@@ -137,6 +186,56 @@ func BroadcastUpdate(eventType string, data interface{}) {
 	}
 
 	log.Printf("Broadcast %s completed: %d/%d clients received", eventType, successCount, clientCount)
+}
+
+func DisconnectUserWebSockets(userID int64) {
+	clientsMu.RLock()
+	var matches []*webSocketClient
+	for _, client := range clients {
+		if client.userID == userID {
+			matches = append(matches, client)
+		}
+	}
+	clientsMu.RUnlock()
+	for _, client := range matches {
+		_ = client.close()
+	}
+}
+
+func eventListID(data interface{}) int64 {
+	switch v := data.(type) {
+	case *db.List:
+		return v.ID
+	case db.List:
+		return v.ID
+	case *db.Section:
+		return v.ListID
+	case db.Section:
+		return v.ListID
+	case *db.Item:
+		id, _ := db.ListIDForItem(v.ID)
+		return id
+	case db.Item:
+		id, _ := db.ListIDForItem(v.ID)
+		return id
+	case map[string]int64:
+		if id := v["list_id"]; id > 0 {
+			return id
+		}
+	case map[string]interface{}:
+		switch id := v["list_id"].(type) {
+		case int64:
+			return id
+		case int:
+			return int64(id)
+		case float64:
+			return int64(id)
+		case json.Number:
+			value, _ := id.Int64()
+			return value
+		}
+	}
+	return 0
 }
 
 // WebSocketUpgrade middleware to upgrade HTTP to WebSocket

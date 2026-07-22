@@ -12,6 +12,23 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/static/manifest.json" crossorigin="use-credentials">
     <meta name="theme-color" content="#f9a8d4">
+    <script>
+      function koffanCookie(name) { const m=document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)')); return m?decodeURIComponent(m[1]):''; }
+      document.addEventListener('htmx:configRequest', function(e){ e.detail.headers['X-CSRF-Token']=koffanCookie('csrf'); });
+      document.addEventListener('submit', function(e){ if(!e.target.matches('form'))return; let i=e.target.querySelector('input[name="_csrf"]'); if(!i){i=document.createElement('input');i.type='hidden';i.name='_csrf';e.target.appendChild(i)}i.value=koffanCookie('csrf'); }, true);
+      const koffanFetch = window.fetch.bind(window);
+      window.fetch = function(input, init) {
+        init = init || {};
+        const method = String(init.method || 'GET').toUpperCase();
+        const url = new URL(typeof input === 'string' ? input : input.url, window.location.href);
+        if (url.origin === window.location.origin && ['POST','PUT','PATCH','DELETE'].includes(method)) {
+          const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+          headers.set('X-CSRF-Token', koffanCookie('csrf'));
+          init.headers = headers;
+        }
+        return koffanFetch(input, init);
+      };
+    </script>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Dark mode initialization (must run before body renders to prevent flash) -->
@@ -77,17 +94,17 @@
 
         // Translation helper function
         function t(key, params) {
-            const lang = window.currentLang;
             const keys = key.split('.');
-            let value = window.translations[lang];
-
-            for (const k of keys) {
-                if (value && typeof value === 'object' && k in value) {
-                    value = value[k];
-                } else {
-                    return key;
-                }
-            }
+			const lookup = (lang) => {
+				let value = window.translations[lang];
+				for (const k of keys) {
+					if (!value || typeof value !== 'object' || !(k in value)) return undefined;
+					value = value[k];
+				}
+				return value;
+			};
+			let value = lookup(window.currentLang);
+			if (typeof value !== 'string') value = lookup(window.defaultLang);
 
             if (typeof value !== 'string') return key;
 
@@ -478,6 +495,7 @@
 
     {{embed}}
 
+	<script>window.KOFFAN_USER_ID = {{if .CurrentUser}}{{.CurrentUser.ID}}{{else}}null{{end}};</script>
     <script src="{{asset "viewport.js"}}"></script>
     <script src="{{asset "offline-storage.js"}}"></script>
     <script src="{{asset "app.js"}}"></script>
@@ -490,6 +508,9 @@
             navigator.serviceWorker.register('{{asset "sw.js"}}', { scope: '/' })
                 .then(reg => {
                     console.log('[App] Service Worker registered:', reg.scope);
+					const sendIdentity = () => reg.active?.postMessage({ type: 'SET_USER', userID: window.KOFFAN_USER_ID });
+					sendIdentity();
+					navigator.serviceWorker.ready.then(sendIdentity);
                     // Force update check
                     reg.update();
                     // Listen for new SW and activate immediately
@@ -534,10 +555,14 @@
 
             // Clear SW caches on logout so the cached authenticated app shell
             // is not served offline to the next user of a shared device.
-            document.addEventListener('submit', (e) => {
+			document.addEventListener('submit', async (e) => {
                 const form = e.target;
-                if (form.matches?.('form[action="/logout"]')) {
+				if (form.matches?.('form[action="/logout"]') && !form.dataset.offlineCleared) {
+					e.preventDefault();
                     navigator.serviceWorker.controller?.postMessage({ type: 'CLEAR_CACHE' });
+					try { await window.offlineStorage?.clearAllData(); } catch (error) { console.error('[App] Failed to clear offline data:', error); }
+					form.dataset.offlineCleared = 'true';
+					form.requestSubmit();
                 }
             }, true);
         }

@@ -10,6 +10,10 @@ import (
 
 // GetSuggestions returns item name suggestions for auto-completion
 func GetSuggestions(c *fiber.Ctx) error {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
 	query := c.Query("q")
 	limitStr := c.Query("limit", "10")
 
@@ -22,7 +26,7 @@ func GetSuggestions(c *fiber.Ctx) error {
 
 	// If no query, return all suggestions (for offline cache)
 	if query == "" {
-		suggestions, err := db.GetAllItemSuggestions(limit)
+		suggestions, err := db.GetAllItemSuggestionsForUser(u.ID, limit)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch suggestions"})
 		}
@@ -32,7 +36,7 @@ func GetSuggestions(c *fiber.Ctx) error {
 		return c.JSON(suggestions)
 	}
 
-	suggestions, err := db.GetItemSuggestions(query, limit)
+	suggestions, err := db.GetItemSuggestionsForUser(u.ID, query, limit)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch suggestions"})
 	}
@@ -46,7 +50,11 @@ func GetSuggestions(c *fiber.Ctx) error {
 
 // GetHistory returns all history items for management UI
 func GetHistory(c *fiber.Ctx) error {
-	items, err := db.GetItemHistoryList()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	items, err := db.GetItemHistoryListForUser(u.ID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch history"})
 	}
@@ -65,7 +73,11 @@ func DeleteHistoryItem(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	err = db.DeleteItemHistory(id)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	err = db.DeleteItemHistoryForUser(u.ID, id)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete history item"})
 	}
@@ -98,7 +110,11 @@ func BatchDeleteHistory(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "No valid IDs provided"})
 	}
 
-	deleted, err := db.DeleteItemHistoryBatch(ids)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	deleted, err := db.DeleteItemHistoryBatchForUser(u.ID, ids)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete history items"})
 	}

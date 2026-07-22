@@ -23,7 +23,11 @@ const (
 
 // GetListsPage returns the homepage with all lists
 func GetListsPage(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	lists, err := db.GetListsForUser(u.ID, u.IsAdmin)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
@@ -36,6 +40,7 @@ func GetListsPage(c *fiber.Ctx) error {
 		"Translations": i18n.GetAllLocales(),
 		"Locales":      i18n.AvailableLocales(),
 		"DefaultLang":  i18n.GetDefaultLang(),
+		"CurrentUser":  u,
 	})
 }
 
@@ -46,6 +51,14 @@ func GetListView(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	allowed, err := db.CanViewList(u.ID, id, u.IsAdmin)
+	if err != nil || !allowed {
+		return fiber.ErrNotFound
+	}
 	list, err := db.GetListByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -58,7 +71,7 @@ func GetListView(c *fiber.Ctx) error {
 	}
 
 	// Set this list as active
-	db.SetActiveList(id)
+	_ = db.SetActiveListForUser(u.ID, id)
 
 	sections, err := db.GetSectionsByList(id)
 	if err != nil {
@@ -66,7 +79,23 @@ func GetListView(c *fiber.Ctx) error {
 	}
 
 	stats := db.GetListStats(id)
-	lists, _ := db.GetAllLists()
+	lists, _ := db.GetListsForUser(u.ID, u.IsAdmin)
+	canManage, _ := db.CanManageList(u.ID, id, u.IsAdmin)
+	list.CanManage = canManage
+	if list.OwnerUserID == u.ID {
+		list.AccessRole = "owner"
+	} else if u.IsAdmin {
+		list.AccessRole = "admin"
+	} else {
+		permission, _ := db.GetUserListPermission(u.ID, id, false)
+		if permission == db.ListPermissionManage {
+			list.AccessRole = "manager"
+		} else if permission == db.ListPermissionEdit {
+			list.AccessRole = "editor"
+		} else {
+			list.AccessRole = "viewer"
+		}
+	}
 
 	return c.Render("list", fiber.Map{
 		"List":          list,
@@ -77,12 +106,18 @@ func GetListView(c *fiber.Ctx) error {
 		"Translations":  i18n.GetAllLocales(),
 		"Locales":       i18n.AvailableLocales(),
 		"DefaultLang":   i18n.GetDefaultLang(),
+		"CurrentUser":   u,
+		"CanManage":     canManage,
 	})
 }
 
 // GetLists returns all lists (JSON API)
 func GetLists(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	lists, err := db.GetListsForUser(u.ID, u.IsAdmin)
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
@@ -109,8 +144,12 @@ func CreateList(c *fiber.Ctx) error {
 		return sendError(c, 400, "common.reserved_name")
 	}
 
-	// Check for duplicate name
-	exists, err := db.ListNameExists(name, 0)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	// Names are private to an owner. Never disclose another owner's names.
+	exists, err := db.ListNameExistsForOwner(name, u.ID, 0)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
@@ -126,10 +165,12 @@ func CreateList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.icon_too_long")
 	}
 
-	list, err := db.CreateList(name, icon)
+	list, err := db.CreateListForUser(u.ID, name, icon)
 	if err != nil {
 		return sendError(c, 500, "error.create_failed")
 	}
+	list.CanManage = true
+	list.AccessRole = "owner"
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("list_created", list)
@@ -158,8 +199,11 @@ func UpdateList(c *fiber.Ctx) error {
 		return sendError(c, 400, "common.reserved_name")
 	}
 
-	// Check for duplicate name (excluding current list)
-	exists, err := db.ListNameExists(name, id)
+	existingList, err := db.GetListByID(id)
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+	exists, err := db.ListNameExistsForOwner(name, existingList.OwnerUserID, id)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
@@ -175,6 +219,13 @@ func UpdateList(c *fiber.Ctx) error {
 	list, err := db.UpdateList(id, name, icon)
 	if err != nil {
 		return sendError(c, 500, "error.update_failed")
+	}
+	u, _ := CurrentUser(c)
+	list.CanManage = true
+	if u != nil && list.OwnerUserID == u.ID {
+		list.AccessRole = "owner"
+	} else {
+		list.AccessRole = "admin"
 	}
 
 	// Broadcast to WebSocket clients
@@ -193,13 +244,13 @@ func DeleteList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
+	// Notify only users who can currently see the list. This must happen before
+	// deletion because its access-control rows are removed with the list.
+	BroadcastListUpdate(id, "list_deleted", map[string]int64{"id": id, "list_id": id})
 	err = db.DeleteList(id)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
 	}
-
-	// Broadcast to WebSocket clients
-	BroadcastUpdate("list_deleted", map[string]int64{"id": id})
 
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")
@@ -212,13 +263,14 @@ func SetActiveList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	err = db.SetActiveList(id)
+	u, userErr := CurrentUser(c)
+	if userErr != nil {
+		return userErr
+	}
+	err = db.SetActiveListForUser(u.ID, id)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
-
-	// Broadcast to WebSocket clients
-	BroadcastUpdate("list_activated", map[string]int64{"id": id})
 
 	// Check if this is an AJAX request (HTMX or fetch)
 	isAjax := c.Get("HX-Request") != "" || c.Get("X-Requested-With") != ""
@@ -247,12 +299,15 @@ func MoveListUp(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	err = db.MoveListUp(id)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	err = db.MoveListForUser(u.ID, u.IsAdmin, id, -1)
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
 
-	BroadcastUpdate("lists_reordered", nil)
 	return c.SendStatus(200)
 }
 
@@ -263,12 +318,15 @@ func MoveListDown(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	err = db.MoveListDown(id)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	err = db.MoveListForUser(u.ID, u.IsAdmin, id, 1)
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
 
-	BroadcastUpdate("lists_reordered", nil)
 	return c.SendStatus(200)
 }
 
@@ -318,7 +376,7 @@ func ToggleShowCompleted(c *fiber.Ctx) error {
 func sectionRenderMap(section *db.Section) fiber.Map {
 	return fiber.Map{
 		"Section":       section,
-		"Sections":      getSectionsForDropdown(),
+		"Sections":      getSectionsForDropdown(section.ListID),
 		"ShowCompleted": db.GetShowCompletedForSection(section.ID),
 	}
 }

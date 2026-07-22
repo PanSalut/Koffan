@@ -65,13 +65,13 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 
 ## Tech Stack
 
-- **Backend:** Go 1.21 + Fiber
+- **Backend:** Go 1.25.12+ + Fiber
 - **Frontend:** HTMX + Alpine.js + Tailwind CSS
 - **Database:** SQLite
 
 ## Local Setup (without Docker)
 
-You can run Koffan directly on your machine using Go. This works on any system (macOS, Linux, Windows).
+You can run Koffan directly on your machine using Go 1.25.12 or newer. This works on any system (macOS, Linux, Windows).
 
 ### 1. Install Go
 
@@ -93,17 +93,38 @@ Download from [go.dev/dl](https://go.dev/dl/)
 ```bash
 git clone https://github.com/PanSalut/Koffan.git
 cd Koffan
-go run main.go
+go run .
 ```
 
 App available at http://localhost:3000
 
-Default password: `shopping123`
+For a new database in development mode, Koffan creates a default administrator:
+
+- Username: `admin`
+- Password: `shopping123`
+
+This fallback is disabled when `APP_ENV=production`. A new production database requires `ADMIN_USERNAME` and `ADMIN_PASSWORD` on its first startup.
 
 To set a custom password:
 ```bash
-APP_PASSWORD=yourpassword go run main.go
+ADMIN_USERNAME=admin ADMIN_PASSWORD=your-secure-password go run .
 ```
+
+### Upgrading from a pre-multi-user database
+
+Back up the SQLite database before upgrading. Older Koffan releases did not store the application password in SQLite; they compared logins directly with the `APP_PASSWORD` environment variable.
+
+On the first startup after upgrading, when the database does not yet contain any users:
+
+1. If both `ADMIN_USERNAME` and `ADMIN_PASSWORD` are set, Koffan creates a local administrator with that username. `ADMIN_DISPLAY_NAME` is optional and otherwise defaults to the username.
+2. Otherwise, if the deprecated `APP_PASSWORD` is set, Koffan creates a local administrator named `admin` using that password.
+3. If neither configuration is available, development mode creates `admin` with password `shopping123`; production mode refuses to start and asks for `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+
+The selected password must contain at least eight characters. This also applies to a legacy `APP_PASSWORD`; startup will fail if it is shorter. Koffan bcrypt-hashes the password and stores the hash in the new `users` table.
+
+All existing lists, templates, and product history are assigned to the new administrator. Existing items are preserved but show as having been added before user tracking, because their original creator cannot be determined. Old sessions are not associated with a user and therefore require a fresh login.
+
+After the administrator has been created successfully, its credentials and ownership are retained in SQLite. `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `APP_PASSWORD` are not needed on subsequent starts and do not change an existing user.
 
 ## Arch Linux (AUR)
 
@@ -129,7 +150,7 @@ yay -S koffan
 ### Quick Start (recommended)
 
 ```bash
-docker run -d -p 3000:8080 -e APP_PASSWORD=yourpassword -v koffan-data:/data ghcr.io/pansalut/koffan:latest
+docker run -d -p 3000:8080 -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=your-secure-password -v koffan-data:/data ghcr.io/pansalut/koffan:latest
 ```
 
 App available at http://localhost:3000
@@ -143,18 +164,78 @@ docker-compose up -d
 
 ## Environment Variables
 
+Configuration can be supplied directly through the process environment, from an explicit file, or from `.env` in Koffan's current working directory:
+
+```bash
+./koffan --env-file /etc/koffan/koffan.env
+```
+
+When `--env-file` is omitted, Koffan loads `.env` if it exists. Process environment variables always take precedence; the file only fills variables that are not already defined. An explicitly selected missing or malformed file prevents startup, while a missing default `.env` is ignored.
+
+Files use standard `KEY=VALUE` lines, comments beginning with `#`, optional `export`, and single- or double-quoted values. Shell expansion and command substitution are not performed. Protect files containing passwords or client secrets with appropriate filesystem permissions.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_ENV` | `development` | Set to `production` for secure cookies |
-| `APP_PASSWORD` | `shopping123` | Login password |
-| `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
+| `DB_PATH` | `./shopping.db` | Path to the SQLite database file. Relative paths are resolved from Koffan's current working directory; the parent directory must exist and be writable. |
 | `PORT` | `8080` (Docker) / `3000` (local) | Server port |
-| `DB_PATH` | `./shopping.db` | Database file path |
 | `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt, uk, no, lt, el, sk, ru) |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
-| `API_TOKEN` | *(disabled)* | Enable REST API with this token ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
+| `API_TOKEN` | *(disabled)* | Enable the administrator-level REST integration token; it can access every list ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
+| `APP_ENV` | `development` | Set to `production` for secure cookies |
+| `ADMIN_USERNAME` | *(required on first production start)* | Username for the one-time initial administrator bootstrap |
+| `ADMIN_PASSWORD` | *(required on first production start)* | Password for the one-time initial administrator bootstrap (minimum 8 characters) |
+| `ADMIN_DISPLAY_NAME` | value of `ADMIN_USERNAME` | Initial administrator display name |
+| `APP_PASSWORD` | *(deprecated)* | Used once as the initial `admin` password only when upgrading an installation with no users |
+| `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
+| `TRUST_PROXY_HEADERS` | `false` | Trust `X-Forwarded-Proto`/`X-Forwarded-Host` for secure cookies, HSTS and WebSocket origin checks; enable only behind a trusted proxy that strips client-supplied forwarding headers |
+| `OIDC_ENABLED` | `false` | Enable OpenID Connect Authorization Code login |
+| `OIDC_ISSUER_URL` | *(empty)* | OIDC discovery issuer URL |
+| `OIDC_CLIENT_ID` | *(empty)* | OIDC client ID |
+| `OIDC_CLIENT_SECRET` | *(empty)* | OIDC client secret, when required by the provider |
+| `OIDC_REDIRECT_URL` | *(empty)* | Callback URL, normally `https://host/auth/oidc/callback` |
+| `OIDC_SCOPES` | `openid profile email` | Space-separated requested scopes |
+| `OIDC_AUTO_CREATE_USERS` | `true` | Automatically provision new OIDC identities |
+| `OIDC_AUTO_CREATE_GROUPS` | `false` | Automatically create groups named in the OIDC groups claim; created groups have no list access |
+| `OIDC_GROUPS_CLAIM` | `groups` | Claim containing group names/identifiers |
+| `OIDC_ALLOWED_GROUP` | *(empty)* | Require this provider group to sign in |
+| `OIDC_ADMIN_GROUP` | *(empty)* | Provider group that grants administrator status to OIDC users; re-evaluated on every login and revoked when absent |
+| `OIDC_USERNAME_CLAIM` | `preferred_username` | Username claim |
+| `OIDC_DISPLAY_NAME_CLAIM` | `name` | Display-name claim |
+| `OIDC_EMAIL_CLAIM` | `email` | Email claim |
+
+### Authentik groups
+
+Use the Authentik issuer exactly as displayed by the provider, including its trailing slash, for example `https://auth.example.com/application/o/koffan/`. OIDC issuer comparison is intentionally exact.
+
+Configure the Authentik provider/property mapping so the ID token contains a `groups` claim containing an array of group names. Koffan matches those names case-insensitively against its groups.
+
+Set `OIDC_AUTO_CREATE_GROUPS=true` in the process environment or environment file to create previously unknown claim groups automatically. It defaults to `false`; when disabled, create and name the groups in Koffan before users sign in.
+
+- Pre-provision a group from **Users & groups**, then assign its list permissions normally.
+- On every OIDC login, all memberships for that OIDC user are replaced with the token's current `groups` claim.
+- OIDC users cannot be manually assigned to groups in Koffan; Authentik is always authoritative for their group membership.
+- A group can grant administrator permissions to every member. This applies equally to local memberships and memberships synchronized from Authentik.
+- OIDC login replaces all group memberships for that OIDC user. Local groups are for local users; local authentication remains independent.
+
+### List access levels
+
+- **View only** can read the list.
+- **Read/write** can read and modify list contents.
+- **Manager** can also manage user and group sharing. It does not transfer ownership, so only the owner or an administrator can rename or delete the list.
+
+List owners and administrators can transfer ownership from the list's **Manage access** page. The previous owner retains Manager access. When the new owner already has a list with the same name, Koffan renames the transferred list to include the previous owner's display name.
+
+### Administrator recovery
+
+If all administrator accounts are inaccessible, stop the running Koffan instance and run the same binary against the same database in recovery mode:
+
+```bash
+DB_PATH=/path/to/shopping.db ./koffan --admin-recovery
+```
+
+The interactive menu can reset an existing local user's password or create a new local administrator. Password input is hidden in a terminal. Recovery mode performs the selected operation and exits without starting the web server. Resetting a password invalidates that user's existing sessions; a disabled account can optionally be re-enabled.
 
 ## Deploy to Your Server
 
@@ -164,7 +245,7 @@ docker-compose up -d
 git clone https://github.com/PanSalut/Koffan.git
 cd Koffan
 docker build -t koffan .
-docker run -d -p 80:8080 -e APP_PASSWORD=your-password -v koffan-data:/data koffan
+docker run -d -p 80:8080 -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=your-secure-password -v koffan-data:/data koffan
 ```
 
 ### Coolify
@@ -172,7 +253,7 @@ docker run -d -p 80:8080 -e APP_PASSWORD=your-password -v koffan-data:/data koff
 1. Add new resource → **Docker Compose** → Select your Git repository or use `https://github.com/PanSalut/Koffan`
 2. Set domain in **Domains** section
 3. Enable **Connect to Predefined Network** in Advanced settings
-4. Add environment variable `APP_PASSWORD` with your password
+4. Add `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables for the initial administrator
 5. Deploy
 
 ### Persistent Storage

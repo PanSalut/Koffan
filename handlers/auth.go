@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,14 +21,6 @@ const (
 	SessionDuration   = 7 * 24 * time.Hour // 7 days
 )
 
-func getAppPassword() string {
-	pass := os.Getenv("APP_PASSWORD")
-	if pass == "" {
-		pass = "shopping123" // Default password for development
-	}
-	return pass
-}
-
 func isAuthDisabled() bool {
 	return os.Getenv("DISABLE_AUTH") == "true"
 }
@@ -35,7 +29,7 @@ func isAuthDisabled() bool {
 // Works both directly and behind reverse proxies
 func isSecureConnection(c *fiber.Ctx) bool {
 	// Check X-Forwarded-Proto header (set by reverse proxies)
-	if c.Get("X-Forwarded-Proto") == "https" {
+	if strings.EqualFold(os.Getenv("TRUST_PROXY_HEADERS"), "true") && c.Get("X-Forwarded-Proto") == "https" {
 		return true
 	}
 	// Check direct connection protocol
@@ -64,7 +58,7 @@ func LoginPage(c *fiber.Ctx) error {
 	sessionID := c.Cookies(SessionCookieName)
 	if sessionID != "" {
 		session, err := db.GetSession(sessionID)
-		if err == nil && session.ExpiresAt > time.Now().Unix() {
+		if err == nil && session.UserID > 0 && session.ExpiresAt > time.Now().Unix() {
 			return c.Redirect("/")
 		}
 	}
@@ -73,18 +67,30 @@ func LoginPage(c *fiber.Ctx) error {
 		"Translations": i18n.GetAllLocales(),
 		"Locales":      i18n.AvailableLocales(),
 		"DefaultLang":  i18n.GetDefaultLang(),
+		"OIDCEnabled":  OIDCEnabled(),
+		"OIDCName":     envDefault("OIDC_DISPLAY_NAME", "OpenID Connect"),
 	}, "")
 }
 
 // Login handles login form submission
 func Login(c *fiber.Ctx) error {
 	ip := c.IP()
+	username := strings.ToLower(strings.TrimSpace(c.FormValue("username")))
 	password := c.FormValue("password")
+	limitKeys := []string{"ip:" + ip, "user:" + username}
 
-	if password != getAppPassword() {
+	user, err := db.GetUserByUsername(username)
+	valid := err == nil && user.PasswordHash != nil && user.AuthSource == "local" && !user.Disabled && db.VerifyPassword(*user.PasswordHash, password)
+	if !valid {
 		// Record failed attempt
 		if loginLimiter != nil {
-			if loginLimiter.RecordAttempt(ip) {
+			blocked := false
+			for _, key := range limitKeys {
+				if loginLimiter.RecordAttempt(key) {
+					blocked = true
+				}
+			}
+			if blocked {
 				// Limit exceeded, redirect with rate_limited error
 				return c.Redirect("/login?error=rate_limited")
 			}
@@ -94,31 +100,31 @@ func Login(c *fiber.Ctx) error {
 
 	// Successful login - reset attempts
 	if loginLimiter != nil {
-		loginLimiter.ResetAttempts(ip)
+		for _, key := range limitKeys {
+			loginLimiter.ResetAttempts(key)
+		}
 	}
 
-	// Create session
-	sessionID := generateSessionID()
-	expiresAt := time.Now().Add(SessionDuration).Unix()
-
-	err := db.CreateSession(sessionID, expiresAt)
+	err = createApplicationSession(c, user)
 	if err != nil {
 		return sendError(c, 500, "error.session_failed")
 	}
-	log.Printf("[AUTH] New session created: %s... (expires: %d)", sessionIDPrefix(sessionID), expiresAt)
-
-	// Set cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     SessionCookieName,
-		Value:    sessionID,
-		Expires:  time.Now().Add(SessionDuration),
-		HTTPOnly: true,
-		Secure:   isSecureConnection(c),
-		SameSite: "Lax",
-		Path:     "/",
-	})
 
 	return c.Redirect("/")
+}
+
+func createApplicationSession(c *fiber.Ctx, user *db.User) error {
+	sessionID := generateSessionID()
+	csrfToken := generateSessionID()
+	expires := time.Now().Add(SessionDuration)
+	if err := db.CreateUserSession(sessionID, user.ID, expires.Unix(), csrfToken); err != nil {
+		return err
+	}
+	c.Cookie(&fiber.Cookie{Name: SessionCookieName, Value: sessionID, Expires: expires, HTTPOnly: true, Secure: isSecureConnection(c), SameSite: "Lax", Path: "/"})
+	c.Cookie(&fiber.Cookie{Name: "csrf", Value: csrfToken, Expires: expires, HTTPOnly: false, Secure: isSecureConnection(c), SameSite: "Lax", Path: "/"})
+	_ = db.MarkUserLogin(user.ID)
+	log.Printf("[AUTH] User %d session created: %s...", user.ID, sessionIDPrefix(sessionID))
+	return nil
 }
 
 // Logout handles logout
@@ -138,6 +144,7 @@ func Logout(c *fiber.Ctx) error {
 		SameSite: "Lax",
 		Path:     "/",
 	})
+	c.Cookie(&fiber.Cookie{Name: "csrf", Value: "", Expires: time.Now().Add(-time.Hour), HTTPOnly: false, Secure: isSecureConnection(c), SameSite: "Lax", Path: "/"})
 
 	return c.Redirect("/login")
 }
@@ -145,6 +152,14 @@ func Logout(c *fiber.Ctx) error {
 // AuthMiddleware checks if user is authenticated
 func AuthMiddleware(c *fiber.Ctx) error {
 	if isAuthDisabled() {
+		users, err := db.ListUsers()
+		if err == nil && len(users) > 0 {
+			u := &users[0]
+			u.IsAdmin = true
+			c.Locals("user", u)
+			c.Locals("userID", u.ID)
+			c.Locals("isAdmin", true)
+		}
 		return c.Next()
 	}
 
@@ -212,5 +227,61 @@ func AuthMiddleware(c *fiber.Ctx) error {
 		return c.Redirect("/login")
 	}
 
+	user, err := db.GetUserByID(session.UserID)
+	if err != nil || user.Disabled {
+		db.DeleteSession(sessionID)
+		if c.Get("HX-Request") == "true" {
+			c.Set("HX-Redirect", "/login")
+			return c.SendStatus(401)
+		}
+		return c.Redirect("/login")
+	}
+	effectiveAdmin, err := db.IsUserAdministrator(user.ID)
+	if err != nil {
+		return sendError(c, 503, "error.database_unavailable")
+	}
+	user.IsAdmin = effectiveAdmin
+	c.Locals("user", user)
+	c.Locals("userID", user.ID)
+	c.Locals("isAdmin", effectiveAdmin)
+	c.Locals("csrfToken", session.CSRFToken)
+
+	return c.Next()
+}
+
+func CurrentUser(c *fiber.Ctx) (*db.User, error) {
+	u, ok := c.Locals("user").(*db.User)
+	if !ok || u == nil {
+		return nil, fiber.ErrUnauthorized
+	}
+	return u, nil
+}
+
+func RequireAdmin(c *fiber.Ctx) error {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	if !u.IsAdmin {
+		return fiber.ErrForbidden
+	}
+	return nil
+}
+
+func CSRFMiddleware(c *fiber.Ctx) error {
+	if isAuthDisabled() {
+		return c.Next()
+	}
+	switch c.Method() {
+	case fiber.MethodPost, fiber.MethodPut, fiber.MethodPatch, fiber.MethodDelete:
+		sessionToken, _ := c.Locals("csrfToken").(string)
+		supplied := c.Get("X-CSRF-Token")
+		if supplied == "" {
+			supplied = c.FormValue("_csrf")
+		}
+		if sessionToken == "" || subtle.ConstantTimeCompare([]byte(sessionToken), []byte(supplied)) != 1 {
+			return fiber.ErrForbidden
+		}
+	}
 	return c.Next()
 }
