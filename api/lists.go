@@ -240,7 +240,7 @@ func DeleteList(c *fiber.Ctx) error {
 		})
 	}
 
-	preparedWebhooks := handlers.PrepareItemWebhooks(webhook.EventItemDeleted, handlers.SnapshotListItems(int64(id)))
+	preparedWebhooks := handlers.PrepareListItemWebhooks(webhook.EventItemDeleted, int64(id))
 	if err := db.DeleteList(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "delete_failed",

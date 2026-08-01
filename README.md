@@ -161,7 +161,7 @@ docker-compose up -d
 
 ### Outbound Webhooks
 
-Set `WEBHOOK_URL` to receive asynchronous HTTP POST notifications when items change. Webhook failures are logged and do not interrupt list operations.
+Set `WEBHOOK_URL` to receive asynchronous HTTP POST notifications when items change. Accepted events are first stored in a SQLite outbox, then delivered in order. Failed deliveries use exponential backoff and survive application restarts. Delivery is at least once, so consumers should deduplicate using the stable event `id`.
 
 ```bash
 WEBHOOK_URL=https://automation.example.com/webhook/koffan \
@@ -174,6 +174,7 @@ Each request includes `Content-Type: application/json`, an `X-Koffan-Event` head
 
 ```json
 {
+  "id": "32f46c85bf51499cac2131cdbf18d78c",
   "event": "item.created",
   "timestamp": "2026-08-01T10:30:00Z",
   "data": {

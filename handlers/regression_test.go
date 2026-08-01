@@ -55,6 +55,10 @@ func initTestDatabase(t *testing.T) {
 }
 
 func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *http.Response {
+	return postImportFileWithResolution(t, app, filename, contents, "skip")
+}
+
+func postImportFileWithResolution(t *testing.T, app *fiber.App, filename, contents, conflictResolution string) *http.Response {
 	t.Helper()
 
 	var body bytes.Buffer
@@ -66,7 +70,7 @@ func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *ht
 	if _, err := io.WriteString(part, contents); err != nil {
 		t.Fatalf("write multipart file: %v", err)
 	}
-	if err := writer.WriteField("conflict_resolution", "skip"); err != nil {
+	if err := writer.WriteField("conflict_resolution", conflictResolution); err != nil {
 		t.Fatalf("write multipart field: %v", err)
 	}
 	if err := writer.Close(); err != nil {
@@ -80,6 +84,78 @@ func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *ht
 		t.Fatalf("import request did not complete: %v", err)
 	}
 	return resp
+}
+
+func TestBulkItemMutationsReturnOnlyExactChangedRows(t *testing.T) {
+	initTestDatabase(t)
+
+	list, err := db.CreateList("Weekly", "cart")
+	if err != nil {
+		t.Fatalf("create list: %v", err)
+	}
+	if err := db.SetActiveList(list.ID); err != nil {
+		t.Fatalf("activate list: %v", err)
+	}
+	section, err := db.CreateSectionForList(list.ID, "General")
+	if err != nil {
+		t.Fatalf("create section: %v", err)
+	}
+	first, err := db.CreateItem(section.ID, "Milk", "", 1)
+	if err != nil {
+		t.Fatalf("create first item: %v", err)
+	}
+	second, err := db.CreateItem(section.ID, "Bread", "", 1)
+	if err != nil {
+		t.Fatalf("create second item: %v", err)
+	}
+	if _, err := db.DB.Exec("UPDATE items SET completed = TRUE, updated_at = 1 WHERE id = ?", second.ID); err != nil {
+		t.Fatalf("prepare completed item: %v", err)
+	}
+	if _, err := db.DB.Exec("UPDATE items SET updated_at = 1 WHERE id = ?", first.ID); err != nil {
+		t.Fatalf("prepare active item: %v", err)
+	}
+
+	checked, err := db.CheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("check all items: %v", err)
+	}
+	if len(checked) != 1 || checked[0].ID != first.ID {
+		t.Fatalf("checked items = %#v, want only item %d", checked, first.ID)
+	}
+	if !checked[0].Completed || checked[0].UpdatedAt <= 1 {
+		t.Fatalf("checked item state = %#v, want completed with current updated_at", checked[0])
+	}
+	checkedAgain, err := db.CheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("check all items again: %v", err)
+	}
+	if len(checkedAgain) != 0 {
+		t.Fatalf("second check returned %d rows, want 0", len(checkedAgain))
+	}
+
+	unchecked, err := db.UncheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("uncheck all items: %v", err)
+	}
+	if len(unchecked) != 2 {
+		t.Fatalf("unchecked items = %d, want 2", len(unchecked))
+	}
+	for _, item := range unchecked {
+		if item.Completed {
+			t.Fatalf("uncheck returned completed item: %#v", item)
+		}
+	}
+
+	if _, err := db.DB.Exec("UPDATE items SET completed = TRUE WHERE id = ?", first.ID); err != nil {
+		t.Fatalf("prepare completed item for deletion: %v", err)
+	}
+	deleted, err := db.DeleteCompletedItems()
+	if err != nil {
+		t.Fatalf("delete completed items: %v", err)
+	}
+	if len(deleted) != 1 || deleted[0].ID != first.ID || !deleted[0].Completed {
+		t.Fatalf("deleted items = %#v, want completed item %d", deleted, first.ID)
+	}
 }
 
 func TestImportDataDoesNotDeadlockSingleConnectionPool(t *testing.T) {

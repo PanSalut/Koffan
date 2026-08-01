@@ -120,7 +120,7 @@ func DeleteSection(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	preparedWebhooks := PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotSectionItems(id))
+	preparedWebhooks := PrepareSectionItemWebhooks(webhook.EventItemDeleted, id)
 	err = db.DeleteSection(id)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
@@ -227,7 +227,7 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 
 	var preparedWebhooks []PreparedItemWebhook
 	for _, id := range ids {
-		preparedWebhooks = append(preparedWebhooks, PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotSectionItems(id))...)
+		preparedWebhooks = append(preparedWebhooks, PrepareSectionItemWebhooks(webhook.EventItemDeleted, id)...)
 	}
 	err := db.DeleteSections(ids)
 	if err != nil {

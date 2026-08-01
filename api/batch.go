@@ -154,7 +154,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": list.ID,
 	})
-	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		List:     list,
@@ -267,7 +267,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": req.ListID,
 	})
-	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Sections: sections,
@@ -349,7 +349,7 @@ func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"section_id": req.SectionID,
 	})
-	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Items: items,

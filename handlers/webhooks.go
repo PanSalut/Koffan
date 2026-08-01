@@ -69,23 +69,6 @@ func NotifyPreparedItemWebhooks(event string, prepared []PreparedItemWebhook) {
 	}
 }
 
-// SnapshotItemsByCompletion captures items before a bulk completion or deletion.
-func SnapshotItemsByCompletion(sectionID int64, completed bool) []db.Item {
-	section, err := db.GetSectionByID(sectionID)
-	if err != nil {
-		log.Printf("Could not snapshot section %d for webhook events: %v", sectionID, err)
-		return nil
-	}
-
-	items := make([]db.Item, 0, len(section.Items))
-	for _, item := range section.Items {
-		if item.Completed == completed {
-			items = append(items, item)
-		}
-	}
-	return items
-}
-
 // SnapshotSectionItems captures all items in a section before a bulk operation.
 func SnapshotSectionItems(sectionID int64) []db.Item {
 	section, err := db.GetSectionByID(sectionID)
@@ -94,6 +77,14 @@ func SnapshotSectionItems(sectionID int64) []db.Item {
 		return nil
 	}
 	return section.Items
+}
+
+// PrepareSectionItemWebhooks avoids reading section items when the event is disabled.
+func PrepareSectionItemWebhooks(event string, sectionID int64) []PreparedItemWebhook {
+	if !webhook.Accepts(event) {
+		return nil
+	}
+	return PrepareItemWebhooks(event, SnapshotSectionItems(sectionID))
 }
 
 // SnapshotListItems captures all items in a list before a bulk operation.
@@ -111,18 +102,45 @@ func SnapshotListItems(listID int64) []db.Item {
 	return items
 }
 
+// PrepareListItemWebhooks avoids reading list items when the event is disabled.
+func PrepareListItemWebhooks(event string, listID int64) []PreparedItemWebhook {
+	if !webhook.Accepts(event) {
+		return nil
+	}
+	return PrepareItemWebhooks(event, SnapshotListItems(listID))
+}
+
+// PrepareAllItemWebhooks captures all item payloads before clearing the database.
+func PrepareAllItemWebhooks(event string) []PreparedItemWebhook {
+	if !webhook.Accepts(event) {
+		return nil
+	}
+
+	lists, err := db.GetAllLists()
+	if err != nil {
+		log.Printf("Could not snapshot database for webhook events: %v", err)
+		return nil
+	}
+
+	var prepared []PreparedItemWebhook
+	for _, list := range lists {
+		prepared = append(prepared, PrepareItemWebhooks(event, SnapshotListItems(list.ID))...)
+	}
+	return prepared
+}
+
 // NotifyItemWebhooks emits one event for each item affected by a bulk operation.
-func NotifyItemWebhooks(event string, items []db.Item, completed *bool) {
+func NotifyItemWebhooks(event string, items []db.Item) {
 	for index := range items {
-		if completed != nil {
-			items[index].Completed = *completed
-		}
 		NotifyItemWebhook(event, &items[index])
 	}
 }
 
 // NotifyCreatedListItems emits created events for items added after a snapshot.
 func NotifyCreatedListItems(listID int64, before []db.Item) {
+	if !webhook.Accepts(webhook.EventItemCreated) {
+		return
+	}
 	existingIDs := make(map[int64]struct{}, len(before))
 	for _, item := range before {
 		existingIDs[item.ID] = struct{}{}

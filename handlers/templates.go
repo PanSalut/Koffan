@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"shopping-list/db"
+	"shopping-list/webhook"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -200,7 +201,10 @@ func ApplyTemplate(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.no_active_list")
 	}
-	itemsBefore := SnapshotListItems(activeList.ID)
+	var itemsBefore []db.Item
+	if webhook.Accepts(webhook.EventItemCreated) {
+		itemsBefore = SnapshotListItems(activeList.ID)
+	}
 
 	err = db.ApplyTemplateToList(templateID, activeList.ID)
 	if err != nil {

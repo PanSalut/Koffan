@@ -662,28 +662,59 @@ func getItemsBySectionWithMode(sectionID int64, sortMode string) ([]Item, error)
 	return items, nil
 }
 
-// CheckAllItems marks all active items in a section as completed
-func CheckAllItems(sectionID int64) (int64, error) {
-	result, err := DB.Exec(`
+// CheckAllItems atomically marks all active items in a section as completed
+// and returns the exact rows changed by the statement.
+func CheckAllItems(sectionID int64) ([]Item, error) {
+	rows, err := DB.Query(`
 		UPDATE items SET completed = TRUE, updated_at = strftime('%s', 'now')
 		WHERE section_id = ? AND completed = FALSE
+		RETURNING id, section_id, name, description, completed, uncertain,
+		          COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 	`, sectionID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected()
+	return scanItemRows(rows)
 }
 
-// UncheckAllItems marks all completed items in a section as active
-func UncheckAllItems(sectionID int64) (int64, error) {
-	result, err := DB.Exec(`
+// UncheckAllItems atomically marks all completed items in a section as active
+// and returns the exact rows changed by the statement.
+func UncheckAllItems(sectionID int64) ([]Item, error) {
+	rows, err := DB.Query(`
 		UPDATE items SET completed = FALSE, updated_at = strftime('%s', 'now')
 		WHERE section_id = ? AND completed = TRUE
+		RETURNING id, section_id, name, description, completed, uncertain,
+		          COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
 	`, sectionID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected()
+	return scanItemRows(rows)
+}
+
+func scanItemRows(rows *sql.Rows) ([]Item, error) {
+	defer rows.Close()
+
+	var items []Item
+	for rows.Next() {
+		var item Item
+		if err := rows.Scan(
+			&item.ID,
+			&item.SectionID,
+			&item.Name,
+			&item.Description,
+			&item.Completed,
+			&item.Uncertain,
+			&item.Quantity,
+			&item.SortOrder,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 func GetItemByID(id int64) (*Item, error) {
@@ -754,22 +785,22 @@ func DeleteItem(id int64) error {
 	return err
 }
 
-// DeleteCompletedItems deletes all completed items from the active list
-func DeleteCompletedItems() (int64, error) {
-	activeList, err := GetActiveList()
-	if err != nil {
-		return 0, err
-	}
-
-	result, err := DB.Exec(`
+// DeleteCompletedItems atomically deletes all completed items from the active
+// list and returns the exact rows removed by the statement.
+func DeleteCompletedItems() ([]Item, error) {
+	rows, err := DB.Query(`
 		DELETE FROM items WHERE completed = TRUE AND section_id IN (
-			SELECT id FROM sections WHERE list_id = ?
+			SELECT s.id FROM sections s
+			JOIN lists l ON l.id = s.list_id
+			WHERE l.is_active = TRUE
 		)
-	`, activeList.ID)
+		RETURNING id, section_id, name, description, completed, uncertain,
+		          COALESCE(quantity, 0), sort_order, created_at, COALESCE(updated_at, 0)
+	`)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected()
+	return scanItemRows(rows)
 }
 
 func ToggleItemCompleted(id int64) (*Item, error) {

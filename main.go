@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"html/template"
@@ -13,6 +14,7 @@ import (
 	"shopping-list/handlers"
 	"shopping-list/i18n"
 	"shopping-list/webhook"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -40,13 +42,20 @@ func main() {
 		i18n.SetDefaultLang(lang)
 	}
 
-	if err := webhook.ConfigureFromEnv(); err != nil {
-		log.Printf("Outbound webhooks are disabled: %v", err)
-	}
-
 	// Initialize database
 	db.Init()
 	defer db.Close()
+
+	if err := webhook.ConfigureFromEnv(db.DB); err != nil {
+		log.Printf("Outbound webhooks are disabled: %v", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := webhook.Shutdown(ctx); err != nil {
+			log.Printf("Webhook worker shutdown timed out: %v", err)
+		}
+	}()
 
 	// Clean expired sessions on startup
 	db.CleanExpiredSessions()
@@ -281,5 +290,7 @@ func main() {
 	}
 
 	log.Printf("Starting server on port %s", port)
-	log.Fatal(app.Listen(":" + port))
+	if err := app.Listen(":" + port); err != nil {
+		log.Printf("Server stopped: %v", err)
+	}
 }

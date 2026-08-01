@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/subtle"
 	"shopping-list/db"
+	"shopping-list/webhook"
 	"sync"
 	"time"
 
@@ -107,6 +108,7 @@ func ClearDatabase(c *fiber.Ctx) error {
 	}
 
 	// Clear all data
+	preparedWebhooks := PrepareAllItemWebhooks(webhook.EventItemDeleted)
 	if err := db.ClearAllData(); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
@@ -116,6 +118,7 @@ func ClearDatabase(c *fiber.Ctx) error {
 
 	// Broadcast update to all connected clients
 	BroadcastUpdate("database_cleared", nil)
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 
 	return c.JSON(fiber.Map{
 		"success": true,

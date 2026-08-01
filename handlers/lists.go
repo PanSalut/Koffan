@@ -194,7 +194,7 @@ func DeleteList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
-	preparedWebhooks := PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotListItems(id))
+	preparedWebhooks := PrepareListItemWebhooks(webhook.EventItemDeleted, id)
 	err = db.DeleteList(id)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())

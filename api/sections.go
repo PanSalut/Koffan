@@ -352,18 +352,17 @@ func CheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	items := handlers.SnapshotItemsByCompletion(int64(id), false)
-	count, err := db.CheckAllItems(int64(id))
+	items, err := db.CheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "check_all_failed",
 			Message: "Failed to check all items",
 		})
 	}
+	count := len(items)
 
 	handlers.BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": int64(id), "count": count})
-	completed := true
-	handlers.NotifyItemWebhooks(webhook.EventItemCompleted, items, &completed)
+	handlers.NotifyItemWebhooks(webhook.EventItemCompleted, items)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 
@@ -391,18 +390,17 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	items := handlers.SnapshotItemsByCompletion(int64(id), true)
-	count, err := db.UncheckAllItems(int64(id))
+	items, err := db.UncheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "uncheck_all_failed",
 			Message: "Failed to uncheck all items",
 		})
 	}
+	count := len(items)
 
 	handlers.BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": int64(id), "count": count})
-	completed := false
-	handlers.NotifyItemWebhooks(webhook.EventItemUpdated, items, &completed)
+	handlers.NotifyItemWebhooks(webhook.EventItemUpdated, items)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 

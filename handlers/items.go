@@ -207,23 +207,15 @@ func DeleteItem(c *fiber.Ctx) error {
 
 // DeleteCompletedItems deletes all completed items
 func DeleteCompletedItems(c *fiber.Ctx) error {
-	var completedItems []db.Item
-	if activeList, activeListErr := db.GetActiveList(); activeListErr == nil {
-		for _, item := range SnapshotListItems(activeList.ID) {
-			if item.Completed {
-				completedItems = append(completedItems, item)
-			}
-		}
-	}
-
-	count, err := db.DeleteCompletedItems()
+	deletedItems, err := db.DeleteCompletedItems()
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
+	count := len(deletedItems)
 
 	// Broadcast to WebSocket clients
-	BroadcastUpdate("completed_items_deleted", map[string]int64{"count": count})
-	NotifyItemWebhooks(webhook.EventItemDeleted, completedItems, nil)
+	BroadcastUpdate("completed_items_deleted", map[string]int64{"count": int64(count)})
+	NotifyItemWebhooks(webhook.EventItemDeleted, deletedItems)
 
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 	return c.JSON(fiber.Map{"deleted": count})
@@ -476,15 +468,14 @@ func CheckAllItems(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_section_id")
 	}
 
-	items := SnapshotItemsByCompletion(id, false)
-	count, err := db.CheckAllItems(id)
+	items, err := db.CheckAllItems(id)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
+	count := len(items)
 
 	BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": id, "count": count})
-	completed := true
-	NotifyItemWebhooks(webhook.EventItemCompleted, items, &completed)
+	NotifyItemWebhooks(webhook.EventItemCompleted, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
@@ -496,15 +487,14 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_section_id")
 	}
 
-	items := SnapshotItemsByCompletion(id, true)
-	count, err := db.UncheckAllItems(id)
+	items, err := db.UncheckAllItems(id)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
+	count := len(items)
 
 	BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": id, "count": count})
-	completed := false
-	NotifyItemWebhooks(webhook.EventItemUpdated, items, &completed)
+	NotifyItemWebhooks(webhook.EventItemUpdated, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
