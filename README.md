@@ -62,6 +62,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 - Simple login system
 - Rate limiting protection against brute-force attacks
 - **REST API** - Programmatic access for integrations and migrations ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API))
+- **Outbound webhooks** - Signed item events for automation tools such as n8n, Node-RED, and Zapier ([docs](https://github.com/PanSalut/Koffan/wiki/Webhooks))
 
 ## Tech Stack
 
@@ -161,7 +162,7 @@ docker-compose up -d
 
 ### Outbound Webhooks
 
-Set `WEBHOOK_URL` to receive asynchronous HTTP POST notifications when items change. Accepted events are first stored in a SQLite outbox, then delivered in order. Failed deliveries use exponential backoff and survive application restarts. Delivery is at least once, so consumers should deduplicate using the stable event `id`.
+Set `WEBHOOK_URL` to receive signed, asynchronous item events. Koffan supports event filtering, HMAC-SHA256 signatures, and durable SQLite-backed retries that survive restarts.
 
 ```bash
 WEBHOOK_URL=https://automation.example.com/webhook/koffan \
@@ -170,33 +171,7 @@ WEBHOOK_EVENTS=item.created,item.completed,item.deleted \
 go run .
 ```
 
-Each request includes `Content-Type: application/json`, an `X-Koffan-Event` header, and a JSON body:
-
-```json
-{
-  "id": "32f46c85bf51499cac2131cdbf18d78c",
-  "event": "item.created",
-  "timestamp": "2026-08-01T10:30:00Z",
-  "data": {
-    "item": {
-      "id": 42,
-      "section_id": 3,
-      "name": "Milk",
-      "description": "",
-      "completed": false,
-      "uncertain": false,
-      "quantity": 1,
-      "sort_order": 0,
-      "created_at": "2026-08-01T10:30:00Z",
-      "updated_at": 1785580200
-    },
-    "section": {"id": 3, "name": "Dairy"},
-    "list": {"id": 1, "name": "Weekly groceries"}
-  }
-}
-```
-
-When `WEBHOOK_SECRET` is set, Koffan adds `X-Koffan-Signature-256: sha256=<hex digest>`. Verify it by computing HMAC-SHA256 over the raw request body with the same secret. If `WEBHOOK_EVENTS` is omitted, all four supported events are delivered.
+See the [Webhook documentation](https://github.com/PanSalut/Koffan/wiki/Webhooks) for events, payloads, signature verification, retry behavior, and integration guidance.
 
 ## Deploy to Your Server
 
@@ -226,6 +201,7 @@ Data is stored in `/data/shopping.db`. The volume ensures your data persists acr
 For more information, check the **[Wiki](https://github.com/PanSalut/Koffan/wiki)**:
 
 - [REST API](https://github.com/PanSalut/Koffan/wiki/REST-API) - Programmatic access, migrations, integrations
+- [Webhooks](https://github.com/PanSalut/Koffan/wiki/Webhooks) - Outbound item events for automation and notifications
 - [Multiple Instances](https://github.com/PanSalut/Koffan/wiki/Multiple-Instances) - Running separate instances for different households
 
 ## Feature Requests
