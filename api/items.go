@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -122,6 +123,7 @@ func CreateItem(c *fiber.Ctx) error {
 			}
 			db.SaveItemHistory(req.Name, req.SectionID)
 			handlers.BroadcastUpdate("item_toggled", item)
+			handlers.NotifyItemWebhook(webhook.EventItemUpdated, item)
 			return c.JSON(fiber.Map{
 				"item":        item,
 				"reactivated": true,
@@ -146,6 +148,7 @@ func CreateItem(c *fiber.Ctx) error {
 	db.SaveItemHistory(req.Name, req.SectionID)
 
 	handlers.BroadcastUpdate("item_created", item)
+	handlers.NotifyItemWebhook(webhook.EventItemCreated, item)
 	return c.Status(fiber.StatusCreated).JSON(item)
 }
 
@@ -220,6 +223,7 @@ func UpdateItem(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_updated", item)
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, item)
 	return c.JSON(item)
 }
 
@@ -234,7 +238,7 @@ func DeleteItem(c *fiber.Ctx) error {
 	}
 
 	// Check if item exists
-	_, err = db.GetItemByID(int64(id))
+	item, err := db.GetItemByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -256,6 +260,7 @@ func DeleteItem(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_deleted", map[string]int64{"id": int64(id)})
+	handlers.NotifyItemWebhook(webhook.EventItemDeleted, item)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -293,6 +298,11 @@ func ToggleItemCompleted(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_toggled", item)
+	event := webhook.EventItemUpdated
+	if item.Completed {
+		event = webhook.EventItemCompleted
+	}
+	handlers.NotifyItemWebhook(event, item)
 	return c.JSON(item)
 }
 
@@ -330,6 +340,7 @@ func ToggleItemUncertain(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_updated", item)
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, item)
 	return c.JSON(item)
 }
 
@@ -375,6 +386,7 @@ func AdjustItemQuantity(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_updated", item)
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, item)
 	return c.JSON(item)
 }
 
@@ -442,6 +454,7 @@ func MoveItem(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("item_moved", item)
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, item)
 	return c.JSON(item)
 }
 
@@ -480,6 +493,7 @@ func MoveItemUp(c *fiber.Ctx) error {
 	handlers.BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
 
 	updatedItem, _ := db.GetItemByID(int64(id))
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, updatedItem)
 	return c.JSON(updatedItem)
 }
 
@@ -518,5 +532,6 @@ func MoveItemDown(c *fiber.Ctx) error {
 	handlers.BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
 
 	updatedItem, _ := db.GetItemByID(int64(id))
+	handlers.NotifyItemWebhook(webhook.EventItemUpdated, updatedItem)
 	return c.JSON(updatedItem)
 }

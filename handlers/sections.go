@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 
@@ -119,6 +120,7 @@ func DeleteSection(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
+	preparedWebhooks := PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotSectionItems(id))
 	err = db.DeleteSection(id)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
@@ -126,6 +128,7 @@ func DeleteSection(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("section_deleted", map[string]int64{"id": id})
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")
@@ -222,6 +225,10 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.no_valid_ids")
 	}
 
+	var preparedWebhooks []PreparedItemWebhook
+	for _, id := range ids {
+		preparedWebhooks = append(preparedWebhooks, PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotSectionItems(id))...)
+	}
 	err := db.DeleteSections(ids)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
@@ -229,6 +236,7 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("sections_deleted", map[string]interface{}{"ids": ids})
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 
 	// Return updated sections list for modal
 	return returnSectionsForModal(c)

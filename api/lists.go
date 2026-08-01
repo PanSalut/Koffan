@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -239,6 +240,7 @@ func DeleteList(c *fiber.Ctx) error {
 		})
 	}
 
+	preparedWebhooks := handlers.PrepareItemWebhooks(webhook.EventItemDeleted, handlers.SnapshotListItems(int64(id)))
 	if err := db.DeleteList(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "delete_failed",
@@ -247,6 +249,7 @@ func DeleteList(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("list_deleted", map[string]int64{"id": int64(id)})
+	handlers.NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

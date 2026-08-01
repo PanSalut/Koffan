@@ -6,6 +6,7 @@ import (
 	"log"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 
@@ -193,6 +194,7 @@ func DeleteList(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_id")
 	}
 
+	preparedWebhooks := PrepareItemWebhooks(webhook.EventItemDeleted, SnapshotListItems(id))
 	err = db.DeleteList(id)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
@@ -200,6 +202,7 @@ func DeleteList(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("list_deleted", map[string]int64{"id": id})
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")

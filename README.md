@@ -155,6 +155,47 @@ docker-compose up -d
 | `LOGIN_WINDOW_MINUTES` | `15` | Time window for counting attempts |
 | `LOGIN_LOCKOUT_MINUTES` | `30` | Lockout duration after exceeding limit |
 | `API_TOKEN` | *(disabled)* | Enable REST API with this token ([docs](https://github.com/PanSalut/Koffan/wiki/REST-API)) |
+| `WEBHOOK_URL` | *(disabled)* | HTTP or HTTPS endpoint for outbound item events |
+| `WEBHOOK_SECRET` | *(none)* | Secret used to sign webhook payloads with HMAC-SHA256 |
+| `WEBHOOK_EVENTS` | *(all item events)* | Comma-separated filter: `item.created`, `item.updated`, `item.completed`, `item.deleted` |
+
+### Outbound Webhooks
+
+Set `WEBHOOK_URL` to receive asynchronous HTTP POST notifications when items change. Webhook failures are logged and do not interrupt list operations.
+
+```bash
+WEBHOOK_URL=https://automation.example.com/webhook/koffan \
+WEBHOOK_SECRET=replace-with-a-random-secret \
+WEBHOOK_EVENTS=item.created,item.completed,item.deleted \
+go run .
+```
+
+Each request includes `Content-Type: application/json`, an `X-Koffan-Event` header, and a JSON body:
+
+```json
+{
+  "event": "item.created",
+  "timestamp": "2026-08-01T10:30:00Z",
+  "data": {
+    "item": {
+      "id": 42,
+      "section_id": 3,
+      "name": "Milk",
+      "description": "",
+      "completed": false,
+      "uncertain": false,
+      "quantity": 1,
+      "sort_order": 0,
+      "created_at": "2026-08-01T10:30:00Z",
+      "updated_at": 1785580200
+    },
+    "section": {"id": 3, "name": "Dairy"},
+    "list": {"id": 1, "name": "Weekly groceries"}
+  }
+}
+```
+
+When `WEBHOOK_SECRET` is set, Koffan adds `X-Koffan-Signature-256: sha256=<hex digest>`. Verify it by computing HMAC-SHA256 over the raw request body with the same secret. If `WEBHOOK_EVENTS` is omitted, all four supported events are delivered.
 
 ## Deploy to Your Server
 

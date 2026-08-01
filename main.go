@@ -12,6 +12,7 @@ import (
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -37,6 +38,10 @@ func main() {
 	// Set default language from env var (if specified)
 	if lang := os.Getenv("DEFAULT_LANG"); lang != "" {
 		i18n.SetDefaultLang(lang)
+	}
+
+	if err := webhook.ConfigureFromEnv(); err != nil {
+		log.Printf("Outbound webhooks are disabled: %v", err)
 	}
 
 	// Initialize database

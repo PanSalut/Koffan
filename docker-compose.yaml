@@ -8,6 +8,9 @@ services:
       - APP_PASSWORD=${APP_PASSWORD:-shopping123}
       - PORT=8080
       - DB_PATH=/data/shopping.db
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
+      - WEBHOOK_EVENTS=${WEBHOOK_EVENTS:-}
     volumes:
       - shopping-data:/data
     restart: unless-stopped

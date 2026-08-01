@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -153,6 +154,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": list.ID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		List:     list,
@@ -265,6 +267,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": req.ListID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Sections: sections,
@@ -346,6 +349,7 @@ func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"section_id": req.SectionID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items, nil)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Items: items,

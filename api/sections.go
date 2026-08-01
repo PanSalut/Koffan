@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -144,7 +145,7 @@ func UpdateSection(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -158,7 +159,7 @@ func UpdateSection(c *fiber.Ctx) error {
 		})
 	}
 
-	section, err := db.UpdateSection(int64(id), req.Name)
+	section, err = db.UpdateSection(int64(id), req.Name)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "update_failed",
@@ -181,7 +182,7 @@ func DeleteSection(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -195,6 +196,7 @@ func DeleteSection(c *fiber.Ctx) error {
 		})
 	}
 
+	preparedWebhooks := handlers.PrepareItemWebhooks(webhook.EventItemDeleted, section.Items)
 	if err := db.DeleteSection(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "delete_failed",
@@ -203,6 +205,7 @@ func DeleteSection(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("section_deleted", map[string]int64{"id": int64(id)})
+	handlers.NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -349,6 +352,7 @@ func CheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
+	items := handlers.SnapshotItemsByCompletion(int64(id), false)
 	count, err := db.CheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
@@ -358,6 +362,8 @@ func CheckAllItems(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": int64(id), "count": count})
+	completed := true
+	handlers.NotifyItemWebhooks(webhook.EventItemCompleted, items, &completed)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 
@@ -385,6 +391,7 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
+	items := handlers.SnapshotItemsByCompletion(int64(id), true)
 	count, err := db.UncheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
@@ -394,6 +401,8 @@ func UncheckAllItems(c *fiber.Ctx) error {
 	}
 
 	handlers.BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": int64(id), "count": count})
+	completed := false
+	handlers.NotifyItemWebhooks(webhook.EventItemUpdated, items, &completed)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 

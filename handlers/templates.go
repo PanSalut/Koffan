@@ -200,6 +200,7 @@ func ApplyTemplate(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.no_active_list")
 	}
+	itemsBefore := SnapshotListItems(activeList.ID)
 
 	err = db.ApplyTemplateToList(templateID, activeList.ID)
 	if err != nil {
@@ -211,6 +212,7 @@ func ApplyTemplate(c *fiber.Ctx) error {
 		"template_id": templateID,
 		"list_id":     activeList.ID,
 	})
+	NotifyCreatedListItems(activeList.ID, itemsBefore)
 
 	// Trigger full refresh - template adds items to multiple sections
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true","refreshList":"true"}`)
