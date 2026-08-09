@@ -4,7 +4,7 @@ Koffan is a lightweight shopping-list PWA for couples and families with real-tim
 
 ## Tech Stack
 
-- **Backend:** Go 1.21, Fiber v2, SQLite (WAL mode, CGO required)
+- **Backend:** Go 1.25+ (Go 1.26.5 toolchain), Fiber v2, SQLite (WAL mode, CGO required)
 - **Frontend:** HTMX + Alpine.js + Tailwind CSS (runtime), SortableJS
 - **Templates:** Go `html/template` with partials in `templates/partials/`
 - **Real-time:** WebSocket via Fiber, broadcast to all connected clients

@@ -66,7 +66,7 @@ I built the first version in **Next.js**, but it turned out to be very resource-
 
 ## Tech Stack
 
-- **Backend:** Go 1.21 + Fiber
+- **Backend:** Go 1.25+ (Go 1.26.5 toolchain) + Fiber
 - **Frontend:** HTMX + Alpine.js + Tailwind CSS
 - **Database:** SQLite
 
