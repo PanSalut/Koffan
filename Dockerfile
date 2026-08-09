@@ -1,5 +1,10 @@
+# Keep the build toolchain and runtime distribution explicit so security updates
+# are reviewable instead of depending on floating major-version tags.
+ARG GO_VERSION=1.26.5
+ARG ALPINE_VERSION=3.23
+
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 WORKDIR /app
 
@@ -18,7 +23,7 @@ RUN VERSION=$(cat VERSION | tr -d '\n') && \
     CGO_ENABLED=1 go build -ldflags "-X shopping-list/handlers.AppVersion=$VERSION" -o shopping-list .
 
 # Production stage
-FROM alpine:3.19
+FROM alpine:${ALPINE_VERSION}
 
 LABEL org.opencontainers.image.source=https://github.com/PanSalut/Koffan
 LABEL org.opencontainers.image.description="Open source self-hosted groceries list for families and shared households"
@@ -26,8 +31,9 @@ LABEL org.opencontainers.image.licenses=MIT
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata libc6-compat
+# Install current runtime security updates and only the packages used by Koffan.
+RUN apk upgrade --no-cache && \
+    apk add --no-cache ca-certificates tzdata
 
 # Copy binary from builder
 COPY --from=builder /app/shopping-list .
