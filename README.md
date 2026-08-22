@@ -150,6 +150,7 @@ docker-compose up -d
 | `APP_PASSWORD` | `shopping123` | Login password |
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
 | `PORT` | `8080` (Docker) / `3000` (local) | Server port |
+| `HTTP_READ_BUFFER_SIZE` | `16384` | Max size in bytes for request headers (raise if you see HTTP 431 behind an SSO proxy) |
 | `DB_PATH` | `./shopping.db` | Database file path |
 | `DEFAULT_LANG` | `en` | Default UI language (pl, en, de, es, fr, pt, uk, no, lt, el, sk, ru) |
 | `LOGIN_MAX_ATTEMPTS` | `5` | Max login attempts before lockout |

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"shopping-list/api"
 	"shopping-list/db"
 	"shopping-list/handlers"
@@ -129,10 +130,26 @@ func main() {
 		},
 	})
 
+	// The request read buffer also caps the maximum size of the HTTP
+	// request header block. fasthttp's default of 4 KiB is too small when
+	// Koffan runs behind an SSO reverse proxy, where the browser sends
+	// large cookie headers on every request. Oversized headers are then
+	// rejected with HTTP 431 "Request Header Fields Too Large" before the
+	// app can handle them. Allow operators to raise the limit.
+	readBufferSize := 16384 // 16 KiB default
+	if v := os.Getenv("HTTP_READ_BUFFER_SIZE"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			readBufferSize = n
+		} else {
+			log.Printf("Invalid HTTP_READ_BUFFER_SIZE %q, using default %d", v, readBufferSize)
+		}
+	}
+
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		Views:       engine,
-		ViewsLayout: "layout",
+		Views:         engine,
+		ViewsLayout:   "layout",
+		ReadBufferSize: readBufferSize,
 	})
 
 	// Middleware
