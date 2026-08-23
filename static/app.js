@@ -1525,7 +1525,7 @@ function shoppingList() {
                 console.error('[Uncertain] Failed:', error);
             }
         },
-
+        // replaced with fix for the toggle and drag controls.  
         // Toggle show/hide completed items for current list
         async toggleShowCompleted(listId) {
             this.markLocalAction('list_updated');
@@ -1535,6 +1535,10 @@ function shoppingList() {
                 const html = await resp.text();
                 document.getElementById('sections-list').innerHTML = html;
                 this.showCompleted = !this.showCompleted;
+                // Reinitialize drag-and-drop after DOM update
+                this.$nextTick(() => {
+                    this.initMobileSortable();
+                });
             } catch (e) {
                 console.error('Failed to toggle show completed:', e);
             }
