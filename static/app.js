@@ -1527,7 +1527,6 @@ function shoppingList() {
         },
         // replaced with fix for the toggle and drag controls.  
         // Toggle show/hide completed items for current list
-        //...existing code...
         async toggleShowCompleted(listId) {
             this.markLocalAction('list_updated');
             try {
