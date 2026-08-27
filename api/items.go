@@ -251,6 +251,13 @@ func DeleteItem(c *fiber.Ctx) error {
 			Message: "Failed to fetch item",
 		})
 	}
+	listID, err := db.ListIDForSection(item.SectionID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "db_error",
+			Message: "Failed to fetch item list",
+		})
+	}
 
 	if err := db.DeleteItem(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
@@ -259,7 +266,7 @@ func DeleteItem(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("item_deleted", map[string]int64{"id": int64(id)})
+	handlers.BroadcastListUpdate(listID, "item_deleted", map[string]int64{"id": int64(id), "section_id": item.SectionID, "list_id": listID})
 	handlers.NotifyItemWebhook(webhook.EventItemDeleted, item)
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -490,7 +497,8 @@ func MoveItemUp(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
+	listID, _ := db.ListIDForSection(item.SectionID)
+	handlers.BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
 
 	updatedItem, _ := db.GetItemByID(int64(id))
 	handlers.NotifyItemWebhook(webhook.EventItemUpdated, updatedItem)
@@ -529,7 +537,8 @@ func MoveItemDown(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
+	listID, _ := db.ListIDForSection(item.SectionID)
+	handlers.BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
 
 	updatedItem, _ := db.GetItemByID(int64(id))
 	handlers.NotifyItemWebhook(webhook.EventItemUpdated, updatedItem)

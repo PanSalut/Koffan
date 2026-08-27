@@ -101,6 +101,11 @@
         {{end}}
 
         <form action="/login" method="POST">
+            <div class="mb-4">
+                <label for="username" class="block text-stone-600 dark:text-stone-400 text-sm font-medium mb-2" x-text="t('login.username')"></label>
+                <input type="text" id="username" name="username" autocomplete="username" required autofocus
+                    class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 rounded-lg px-4 py-3 text-sm text-stone-700 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-pink-400">
+            </div>
             <div class="mb-6">
                 <label for="password" class="block text-stone-600 dark:text-stone-400 text-sm font-medium mb-2" x-text="t('login.password')">
                 </label>
@@ -110,7 +115,7 @@
                     name="password"
                     class="w-full border border-stone-200 dark:border-stone-600 dark:bg-stone-700 rounded-lg px-4 py-3 text-sm text-stone-700 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
                     :placeholder="t('login.password_placeholder')"
-                    autofocus
+                    autocomplete="current-password"
                     required
                 >
             </div>
@@ -122,6 +127,7 @@
             >
             </button>
         </form>
+        {{if .OIDCEnabled}}<div class="my-4 text-center text-sm text-stone-400">or</div><a href="/auth/oidc/login" class="block w-full text-center border border-stone-300 dark:border-stone-600 dark:text-stone-100 rounded-lg py-3">Sign in with {{.OIDCName}}</a>{{end}}
     </div>
 </body>
 </html>

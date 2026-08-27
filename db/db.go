@@ -12,6 +12,16 @@ import (
 var DB *sql.DB
 
 func Init() {
+	initDatabase(false)
+}
+
+// InitForAdminRecovery initializes and migrates the database without running
+// automatic administrator bootstrap. The recovery CLI owns that decision.
+func InitForAdminRecovery() {
+	initDatabase(true)
+}
+
+func initDatabase(skipBootstrap bool) {
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "./shopping.db"
@@ -57,6 +67,11 @@ func Init() {
 
 	// Create tables
 	createTables()
+	if !skipBootstrap {
+		if err := BootstrapInitialAdmin(); err != nil {
+			log.Fatal("Authentication bootstrap failed: ", err)
+		}
+	}
 
 	log.Println("Database initialized successfully (WAL mode)")
 }
@@ -190,6 +205,11 @@ func runMigrations() {
 
 	// Migration: Add show_completed to lists
 	migrateListShowCompleted()
+
+	// Migration: persistent users, user sessions, ownership, sharing and attribution.
+	if err := migrateMultiUser(); err != nil {
+		log.Fatal("Multi-user migration failed: ", err)
+	}
 }
 
 func migrateToMultipleLists() {
@@ -236,6 +256,23 @@ func migrateToMultipleLists() {
 	_, err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_sections_list ON sections(list_id, sort_order)")
 	if err != nil {
 		log.Println("Migration warning - creating sections list index:", err)
+	}
+
+	// Preserve data from the original single-list schema by placing every
+	// existing section into one migrated list. Ownership is assigned later by
+	// the multi-user migration/bootstrap.
+	var sectionCount int
+	if err = DB.QueryRow(`SELECT COUNT(*) FROM sections`).Scan(&sectionCount); err == nil && sectionCount > 0 {
+		result, insertErr := DB.Exec(`INSERT INTO lists(name,sort_order,is_active) VALUES('Shopping List',0,TRUE)`)
+		if insertErr != nil {
+			log.Println("Migration failed - creating list for legacy sections:", insertErr)
+			return
+		}
+		listID, _ := result.LastInsertId()
+		if _, err = DB.Exec(`UPDATE sections SET list_id=? WHERE list_id IS NULL`, listID); err != nil {
+			log.Println("Migration failed - assigning legacy sections:", err)
+			return
+		}
 	}
 
 	log.Println("Migration completed: Multiple lists support added")

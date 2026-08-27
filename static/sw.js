@@ -3,7 +3,19 @@
 // handlers.ServeServiceWorker using the startup-computed asset hash.
 const CACHE_VERSION = 'koffan-__CACHE_VERSION__';
 const STATIC_CACHE = CACHE_VERSION + '-static';
-const DYNAMIC_CACHE = CACHE_VERSION + '-dynamic';
+const IDENTITY_CACHE = CACHE_VERSION + '-identity';
+const IDENTITY_KEY = '/__koffan_authenticated_user__';
+
+async function authenticatedUserID() {
+    const cache = await caches.open(IDENTITY_CACHE);
+    const response = await cache.match(IDENTITY_KEY);
+    return response ? response.text() : '';
+}
+
+async function dynamicCacheName() {
+    const userID = await authenticatedUserID();
+    return userID ? `${CACHE_VERSION}-dynamic-user-${userID}` : '';
+}
 
 // Pattern for list pages
 const LIST_PAGE_PATTERN = /^\/lists\/\d+$/;
@@ -28,31 +40,19 @@ const STATIC_ASSETS = [
     '/static/sortable.min.js?v=__ASSET_HASH__'
 ];
 
-// Install event - cache static assets and the app shell
+// Install event - cache only public static assets. Authenticated HTML is not
+// cached until the page identifies its signed-in user to this worker.
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing service worker...');
     event.waitUntil(
-        Promise.all([
-            caches.open(STATIC_CACHE)
+		caches.open(STATIC_CACHE)
                 .then(cache => {
                     console.log('[SW] Caching static assets');
                     return cache.addAll(STATIC_ASSETS).catch(err => {
                         console.warn('[SW] Some static assets failed to cache:', err);
                     });
-                }),
-            // Precache the app shell so the installed PWA can cold-start offline.
-            // Without this, launching offline hits the networkFirst fallback because
-            // "/" is otherwise only cached lazily after a successful online load.
-            caches.open(DYNAMIC_CACHE)
-                .then(cache => fetch('/', { credentials: 'same-origin' })
-                    .then(response => {
-                        // Skip login redirects and errors so we never cache a non-shell page.
-                        if (response.ok && !response.redirected) {
-                            return cache.put('/', response);
-                        }
-                    })
-                    .catch(err => console.warn('[SW] App shell precache failed:', err)))
-        ]).then(() => self.skipWaiting())
+				})
+				.then(() => self.skipWaiting())
     );
 });
 
@@ -63,11 +63,7 @@ self.addEventListener('activate', (event) => {
         caches.keys()
             .then(keys => {
                 return Promise.all(
-                    keys.filter(key => {
-                        return key.startsWith('koffan-') &&
-                               key !== STATIC_CACHE &&
-                               key !== DYNAMIC_CACHE;
-                    }).map(key => {
+					keys.filter(key => key.startsWith('koffan-') && !key.startsWith(CACHE_VERSION)).map(key => {
                         console.log('[SW] Deleting old cache:', key);
                         return caches.delete(key);
                     })
@@ -163,12 +159,17 @@ async function networkFirst(request) {
         // Skip redirected responses (e.g. an expired session bouncing to /login) so we
         // never cache a login page under the requested URL and poison the offline shell.
         if (response.ok && !response.redirected) {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, response.clone());
+			const cacheName = await dynamicCacheName();
+			if (cacheName) {
+				const cache = await caches.open(cacheName);
+				cache.put(request, response.clone());
+			}
         }
         return response;
     } catch (error) {
-        const cached = await caches.match(request);
+		const cacheName = await dynamicCacheName();
+		const cache = cacheName ? await caches.open(cacheName) : null;
+		const cached = cache ? await cache.match(request) : null;
         if (cached) {
             return cached;
         }
@@ -176,7 +177,7 @@ async function networkFirst(request) {
         // Return offline fallback for HTML
         if (request.headers.get('accept')?.includes('text/html')) {
             // Try to return cached main page
-            const mainPage = await caches.match('/');
+			const mainPage = cache ? await cache.match('/') : null;
             if (mainPage) {
                 return mainPage;
             }
@@ -196,13 +197,18 @@ async function listPageStrategy(request) {
         // Skip redirected responses (e.g. an expired session bouncing to /login) so we
         // never cache a login page under the list URL.
         if (response.ok && !response.redirected) {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, response.clone());
+			const cacheName = await dynamicCacheName();
+			if (cacheName) {
+				const cache = await caches.open(cacheName);
+				cache.put(request, response.clone());
+			}
         }
         return response;
     } catch (error) {
         // Try to return cached version of this list
-        const cached = await caches.match(request);
+		const cacheName = await dynamicCacheName();
+		const cache = cacheName ? await caches.open(cacheName) : null;
+		const cached = cache ? await cache.match(request) : null;
         if (cached) {
             return cached;
         }
@@ -220,10 +226,24 @@ self.addEventListener('message', (event) => {
         self.skipWaiting();
     }
 
+	if (event.data && event.data.type === 'SET_USER') {
+		const userID = String(event.data.userID || '');
+		event.waitUntil((async () => {
+			const previous = await authenticatedUserID();
+			const keys = await caches.keys();
+			if (previous !== userID) {
+				await Promise.all(keys.filter(key => key.startsWith(`${CACHE_VERSION}-dynamic-user-`)).map(key => caches.delete(key)));
+			}
+			const identity = await caches.open(IDENTITY_CACHE);
+			if (userID) await identity.put(IDENTITY_KEY, new Response(userID));
+			else await identity.delete(IDENTITY_KEY);
+		})());
+	}
+
     if (event.data && event.data.type === 'CLEAR_CACHE') {
         event.waitUntil(
             caches.keys().then(keys => {
-                return Promise.all(keys.map(key => caches.delete(key)));
+				return Promise.all(keys.filter(key => key !== STATIC_CACHE).map(key => caches.delete(key)));
             })
         );
     }

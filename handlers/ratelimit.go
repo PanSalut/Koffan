@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -159,14 +160,17 @@ func LoginRateLimitMiddleware(c *fiber.Ctx) error {
 	}
 
 	ip := c.IP()
-
-	if blocked, remaining := loginLimiter.IsBlocked(ip); blocked {
-		minutes := int(remaining.Minutes())
-		if minutes < 1 {
-			minutes = 1
+	username := strings.ToLower(strings.TrimSpace(c.FormValue("username")))
+	keys := []string{"ip:" + ip, "user:" + username}
+	for _, key := range keys {
+		if blocked, remaining := loginLimiter.IsBlocked(key); blocked {
+			minutes := int(remaining.Minutes())
+			if minutes < 1 {
+				minutes = 1
+			}
+			log.Printf("[RATE LIMIT] Blocked login attempt from IP: %s (remaining: %dm)", ip, minutes)
+			return c.Redirect("/login?error=rate_limited")
 		}
-		log.Printf("[RATE LIMIT] Blocked login attempt from IP: %s (remaining: %dm)", ip, minutes)
-		return c.Redirect("/login?error=rate_limited")
 	}
 
 	return c.Next()

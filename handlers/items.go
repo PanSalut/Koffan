@@ -31,13 +31,46 @@ func retryOnBusy[T any](maxRetries int, operation func() (T, error)) (T, error) 
 	return result, err
 }
 
+func attributeItem(c *fiber.Ctx, item *db.Item, created bool) (*db.Item, error) {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		err = db.SetItemCreatedBy(item.ID, u.ID)
+	} else {
+		err = db.SetItemUpdatedBy(item.ID, u.ID)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return db.GetItemByID(item.ID)
+}
+
+func recordListActivity(c *fiber.Ctx, listID, itemID int64, action string, metadata interface{}) {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return
+	}
+	if err = db.LogListActivity(listID, itemID, u.ID, action, metadata); err != nil {
+		log.Printf("Failed to record list activity %s: %v", action, err)
+	}
+}
+
+func sectionsForItem(item *db.Item) []db.Section {
+	listID, err := db.ListIDForSection(item.SectionID)
+	if err != nil {
+		return nil
+	}
+	return getSectionsForDropdown(listID)
+}
+
 // CreateItem creates a new item in a section
 func CreateItem(c *fiber.Ctx) error {
 	sectionID, err := strconv.ParseInt(c.FormValue("section_id"), 10, 64)
 	if err != nil {
 		return sendError(c, 400, "error.invalid_section_id")
 	}
-
 	name := c.FormValue("name")
 	if name == "" {
 		return sendError(c, 400, "error.name_required")
@@ -49,6 +82,18 @@ func CreateItem(c *fiber.Ctx) error {
 	description := c.FormValue("description")
 	if len(description) > MaxDescriptionLength {
 		return c.Status(fiber.StatusBadRequest).SendString("Item description too long (max 500 characters)")
+	}
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	listID, err := db.ListIDForSection(sectionID)
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+	allowed, err := db.CanEditList(u.ID, listID, u.IsAdmin)
+	if err != nil || !allowed {
+		return fiber.ErrForbidden
 	}
 
 	// Parse quantity (default to 0)
@@ -80,14 +125,19 @@ func CreateItem(c *fiber.Ctx) error {
 			if err != nil {
 				return sendError(c, 500, "error.check_failed")
 			}
-			db.SaveItemHistory(name, sectionID)
+			item, err = attributeItem(c, item, false)
+			if err != nil {
+				return sendError(c, 500, "error.update_failed")
+			}
+			recordListActivity(c, listID, item.ID, "item_reactivated", map[string]interface{}{"name": item.Name, "section_id": item.SectionID})
+			db.SaveItemHistoryForUser(u.ID, name, sectionID)
 			c.Set("X-Item-Reactivated", "true")
 			BroadcastUpdate("item_toggled", item)
 			NotifyItemWebhook(webhook.EventItemUpdated, item)
 			c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 			return c.Render("partials/item", fiber.Map{
 				"Item":     item,
-				"Sections": getSectionsForDropdown(),
+				"Sections": sectionsForItem(item),
 			}, "")
 		}
 		// Item already active - signal to client
@@ -100,9 +150,14 @@ func CreateItem(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.create_failed")
 	}
+	item, err = attributeItem(c, item, true)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	recordListActivity(c, listID, item.ID, "item_created", map[string]interface{}{"name": item.Name, "section_id": item.SectionID, "quantity": item.Quantity})
 
 	// Save to item history for auto-completion
-	db.SaveItemHistory(name, sectionID)
+	db.SaveItemHistoryForUser(u.ID, name, sectionID)
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_created", item)
@@ -114,14 +169,14 @@ func CreateItem(c *fiber.Ctx) error {
 	if c.FormValue("quick_add") == "true" {
 		return c.Render("partials/item", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": sectionsForItem(item),
 		}, "")
 	}
 
 	// Regular form also returns per-item partial (client handles DOM insertion)
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -163,6 +218,12 @@ func UpdateItem(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.update_failed")
 	}
+	item, err = attributeItem(c, item, false)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	listID, _ := db.ListIDForSection(item.SectionID)
+	recordListActivity(c, listID, item.ID, "item_updated", map[string]interface{}{"name": item.Name, "previous_name": existing.Name, "section_id": item.SectionID, "quantity": item.Quantity})
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
@@ -173,12 +234,12 @@ func UpdateItem(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": sectionsForItem(item),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -193,13 +254,18 @@ func DeleteItem(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.fetch_failed")
 	}
+	listID, err := db.ListIDForSection(item.SectionID)
+	if err != nil {
+		return sendError(c, 500, "error.fetch_failed")
+	}
 
+	recordListActivity(c, listID, item.ID, "item_deleted", map[string]interface{}{"name": item.Name, "section_id": item.SectionID})
 	err = db.DeleteItem(id)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
 
-	BroadcastUpdate("item_deleted", map[string]int64{"id": id, "section_id": item.SectionID})
+	BroadcastListUpdate(listID, "item_deleted", map[string]int64{"id": id, "section_id": item.SectionID, "list_id": listID})
 	NotifyItemWebhook(webhook.EventItemDeleted, item)
 
 	return c.SendStatus(200)
@@ -207,14 +273,26 @@ func DeleteItem(c *fiber.Ctx) error {
 
 // DeleteCompletedItems deletes all completed items
 func DeleteCompletedItems(c *fiber.Ctx) error {
-	deletedItems, err := db.DeleteCompletedItems()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	activeList, err := db.GetActiveListForUser(u.ID, u.IsAdmin)
+	if err != nil {
+		return sendError(c, 404, "error.no_active_list")
+	}
+	canEdit, err := db.CanEditList(u.ID, activeList.ID, u.IsAdmin)
+	if err != nil || !canEdit {
+		return fiber.ErrForbidden
+	}
+	deletedItems, err := db.DeleteCompletedItemsForList(activeList.ID)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
 	count := len(deletedItems)
 
 	// Broadcast to WebSocket clients
-	BroadcastUpdate("completed_items_deleted", map[string]int64{"count": int64(count)})
+	BroadcastListUpdate(activeList.ID, "completed_items_deleted", map[string]interface{}{"count": count, "list_id": activeList.ID})
 	NotifyItemWebhooks(webhook.EventItemDeleted, deletedItems)
 
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
@@ -232,7 +310,16 @@ func ToggleItem(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.toggle_failed")
 	}
-
+	item, err = attributeItem(c, item, false)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	listID, _ := db.ListIDForSection(item.SectionID)
+	action := "item_uncompleted"
+	if item.Completed {
+		action = "item_completed"
+	}
+	recordListActivity(c, listID, item.ID, action, map[string]interface{}{"name": item.Name, "section_id": item.SectionID})
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_toggled", item)
 	event := webhook.EventItemUpdated
@@ -245,12 +332,12 @@ func ToggleItem(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": sectionsForItem(item),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -265,6 +352,12 @@ func ToggleUncertain(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.toggle_failed")
 	}
+	item, err = attributeItem(c, item, false)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	listID, _ := db.ListIDForSection(item.SectionID)
+	recordListActivity(c, listID, item.ID, "item_uncertain_changed", map[string]interface{}{"name": item.Name, "uncertain": item.Uncertain, "section_id": item.SectionID})
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
@@ -274,12 +367,12 @@ func ToggleUncertain(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": sectionsForItem(item),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -310,6 +403,12 @@ func AdjustItemQuantity(c *fiber.Ctx) error {
 		}
 		return sendError(c, 500, "error.update_failed")
 	}
+	item, err = attributeItem(c, item, false)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	listID, _ := db.ListIDForSection(item.SectionID)
+	recordListActivity(c, listID, item.ID, "item_quantity_changed", map[string]interface{}{"name": item.Name, "quantity": item.Quantity, "section_id": item.SectionID})
 
 	BroadcastUpdate("item_updated", item)
 	NotifyItemWebhook(webhook.EventItemUpdated, item)
@@ -317,12 +416,12 @@ func AdjustItemQuantity(c *fiber.Ctx) error {
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
 			"Item":     item,
-			"Sections": getSectionsForDropdown(),
+			"Sections": sectionsForItem(item),
 		}, "")
 	}
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -345,6 +444,17 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		return sendError(c, 404, "error.item_not_found")
 	}
 	fromSectionID := oldItem.SectionID
+	fromListID, err := db.ListIDForSection(fromSectionID)
+	if err != nil {
+		return sendError(c, 404, "error.item_not_found")
+	}
+	toListID, err := db.ListIDForSection(newSectionID)
+	if err != nil {
+		return sendError(c, 404, "error.section_not_found")
+	}
+	if fromListID != toListID {
+		return fiber.ErrForbidden
+	}
 
 	var item *db.Item
 
@@ -369,12 +479,19 @@ func MoveItemToSection(c *fiber.Ctx) error {
 			return sendError(c, 500, "error.move_failed")
 		}
 	}
+	item, err = attributeItem(c, item, false)
+	if err != nil {
+		return sendError(c, 500, "error.update_failed")
+	}
+	listID, _ := db.ListIDForSection(item.SectionID)
+	recordListActivity(c, listID, item.ID, "item_moved", map[string]interface{}{"name": item.Name, "from_section_id": fromSectionID, "section_id": item.SectionID})
 
 	// Broadcast to WebSocket clients with both section IDs
-	BroadcastUpdate("item_moved", map[string]interface{}{
+	BroadcastListUpdate(listID, "item_moved", map[string]interface{}{
 		"id":              item.ID,
 		"section_id":      item.SectionID,
 		"from_section_id": fromSectionID,
+		"list_id":         listID,
 	})
 	NotifyItemWebhook(webhook.EventItemUpdated, item)
 
@@ -382,7 +499,7 @@ func MoveItemToSection(c *fiber.Ctx) error {
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 	return c.Render("partials/item", fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -397,10 +514,14 @@ func MoveItemUp(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
+	if item, e := db.GetItemByID(id); e == nil {
+		_, _ = attributeItem(c, item, false)
+	}
 
 	item, _ := db.GetItemByID(id)
 	if item != nil {
-		BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
+		listID, _ := db.ListIDForSection(item.SectionID)
+		BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
 		NotifyItemWebhook(webhook.EventItemUpdated, item)
 	}
 
@@ -418,10 +539,14 @@ func MoveItemDown(c *fiber.Ctx) error {
 	if err != nil {
 		return sendError(c, 500, "error.move_failed")
 	}
+	if item, e := db.GetItemByID(id); e == nil {
+		_, _ = attributeItem(c, item, false)
+	}
 
 	item, _ := db.GetItemByID(id)
 	if item != nil {
-		BroadcastUpdate("items_reordered", map[string]int64{"section_id": item.SectionID})
+		listID, _ := db.ListIDForSection(item.SectionID)
+		BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
 		NotifyItemWebhook(webhook.EventItemUpdated, item)
 	}
 
@@ -457,7 +582,7 @@ func GetItemHTML(c *fiber.Ctx) error {
 
 	return c.Render(tmpl, fiber.Map{
 		"Item":     item,
-		"Sections": getSectionsForDropdown(),
+		"Sections": sectionsForItem(item),
 	}, "")
 }
 
@@ -468,13 +593,18 @@ func CheckAllItems(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_section_id")
 	}
 
-	items, err := db.CheckAllItems(id)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	items, err := db.CheckAllItemsByUser(id, u.ID)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
 	count := len(items)
 
-	BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": id, "count": count})
+	listID, _ := db.ListIDForSection(id)
+	BroadcastListUpdate(listID, "section_items_checked", map[string]interface{}{"section_id": id, "count": count, "list_id": listID})
 	NotifyItemWebhooks(webhook.EventItemCompleted, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
@@ -487,13 +617,18 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		return sendError(c, 400, "error.invalid_section_id")
 	}
 
-	items, err := db.UncheckAllItems(id)
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	items, err := db.UncheckAllItemsByUser(id, u.ID)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
 	count := len(items)
 
-	BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": id, "count": count})
+	listID, _ := db.ListIDForSection(id)
+	BroadcastListUpdate(listID, "section_items_unchecked", map[string]interface{}{"section_id": id, "count": count, "list_id": listID})
 	NotifyItemWebhooks(webhook.EventItemUpdated, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
@@ -501,7 +636,15 @@ func UncheckAllItems(c *fiber.Ctx) error {
 
 // GetStats returns current stats as JSON (for Alpine.js updates)
 func GetStats(c *fiber.Ctx) error {
-	stats := db.GetStats()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	list, err := db.GetActiveListForUser(u.ID, u.IsAdmin)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No accessible list"})
+	}
+	stats := db.GetListStats(list.ID)
 	return c.JSON(stats)
 }
 

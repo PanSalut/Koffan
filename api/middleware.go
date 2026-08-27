@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"os"
 	"strings"
 
@@ -44,7 +45,7 @@ func TokenAuthMiddleware(c *fiber.Ctx) error {
 		})
 	}
 
-	if parts[1] != expectedToken {
+	if subtle.ConstantTimeCompare([]byte(parts[1]), []byte(expectedToken)) != 1 {
 		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
 			Error:   "invalid_token",
 			Message: "Invalid API token",

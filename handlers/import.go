@@ -129,7 +129,11 @@ func previewJSONImport(c *fiber.Ctx, data []byte) error {
 	}
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	u, userErr := CurrentUser(c)
+	if userErr != nil {
+		return userErr
+	}
+	existingLists, _ := db.GetListsOwnedByUser(u.ID)
 	existingNames := make(map[string]bool)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = true
@@ -245,7 +249,11 @@ func previewCSVImport(c *fiber.Ctx, data []byte, delimiter string) error {
 	}
 
 	// Get existing lists for conflict detection
-	existingLists, _ := db.GetAllLists()
+	u, userErr := CurrentUser(c)
+	if userErr != nil {
+		return userErr
+	}
+	existingLists, _ := db.GetListsOwnedByUser(u.ID)
 	existingNames := make(map[string]bool)
 	for _, list := range existingLists {
 		existingNames[strings.ToLower(list.Name)] = true
@@ -395,7 +403,11 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	// Read conflict data before opening a transaction. The SQLite pool is
 	// intentionally limited to one connection, so querying through db.DB while
 	// a transaction owns that connection would deadlock the whole application.
-	existingLists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	existingLists, err := db.GetListsOwnedByUser(u.ID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
 	}
@@ -465,7 +477,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 		}
 
 		// Create list with is_active flag preserved
-		list, err := db.CreateListTx(tx, exportList.Name, exportList.Icon)
+		list, err := db.CreateListTxForUser(tx, u.ID, exportList.Name, exportList.Icon)
 		if err != nil {
 			continue
 		}
@@ -509,7 +521,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 					itemDesc = itemDesc[:MaxDescriptionLength]
 				}
 
-				item, err := db.CreateItemTx(tx, section.ID, itemName, itemDesc, exportItem.Quantity, itemOrder)
+				item, err := db.CreateItemTxForUser(tx, section.ID, u.ID, itemName, itemDesc, exportItem.Quantity, itemOrder)
 				if err != nil {
 					continue
 				}
@@ -533,7 +545,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 
 	// Import templates
 	for _, exportTemplate := range exportData.Data.Templates {
-		template, err := db.CreateTemplateTx(tx, exportTemplate.Name, exportTemplate.Description)
+		template, err := db.CreateTemplateTxForUser(tx, u.ID, exportTemplate.Name, exportTemplate.Description)
 		if err != nil {
 			continue
 		}
@@ -551,7 +563,7 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 			usageCount = 1
 		}
 		sectionID := db.GetSectionIDByNameTx(tx, h.LastSection)
-		err := db.SaveItemHistoryWithCountTx(tx, h.Name, sectionID, usageCount)
+		err := db.SaveItemHistoryWithCountForUserTx(tx, u.ID, h.Name, sectionID, usageCount)
 		if err == nil {
 			importedHistory++
 		}
@@ -597,7 +609,11 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 
 	// Read conflict data before opening a transaction. See importJSON for why
 	// this must not use db.DB after the single SQLite connection is checked out.
-	existingLists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	existingLists, err := db.GetListsOwnedByUser(u.ID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
 	}
@@ -690,7 +706,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 				// Find section ID by name
 				sectionID := db.GetSectionIDByNameTx(tx, lastSectionName)
 
-				err := db.SaveItemHistoryWithCountTx(tx, itemName, sectionID, usageCount)
+				err := db.SaveItemHistoryWithCountForUserTx(tx, u.ID, itemName, sectionID, usageCount)
 				if err == nil {
 					importedHistory++
 				}
@@ -775,7 +791,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 				}
 			}
 
-			newList, err := db.CreateListTx(tx, listName, listIcon)
+			newList, err := db.CreateListTxForUser(tx, u.ID, listName, listIcon)
 			if err != nil {
 				continue
 			}
@@ -808,7 +824,7 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 
 		// Create item
 		if itemName != "" {
-			item, err := db.CreateItemTx(tx, section.ID, itemName, itemDescription, itemQuantity, itemOrders[section.ID])
+			item, err := db.CreateItemTxForUser(tx, section.ID, u.ID, itemName, itemDescription, itemQuantity, itemOrders[section.ID])
 			if err != nil {
 				continue
 			}

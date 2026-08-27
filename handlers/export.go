@@ -77,7 +77,11 @@ func ExportAllData(c *fiber.Ctx) error {
 	includeTemplates := c.Query("include_templates", "true") == "true"
 	includeHistory := c.Query("include_history", "true") == "true"
 
-	lists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	lists, err := db.GetListsForUser(u.ID, u.IsAdmin)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch lists"})
 	}
@@ -86,7 +90,7 @@ func ExportAllData(c *fiber.Ctx) error {
 		return exportAllAsCSV(c, lists)
 	}
 
-	return exportAllAsJSON(c, lists, includeTemplates, includeHistory)
+	return exportAllAsJSON(c, lists, includeTemplates, includeHistory, u)
 }
 
 // ExportSingleList exports a single list
@@ -115,7 +119,7 @@ func ExportSingleList(c *fiber.Ctx) error {
 	return exportListAsJSON(c, list, sections)
 }
 
-func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHistory bool) error {
+func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHistory bool, user *db.User) error {
 	exportData := ExportData{
 		Version:    "1.0",
 		ExportedAt: time.Now().UTC().Format(time.RFC3339),
@@ -163,7 +167,7 @@ func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHis
 
 	// Include templates if requested
 	if includeTemplates {
-		templates, err := db.GetAllTemplates()
+		templates, err := db.GetTemplatesForUser(user.ID, user.IsAdmin)
 		if err == nil {
 			exportData.Data.Templates = make([]ExportTemplate, 0, len(templates))
 			for _, tmpl := range templates {
@@ -186,15 +190,12 @@ func exportAllAsJSON(c *fiber.Ctx, lists []db.List, includeTemplates, includeHis
 
 	// Include history if requested
 	if includeHistory {
-		historyItems, err := db.GetAllItemSuggestions(1000)
+		historyItems, err := db.GetAllItemSuggestionsForUser(user.ID, 1000)
 		if err == nil {
 			exportData.Data.History = make([]ExportHistory, 0, len(historyItems))
 			for _, h := range historyItems {
 				sectionName := h.LastSectionName
 				// Fallback: if no section in history, find where item currently exists
-				if sectionName == "" {
-					sectionName = db.GetSectionNameForItem(h.Name)
-				}
 				exportData.Data.History = append(exportData.Data.History, ExportHistory{
 					Name:        h.Name,
 					LastSection: sectionName,
@@ -319,14 +320,15 @@ func exportAllAsCSV(c *fiber.Ctx, lists []db.List) error {
 	// Export history if requested
 	// Format: [HISTORY],,item_name,last_section,usage_count,,
 	if includeHistory {
-		historyItems, err := db.GetAllItemSuggestions(1000)
+		u, userErr := CurrentUser(c)
+		if userErr != nil {
+			return userErr
+		}
+		historyItems, err := db.GetAllItemSuggestionsForUser(u.ID, 1000)
 		if err == nil {
 			for _, h := range historyItems {
 				sectionName := h.LastSectionName
 				// Fallback: if no section in history, find where item currently exists
-				if sectionName == "" {
-					sectionName = db.GetSectionNameForItem(h.Name)
-				}
 				writer.Write([]string{
 					"[HISTORY]",
 					"",
@@ -395,13 +397,17 @@ func sanitizeFilename(name string) string {
 
 // GetExportPreview returns a preview of what will be exported (for UI)
 func GetExportPreview(c *fiber.Ctx) error {
-	lists, err := db.GetAllLists()
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
+	lists, err := db.GetListsForUser(u.ID, u.IsAdmin)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch lists"})
 	}
 
-	templates, _ := db.GetAllTemplates()
-	history, _ := db.GetAllItemSuggestions(100)
+	templates, _ := db.GetTemplatesForUser(u.ID, u.IsAdmin)
+	history, _ := db.GetAllItemSuggestionsForUser(u.ID, 100)
 
 	totalItems := 0
 	for _, list := range lists {

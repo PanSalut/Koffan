@@ -18,7 +18,7 @@
                             @click="showListSwitcher = !showListSwitcher"
                             class="flex items-center gap-1.5 md:gap-2 overflow-hidden hover:opacity-70 transition-opacity"
                         >
-                            <h1 class="text-sm md:text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" x-init="if (!$el.textContent.trim()) { $el.textContent = t('list.shopping_list'); $el.title = t('list.shopping_list'); }">{{if .List}}{{.List.Name}}{{else}}{{end}}</h1>
+							<span class="min-w-0 text-left"><h1 class="text-sm md:text-lg font-semibold text-stone-800 dark:text-stone-100 truncate" x-init="if (!$el.textContent.trim()) { $el.textContent = t('list.shopping_list'); $el.title = t('list.shopping_list'); }">{{if .List}}{{.List.Name}}{{else}}{{end}}</h1><span class="block text-[10px] md:text-xs text-stone-400 truncate">{{if eq .List.AccessRole "owner"}}<span x-text="t('sharing.owned_by_me')"></span>{{else}}<span x-text="t('sharing.owned_by',{name:'{{.List.OwnerDisplayName | js}}'})"></span> · <span x-text="t('{{if eq .List.AccessRole "manager"}}sharing.manager{{else if eq .List.AccessRole "editor"}}sharing.editor{{else if eq .List.AccessRole "viewer"}}sharing.viewer{{else}}sharing.administrator_access{{end}}')"></span>{{end}}</span></span>
                             <svg class="w-3.5 h-3.5 md:w-4 md:h-4 text-stone-400 dark:text-stone-500 flex-shrink-0 transition-transform" :class="showListSwitcher && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
@@ -27,7 +27,17 @@
                 </div>
 
                 <!-- Desktop Stats pill + controls (hidden on mobile) -->
+                {{if .CanManage}}
+                <a href="/lists/{{.List.ID}}/access"
+                   class="md:hidden flex-shrink-0 p-2 rounded-lg text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+				   :title="t('sharing.manage_access')" :aria-label="t('sharing.manage_access')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </a>
+                {{end}}
                 <div class="hidden md:flex items-center gap-3">
+                    {{if .CanManage}}<a href="/lists/{{.List.ID}}/access" class="text-sm text-pink-500 font-medium" x-text="t('sharing.manage_access')">Manage access</a>{{end}}
                     <div class="flex items-center gap-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-full px-3 py-1.5 shadow-sm"
                          x-show="stats.total > 0">
                         <div class="w-2 h-2 rounded-full transition-colors"
@@ -1090,18 +1100,19 @@
     >
         <div class="py-2">
             {{range .Lists}}
-            <a
-                href="/lists/{{.ID}}/activate"
+			<form method="post" action="/lists/{{.ID}}/activate">
+			<button type="submit"
                 class="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors {{if eq .ID $.List.ID}}bg-pink-50 dark:bg-pink-900/30{{end}}"
             >
                 <span class="text-lg">{{.Icon}}</span>
-                <span class="flex-1 truncate text-sm font-medium {{if eq .ID $.List.ID}}text-pink-600 dark:text-pink-400{{else}}text-stone-700 dark:text-stone-200{{end}}">{{.Name}}</span>
+				<span class="flex-1 min-w-0"><span class="block truncate text-sm font-medium {{if eq .ID $.List.ID}}text-pink-600 dark:text-pink-400{{else}}text-stone-700 dark:text-stone-200{{end}}">{{.Name}}</span><span class="block truncate text-xs text-stone-400">{{if eq .AccessRole "owner"}}<span x-text="t('sharing.owned_by_me')"></span>{{else}}<span x-text="t('sharing.owned_by',{name:'{{.OwnerDisplayName | js}}'})"></span> · <span x-text="t('{{if eq .AccessRole "manager"}}sharing.manager{{else if eq .AccessRole "editor"}}sharing.editor{{else if eq .AccessRole "viewer"}}sharing.viewer{{else}}sharing.administrator_access{{end}}')"></span>{{end}}</span></span>
                 {{if eq .ID $.List.ID}}
                 <svg class="w-4 h-4 text-pink-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 {{end}}
-            </a>
+			</button>
+			</form>
             {{end}}
         </div>
     </div>

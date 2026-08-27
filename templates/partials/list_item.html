@@ -22,6 +22,7 @@
         <!-- View mode -->
         <div x-show="!editing">
             <p class="font-medium text-stone-800 truncate {{if .List.IsActive}}text-pink-700{{end}}">{{.List.Name}}</p>
+			<p class="text-xs text-stone-400 truncate">{{if eq .List.AccessRole "owner"}}<span x-text="t('sharing.owned_by_me')"></span>{{else}}<span x-text="t('sharing.owned_by',{name:'{{.List.OwnerDisplayName | js}}'})"></span> · <span x-text="t('{{if eq .List.AccessRole "manager"}}sharing.manager{{else if eq .List.AccessRole "editor"}}sharing.editor{{else if eq .List.AccessRole "viewer"}}sharing.viewer{{else}}sharing.administrator_access{{end}}')"></span>{{end}}</p>
             <p class="text-xs text-stone-400">{{.List.Stats.CompletedItems}}/{{.List.Stats.TotalItems}} <span x-text="t('templates.items')">produktów</span></p>
         </div>
 

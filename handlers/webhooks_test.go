@@ -142,6 +142,10 @@ func TestImportReplaceEmitsDeletedAndCreatedItemWebhooks(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			initTestDatabase(t)
+			admin, err := db.GetUserByUsername("admin")
+			if err != nil {
+				t.Fatalf("get administrator: %v", err)
+			}
 			bodies := make(chan []byte, 4)
 			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				body, _ := io.ReadAll(request.Body)
@@ -151,7 +155,7 @@ func TestImportReplaceEmitsDeletedAndCreatedItemWebhooks(t *testing.T) {
 			t.Cleanup(server.Close)
 			configureTestWebhook(t, server.URL, webhook.EventItemDeleted+","+webhook.EventItemCreated)
 
-			list, err := db.CreateList("Weekly", "cart")
+			list, err := db.CreateListForUser(admin.ID, "Weekly", "cart")
 			if err != nil {
 				t.Fatalf("create existing list: %v", err)
 			}
@@ -164,6 +168,10 @@ func TestImportReplaceEmitsDeletedAndCreatedItemWebhooks(t *testing.T) {
 			}
 
 			app := fiber.New()
+			app.Use(func(c *fiber.Ctx) error {
+				c.Locals("user", admin)
+				return c.Next()
+			})
 			app.Post("/import", ImportData)
 			response := postImportFileWithResolution(t, app, test.filename, test.contents, "replace")
 			defer response.Body.Close()
@@ -195,6 +203,10 @@ func TestImportReplaceEmitsDeletedAndCreatedItemWebhooks(t *testing.T) {
 
 func TestClearDatabaseEmitsDeletedItemWebhooks(t *testing.T) {
 	initTestDatabase(t)
+	admin, err := db.GetUserByUsername("admin")
+	if err != nil {
+		t.Fatalf("get administrator: %v", err)
+	}
 	bodies := make(chan []byte, 2)
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		body, _ := io.ReadAll(request.Body)
@@ -204,7 +216,7 @@ func TestClearDatabaseEmitsDeletedItemWebhooks(t *testing.T) {
 	t.Cleanup(server.Close)
 	configureTestWebhook(t, server.URL, webhook.EventItemDeleted)
 
-	list, err := db.CreateList("Weekly", "cart")
+	list, err := db.CreateListForUser(admin.ID, "Weekly", "cart")
 	if err != nil {
 		t.Fatalf("create list: %v", err)
 	}
@@ -215,8 +227,28 @@ func TestClearDatabaseEmitsDeletedItemWebhooks(t *testing.T) {
 	if _, err := db.CreateItem(section.ID, "Milk", "", 1); err != nil {
 		t.Fatalf("create item: %v", err)
 	}
+	other, err := db.CreateLocalUser("clear-other", "Clear Other", "password123", false)
+	if err != nil {
+		t.Fatalf("create other user: %v", err)
+	}
+	otherList, err := db.CreateListForUser(other.ID, "Other user's list", "cart")
+	if err != nil {
+		t.Fatalf("create other list: %v", err)
+	}
+	otherSection, err := db.CreateSectionForList(otherList.ID, "Private")
+	if err != nil {
+		t.Fatalf("create other section: %v", err)
+	}
+	otherItem, err := db.CreateItem(otherSection.ID, "Keep me", "", 1)
+	if err != nil {
+		t.Fatalf("create other item: %v", err)
+	}
 
 	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", admin)
+		return c.Next()
+	})
 	app.Get("/csrf", GenerateCSRFToken)
 	app.Delete("/database", ClearDatabase)
 	csrfResponse, err := app.Test(httptest.NewRequest(http.MethodGet, "/csrf", nil))
@@ -252,12 +284,20 @@ func TestClearDatabaseEmitsDeletedItemWebhooks(t *testing.T) {
 	if event.Data.Section.Name != "Dairy" || event.Data.List.Name != "Weekly" {
 		t.Fatalf("event context = %#v, want Dairy and Weekly", event.Data)
 	}
+	select {
+	case body := <-bodies:
+		t.Fatalf("clear emitted a webhook for another user's data: %s", body)
+	case <-time.After(250 * time.Millisecond):
+	}
 	var itemCount int
 	if err := db.DB.QueryRow("SELECT COUNT(*) FROM items").Scan(&itemCount); err != nil {
 		t.Fatalf("count remaining items: %v", err)
 	}
-	if itemCount != 0 {
-		t.Fatalf("remaining items = %d, want 0", itemCount)
+	if itemCount != 1 {
+		t.Fatalf("remaining items = %d, want only the other user's item", itemCount)
+	}
+	if _, err := db.GetItemByID(otherItem.ID); err != nil {
+		t.Fatalf("other user's item was deleted: %v", err)
 	}
 }
 

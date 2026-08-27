@@ -9,6 +9,7 @@
                     <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="app-logo-home">
                 </a>
 
+                {{if .CurrentUser.IsAdmin}}<a href="/admin" class="text-sm text-pink-500 font-medium px-2" x-text="t('nav.user_management')">Users & groups</a>{{end}}
                 <!-- Settings -->
                 <button
                     @click="showSettings = true"
@@ -46,6 +47,7 @@
                     <!-- Info (clickable) -->
                     <a href="/lists/{{$list.ID}}" class="flex-1 min-w-0">
                         <p class="font-medium text-stone-800 dark:text-stone-100 truncate">{{$list.Name}}</p>
+						<p class="text-xs text-stone-400 dark:text-stone-500 truncate">{{if eq $list.AccessRole "owner"}}<span x-text="t('sharing.owned_by_me')"></span>{{else}}<span x-text="t('sharing.owned_by',{name:'{{$list.OwnerDisplayName | js}}'})"></span> · <span x-text="t('{{if eq $list.AccessRole "manager"}}sharing.manager{{else if eq $list.AccessRole "editor"}}sharing.editor{{else if eq $list.AccessRole "viewer"}}sharing.viewer{{else}}sharing.administrator_access{{end}}')"></span>{{end}}</p>
                         <p class="text-sm text-stone-400 dark:text-stone-500" data-stats-count>{{$list.Stats.CompletedItems}}/{{$list.Stats.TotalItems}} <span x-text="t('list.completed')"></span></p>
                     </a>
 
@@ -106,6 +108,7 @@
                                     </svg>
                                     <span x-text="t('common.edit')"></span>
                                 </button>
+                                {{if $list.CanManage}}<a href="/lists/{{$list.ID}}/access" class="w-full px-4 py-2.5 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 flex items-center gap-3"><span>👥</span><span x-text="t('sharing.manage_access')">Manage access</span></a>{{end}}
                                 <button
                                     @click="showActions = false; deleteList({{$list.ID}}, '{{$list.Name | js}}')"
                                     class="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3"
@@ -490,7 +493,7 @@
                             </svg>
                             <span x-text="t('danger_zone.title')"></span>
                         </h4>
-                        <p class="text-xs text-red-600 dark:text-red-400 mb-3" x-text="t('danger_zone.clear_database_warning')"></p>
+                        <p class="text-xs text-red-600 dark:text-red-400 mb-3" x-text="t('danger_zone.clear_owned_data_warning')"></p>
                         <button
                             @click="showClearDatabaseModal = true"
                             :disabled="!isOnline"
@@ -500,7 +503,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
-                            <span x-text="t('danger_zone.clear_database')"></span>
+                            <span x-text="t('danger_zone.clear_owned_data')"></span>
                         </button>
                     </div>
                 </div>
@@ -601,41 +604,23 @@
                 </div>
             </div>
 
-            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 text-center mb-2" x-text="t('danger_zone.confirm_title')"></h3>
+            <h3 class="text-lg font-semibold text-stone-800 dark:text-stone-100 text-center mb-2" x-text="t('danger_zone.confirm_owned_title')"></h3>
 
             <!-- What will be deleted -->
             <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
-                <p class="text-sm font-medium text-red-700 dark:text-red-400 mb-2" x-text="t('danger_zone.will_delete')"></p>
+                <p class="text-sm font-medium text-red-700 dark:text-red-400 mb-2" x-text="t('danger_zone.will_delete_owned')"></p>
                 <ul class="text-sm text-red-600 dark:text-red-400 space-y-1">
                     <li class="flex items-center gap-2">
                         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
-                        <span x-text="t('danger_zone.delete_lists')"></span>
+                        <span x-text="t('danger_zone.delete_owned_lists')"></span>
                     </li>
                     <li class="flex items-center gap-2">
                         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
-                        <span x-text="t('danger_zone.delete_sections')"></span>
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        <span x-text="t('danger_zone.delete_items')"></span>
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        <span x-text="t('danger_zone.delete_templates')"></span>
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        <span x-text="t('danger_zone.delete_history')"></span>
+                        <span x-text="t('danger_zone.delete_owned_templates')"></span>
                     </li>
                 </ul>
             </div>
@@ -1351,7 +1336,7 @@ function homePage() {
                     this.showClearDatabaseModal = false;
                     this.clearDatabaseInput = '';
                     if (window.Toast) {
-                        window.Toast.show(this.t('danger_zone.success'), 'success');
+                        window.Toast.show(this.t('danger_zone.owned_success'), 'success');
                     }
                     // Redirect to home page
                     window.location.href = '/';

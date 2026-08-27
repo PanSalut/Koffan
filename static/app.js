@@ -297,6 +297,8 @@ function shoppingList() {
 
         // Return the current list ID extracted from the page URL (e.g. /lists/5 → 5), or null if not on a list page.
         currentListId() {
+			const embedded = document.querySelector('[data-list-id]')?.dataset?.listId;
+			if (embedded) return embedded;
             const match = window.location.pathname.match(/^\/lists\/(\d+)/);
             return match ? match[1] : null;
         },
@@ -474,6 +476,7 @@ function shoppingList() {
             // Initialize IndexedDB
             try {
                 await window.offlineStorage.init();
+				await window.offlineStorage.ensureUser(window.KOFFAN_USER_ID);
                 this.offlineStorageReady = true;
                 console.log('[App] Offline storage initialized');
 
@@ -587,6 +590,14 @@ function shoppingList() {
                         }
 
                         const response = await fetch(action.url, fetchOptions);
+
+						if (response.status === 401 || response.status === 403) {
+							// Never replay queued changes under a different or newly
+							// unauthorized session on a shared browser.
+							await window.offlineStorage.clearAllData();
+							console.warn('[App] Offline queue discarded after authorization failure');
+							break;
+						}
 
                         if (response.ok || response.status === 404) {
                             // Success or item no longer exists - remove from queue
@@ -1314,6 +1325,12 @@ function shoppingList() {
                     });
                     moveDropdown.appendChild(btn);
                 });
+				if (moveDropdown.children.length === 0) {
+					const empty = document.createElement('div');
+					empty.className = 'px-3 py-1.5 text-sm text-stone-400';
+					empty.textContent = 'No other sections';
+					moveDropdown.appendChild(empty);
+				}
             });
 
             // Update mobile action sheet move buttons

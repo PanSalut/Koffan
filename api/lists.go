@@ -241,6 +241,8 @@ func DeleteList(c *fiber.Ctx) error {
 	}
 
 	preparedWebhooks := handlers.PrepareListItemWebhooks(webhook.EventItemDeleted, int64(id))
+	// Resolve recipients while list access rows still exist; they cascade on delete.
+	handlers.BroadcastListUpdate(int64(id), "list_deleted", map[string]int64{"id": int64(id), "list_id": int64(id)})
 	if err := db.DeleteList(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "delete_failed",
@@ -248,7 +250,6 @@ func DeleteList(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("list_deleted", map[string]int64{"id": int64(id)})
 	handlers.NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -321,7 +322,7 @@ func MoveListUp(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("lists_reordered", nil)
+	handlers.BroadcastListUpdate(int64(id), "lists_reordered", map[string]int64{"list_id": int64(id)})
 
 	list, _ := db.GetListByID(int64(id))
 	return c.JSON(list)
@@ -359,7 +360,7 @@ func MoveListDown(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("lists_reordered", nil)
+	handlers.BroadcastListUpdate(int64(id), "lists_reordered", map[string]int64{"list_id": int64(id)})
 
 	list, _ := db.GetListByID(int64(id))
 	return c.JSON(list)

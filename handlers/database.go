@@ -79,9 +79,13 @@ func validateCSRFToken(sessionID, token string) bool {
 	return subtle.ConstantTimeCompare([]byte(stored.Token), []byte(token)) == 1
 }
 
-// ClearDatabase handles the database clear operation
-// Requires confirmation word "DELETE" and a valid CSRF token to proceed
+// ClearDatabase deletes only data owned by the signed-in user. Administrator
+// status deliberately does not broaden the deletion scope.
 func ClearDatabase(c *fiber.Ctx) error {
+	u, err := CurrentUser(c)
+	if err != nil {
+		return err
+	}
 	var req ClearDatabaseRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -107,20 +111,26 @@ func ClearDatabase(c *fiber.Ctx) error {
 		})
 	}
 
-	// Clear all data
-	preparedWebhooks := PrepareAllItemWebhooks(webhook.EventItemDeleted)
-	if err := db.ClearAllData(); err != nil {
+	ownedLists, err := db.GetListsOwnedByUser(u.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "error": "Failed to load owned lists: " + err.Error()})
+	}
+	var preparedWebhooks []PreparedItemWebhook
+	for _, list := range ownedLists {
+		preparedWebhooks = append(preparedWebhooks, PrepareListItemWebhooks(webhook.EventItemDeleted, list.ID)...)
+		BroadcastListUpdate(list.ID, "list_deleted", map[string]int64{"id": list.ID, "list_id": list.ID})
+	}
+	deletedLists, deletedTemplates, err := db.ClearUserOwnedData(u.ID)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"error":   "Failed to clear database: " + err.Error(),
 		})
 	}
-
-	// Broadcast update to all connected clients
-	BroadcastUpdate("database_cleared", nil)
 	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
-
 	return c.JSON(fiber.Map{
-		"success": true,
+		"success":           true,
+		"deleted_lists":     deletedLists,
+		"deleted_templates": deletedTemplates,
 	})
 }
