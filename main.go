@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"flag"
@@ -13,7 +14,9 @@ import (
 	"shopping-list/db"
 	"shopping-list/handlers"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -68,6 +71,17 @@ func main() {
 	if strings.EqualFold(os.Getenv("DISABLE_AUTH"), "true") {
 		log.Print("SECURITY WARNING: DISABLE_AUTH=true grants every request administrator access. Use only on an isolated, trusted network.")
 	}
+
+	if err := webhook.ConfigureFromEnv(db.DB); err != nil {
+		log.Printf("Outbound webhooks are disabled: %v", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := webhook.Shutdown(ctx); err != nil {
+			log.Printf("Webhook worker shutdown timed out: %v", err)
+		}
+	}()
 
 	// Clean expired sessions on startup
 	db.CleanExpiredSessions()
@@ -341,5 +355,7 @@ func main() {
 	}
 
 	log.Printf("Starting server on port %s", port)
-	log.Fatal(app.Listen(":" + port))
+	if err := app.Listen(":" + port); err != nil {
+		log.Printf("Server stopped: %v", err)
+	}
 }

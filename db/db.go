@@ -113,11 +113,22 @@ func createTables() {
 		UNIQUE(name COLLATE NOCASE)
 	);
 
+	CREATE TABLE IF NOT EXISTS webhook_outbox (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		event TEXT NOT NULL,
+		payload BLOB NOT NULL,
+		attempts INTEGER NOT NULL DEFAULT 0,
+		available_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+		last_error TEXT DEFAULT '',
+		created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+	);
+
 	DROP INDEX IF EXISTS idx_items_section;
 	CREATE INDEX IF NOT EXISTS idx_items_section_completed ON items(section_id, completed, sort_order);
 	CREATE INDEX IF NOT EXISTS idx_sections_order ON sections(sort_order);
 	CREATE INDEX IF NOT EXISTS idx_item_history_name ON item_history(name COLLATE NOCASE);
 	CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+	CREATE INDEX IF NOT EXISTS idx_webhook_outbox_delivery ON webhook_outbox(id, available_at);
 	`
 
 	_, err := DB.Exec(schema)

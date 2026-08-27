@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"shopping-list/db"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 	"time"
@@ -132,6 +133,7 @@ func CreateItem(c *fiber.Ctx) error {
 			db.SaveItemHistoryForUser(u.ID, name, sectionID)
 			c.Set("X-Item-Reactivated", "true")
 			BroadcastUpdate("item_toggled", item)
+			NotifyItemWebhook(webhook.EventItemUpdated, item)
 			c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 			return c.Render("partials/item", fiber.Map{
 				"Item":     item,
@@ -159,6 +161,7 @@ func CreateItem(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_created", item)
+	NotifyItemWebhook(webhook.EventItemCreated, item)
 
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 
@@ -224,6 +227,7 @@ func UpdateItem(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
+	NotifyItemWebhook(webhook.EventItemUpdated, item)
 
 	// Return individual item partial for smooth per-item swap
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
@@ -262,6 +266,7 @@ func DeleteItem(c *fiber.Ctx) error {
 	}
 
 	BroadcastListUpdate(listID, "item_deleted", map[string]int64{"id": id, "section_id": item.SectionID, "list_id": listID})
+	NotifyItemWebhook(webhook.EventItemDeleted, item)
 
 	return c.SendStatus(200)
 }
@@ -280,13 +285,15 @@ func DeleteCompletedItems(c *fiber.Ctx) error {
 	if err != nil || !canEdit {
 		return fiber.ErrForbidden
 	}
-	count, err := db.DeleteCompletedItemsForList(activeList.ID)
+	deletedItems, err := db.DeleteCompletedItemsForList(activeList.ID)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
+	count := len(deletedItems)
 
 	// Broadcast to WebSocket clients
-	BroadcastListUpdate(activeList.ID, "completed_items_deleted", map[string]int64{"count": count, "list_id": activeList.ID})
+	BroadcastListUpdate(activeList.ID, "completed_items_deleted", map[string]interface{}{"count": count, "list_id": activeList.ID})
+	NotifyItemWebhooks(webhook.EventItemDeleted, deletedItems)
 
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
 	return c.JSON(fiber.Map{"deleted": count})
@@ -315,6 +322,11 @@ func ToggleItem(c *fiber.Ctx) error {
 	recordListActivity(c, listID, item.ID, action, map[string]interface{}{"name": item.Name, "section_id": item.SectionID})
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_toggled", item)
+	event := webhook.EventItemUpdated
+	if item.Completed {
+		event = webhook.EventItemCompleted
+	}
+	NotifyItemWebhook(event, item)
 
 	// Return per-item partial (no section swap - client handles DOM move)
 	if item.Completed {
@@ -349,6 +361,7 @@ func ToggleUncertain(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastUpdate("item_updated", item)
+	NotifyItemWebhook(webhook.EventItemUpdated, item)
 
 	// Return individual item partial for smooth per-item swap
 	if item.Completed {
@@ -398,6 +411,7 @@ func AdjustItemQuantity(c *fiber.Ctx) error {
 	recordListActivity(c, listID, item.ID, "item_quantity_changed", map[string]interface{}{"name": item.Name, "quantity": item.Quantity, "section_id": item.SectionID})
 
 	BroadcastUpdate("item_updated", item)
+	NotifyItemWebhook(webhook.EventItemUpdated, item)
 
 	if item.Completed {
 		return c.Render("partials/item_completed", fiber.Map{
@@ -479,6 +493,7 @@ func MoveItemToSection(c *fiber.Ctx) error {
 		"from_section_id": fromSectionID,
 		"list_id":         listID,
 	})
+	NotifyItemWebhook(webhook.EventItemUpdated, item)
 
 	// Return updated item partial so client can replace stale dropdown
 	c.Set("HX-Trigger-After-Settle", `{"statsRefresh":"true"}`)
@@ -507,6 +522,7 @@ func MoveItemUp(c *fiber.Ctx) error {
 	if item != nil {
 		listID, _ := db.ListIDForSection(item.SectionID)
 		BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
+		NotifyItemWebhook(webhook.EventItemUpdated, item)
 	}
 
 	return c.SendStatus(200)
@@ -531,6 +547,7 @@ func MoveItemDown(c *fiber.Ctx) error {
 	if item != nil {
 		listID, _ := db.ListIDForSection(item.SectionID)
 		BroadcastListUpdate(listID, "items_reordered", map[string]int64{"section_id": item.SectionID, "list_id": listID})
+		NotifyItemWebhook(webhook.EventItemUpdated, item)
 	}
 
 	return c.SendStatus(200)
@@ -580,13 +597,15 @@ func CheckAllItems(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	count, err := db.CheckAllItemsByUser(id, u.ID)
+	items, err := db.CheckAllItemsByUser(id, u.ID)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
+	count := len(items)
 
 	listID, _ := db.ListIDForSection(id)
 	BroadcastListUpdate(listID, "section_items_checked", map[string]interface{}{"section_id": id, "count": count, "list_id": listID})
+	NotifyItemWebhooks(webhook.EventItemCompleted, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
@@ -602,13 +621,15 @@ func UncheckAllItems(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	count, err := db.UncheckAllItemsByUser(id, u.ID)
+	items, err := db.UncheckAllItemsByUser(id, u.ID)
 	if err != nil {
 		return sendError(c, 500, "error.check_failed")
 	}
+	count := len(items)
 
 	listID, _ := db.ListIDForSection(id)
 	BroadcastListUpdate(listID, "section_items_unchecked", map[string]interface{}{"section_id": id, "count": count, "list_id": listID})
+	NotifyItemWebhooks(webhook.EventItemUpdated, items)
 
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }

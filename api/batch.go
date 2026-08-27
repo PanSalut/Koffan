@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -153,6 +154,7 @@ func batchCreateNewList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": list.ID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		List:     list,
@@ -265,6 +267,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"list_id": req.ListID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Sections: sections,
@@ -275,7 +278,7 @@ func batchAddToList(c *fiber.Ctx, req BatchCreateRequest) error {
 // batchAddToSection adds items to an existing section
 func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 	// Check if section exists
-	_, err := db.GetSectionByID(req.SectionID)
+	section, err := db.GetSectionByID(req.SectionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -345,7 +348,9 @@ func batchAddToSection(c *fiber.Ctx, req BatchCreateRequest) error {
 	// Broadcast WebSocket update
 	handlers.BroadcastUpdate("batch_created", map[string]interface{}{
 		"section_id": req.SectionID,
+		"list_id":    section.ListID,
 	})
+	handlers.NotifyItemWebhooks(webhook.EventItemCreated, items)
 
 	return c.Status(fiber.StatusCreated).JSON(BatchCreateResponse{
 		Items: items,

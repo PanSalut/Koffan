@@ -63,6 +63,10 @@ func initTestDatabase(t *testing.T) {
 }
 
 func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *http.Response {
+	return postImportFileWithResolution(t, app, filename, contents, "skip")
+}
+
+func postImportFileWithResolution(t *testing.T, app *fiber.App, filename, contents, conflictResolution string) *http.Response {
 	t.Helper()
 
 	var body bytes.Buffer
@@ -74,7 +78,7 @@ func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *ht
 	if _, err := io.WriteString(part, contents); err != nil {
 		t.Fatalf("write multipart file: %v", err)
 	}
-	if err := writer.WriteField("conflict_resolution", "skip"); err != nil {
+	if err := writer.WriteField("conflict_resolution", conflictResolution); err != nil {
 		t.Fatalf("write multipart field: %v", err)
 	}
 	if err := writer.Close(); err != nil {
@@ -88,6 +92,148 @@ func postImportFile(t *testing.T, app *fiber.App, filename, contents string) *ht
 		t.Fatalf("import request did not complete: %v", err)
 	}
 	return resp
+}
+
+func TestBulkItemMutationsReturnOnlyExactChangedRows(t *testing.T) {
+	initTestDatabase(t)
+
+	list, err := db.CreateList("Weekly", "cart")
+	if err != nil {
+		t.Fatalf("create list: %v", err)
+	}
+	if err := db.SetActiveList(list.ID); err != nil {
+		t.Fatalf("activate list: %v", err)
+	}
+	section, err := db.CreateSectionForList(list.ID, "General")
+	if err != nil {
+		t.Fatalf("create section: %v", err)
+	}
+	first, err := db.CreateItem(section.ID, "Milk", "", 1)
+	if err != nil {
+		t.Fatalf("create first item: %v", err)
+	}
+	second, err := db.CreateItem(section.ID, "Bread", "", 1)
+	if err != nil {
+		t.Fatalf("create second item: %v", err)
+	}
+	if _, err := db.DB.Exec("UPDATE items SET completed = TRUE, updated_at = 1 WHERE id = ?", second.ID); err != nil {
+		t.Fatalf("prepare completed item: %v", err)
+	}
+	if _, err := db.DB.Exec("UPDATE items SET updated_at = 1 WHERE id = ?", first.ID); err != nil {
+		t.Fatalf("prepare active item: %v", err)
+	}
+
+	checked, err := db.CheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("check all items: %v", err)
+	}
+	if len(checked) != 1 || checked[0].ID != first.ID {
+		t.Fatalf("checked items = %#v, want only item %d", checked, first.ID)
+	}
+	if !checked[0].Completed || checked[0].UpdatedAt <= 1 {
+		t.Fatalf("checked item state = %#v, want completed with current updated_at", checked[0])
+	}
+	checkedAgain, err := db.CheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("check all items again: %v", err)
+	}
+	if len(checkedAgain) != 0 {
+		t.Fatalf("second check returned %d rows, want 0", len(checkedAgain))
+	}
+
+	unchecked, err := db.UncheckAllItems(section.ID)
+	if err != nil {
+		t.Fatalf("uncheck all items: %v", err)
+	}
+	if len(unchecked) != 2 {
+		t.Fatalf("unchecked items = %d, want 2", len(unchecked))
+	}
+	for _, item := range unchecked {
+		if item.Completed {
+			t.Fatalf("uncheck returned completed item: %#v", item)
+		}
+	}
+
+	if _, err := db.DB.Exec("UPDATE items SET completed = TRUE WHERE id = ?", first.ID); err != nil {
+		t.Fatalf("prepare completed item for deletion: %v", err)
+	}
+	deleted, err := db.DeleteCompletedItems()
+	if err != nil {
+		t.Fatalf("delete completed items: %v", err)
+	}
+	if len(deleted) != 1 || deleted[0].ID != first.ID || !deleted[0].Completed {
+		t.Fatalf("deleted items = %#v, want completed item %d", deleted, first.ID)
+	}
+}
+
+func TestUserScopedBulkItemMutationsReturnAttributedRows(t *testing.T) {
+	initTestDatabase(t)
+
+	owner, err := db.CreateLocalUser("bulk-owner", "Bulk Owner", "password123", false)
+	if err != nil {
+		t.Fatalf("create owner: %v", err)
+	}
+	other, err := db.CreateLocalUser("bulk-other", "Bulk Other", "password123", false)
+	if err != nil {
+		t.Fatalf("create other user: %v", err)
+	}
+	ownerList, err := db.CreateListForUser(owner.ID, "Owner list", "cart")
+	if err != nil {
+		t.Fatalf("create owner list: %v", err)
+	}
+	otherList, err := db.CreateListForUser(other.ID, "Other list", "cart")
+	if err != nil {
+		t.Fatalf("create other list: %v", err)
+	}
+	ownerSection, err := db.CreateSectionForList(ownerList.ID, "Owner section")
+	if err != nil {
+		t.Fatalf("create owner section: %v", err)
+	}
+	otherSection, err := db.CreateSectionForList(otherList.ID, "Other section")
+	if err != nil {
+		t.Fatalf("create other section: %v", err)
+	}
+	ownerItem, err := db.CreateItem(ownerSection.ID, "Owner item", "", 1)
+	if err != nil {
+		t.Fatalf("create owner item: %v", err)
+	}
+	otherItem, err := db.CreateItem(otherSection.ID, "Other item", "", 1)
+	if err != nil {
+		t.Fatalf("create other item: %v", err)
+	}
+
+	checked, err := db.CheckAllItemsByUser(ownerSection.ID, owner.ID)
+	if err != nil {
+		t.Fatalf("check owner items: %v", err)
+	}
+	if len(checked) != 1 || checked[0].ID != ownerItem.ID || checked[0].UpdatedBy == nil || checked[0].UpdatedBy.ID != owner.ID || checked[0].UpdatedBy.DisplayName != owner.DisplayName {
+		t.Fatalf("checked items = %#v, want owner-attributed item %d", checked, ownerItem.ID)
+	}
+
+	unchecked, err := db.UncheckAllItemsByUser(ownerSection.ID, owner.ID)
+	if err != nil {
+		t.Fatalf("uncheck owner items: %v", err)
+	}
+	if len(unchecked) != 1 || unchecked[0].ID != ownerItem.ID || unchecked[0].UpdatedBy == nil || unchecked[0].UpdatedBy.ID != owner.ID {
+		t.Fatalf("unchecked items = %#v, want owner-attributed item %d", unchecked, ownerItem.ID)
+	}
+
+	if _, err := db.DB.Exec(`UPDATE items SET completed=TRUE WHERE id IN (?,?)`, ownerItem.ID, otherItem.ID); err != nil {
+		t.Fatalf("prepare completed items: %v", err)
+	}
+	deleted, err := db.DeleteCompletedItemsForList(ownerList.ID)
+	if err != nil {
+		t.Fatalf("delete owner completed items: %v", err)
+	}
+	if len(deleted) != 1 || deleted[0].ID != ownerItem.ID || deleted[0].UpdatedBy == nil || deleted[0].UpdatedBy.ID != owner.ID {
+		t.Fatalf("deleted items = %#v, want only owner item %d", deleted, ownerItem.ID)
+	}
+	if _, err := db.GetItemByID(ownerItem.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("owner item survived scoped delete: %v", err)
+	}
+	if _, err := db.GetItemByID(otherItem.ID); err != nil {
+		t.Fatalf("other user's item was deleted: %v", err)
+	}
 }
 
 func TestImportDataDoesNotDeadlockSingleConnectionPool(t *testing.T) {

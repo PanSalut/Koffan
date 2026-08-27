@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"shopping-list/db"
 	"shopping-list/handlers"
+	"shopping-list/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -144,7 +145,7 @@ func UpdateSection(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -158,7 +159,7 @@ func UpdateSection(c *fiber.Ctx) error {
 		})
 	}
 
-	section, err := db.UpdateSection(int64(id), req.Name)
+	section, err = db.UpdateSection(int64(id), req.Name)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "update_failed",
@@ -181,7 +182,7 @@ func DeleteSection(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -195,6 +196,7 @@ func DeleteSection(c *fiber.Ctx) error {
 		})
 	}
 
+	preparedWebhooks := handlers.PrepareItemWebhooks(webhook.EventItemDeleted, section.Items)
 	if err := db.DeleteSection(int64(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "delete_failed",
@@ -202,7 +204,8 @@ func DeleteSection(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("section_deleted", map[string]int64{"id": int64(id)})
+	handlers.BroadcastListUpdate(section.ListID, "section_deleted", map[string]int64{"id": int64(id), "list_id": section.ListID})
+	handlers.NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -253,7 +256,7 @@ func MoveSectionUp(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -274,9 +277,9 @@ func MoveSectionUp(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("sections_reordered", nil)
+	handlers.BroadcastListUpdate(section.ListID, "sections_reordered", map[string]int64{"list_id": section.ListID})
 
-	section, _ := db.GetSectionByID(int64(id))
+	section, _ = db.GetSectionByID(int64(id))
 	return c.JSON(section)
 }
 
@@ -291,7 +294,7 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -313,7 +316,7 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 		})
 	}
 
-	section, err := db.UpdateSectionSortMode(int64(id), req.SortMode)
+	section, err = db.UpdateSectionSortMode(int64(id), req.SortMode)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "update_failed",
@@ -321,7 +324,7 @@ func UpdateSectionSortMode(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("section_sort_changed", map[string]interface{}{"section_id": int64(id), "sort_mode": req.SortMode})
+	handlers.BroadcastListUpdate(section.ListID, "section_sort_changed", map[string]interface{}{"section_id": int64(id), "sort_mode": req.SortMode, "list_id": section.ListID})
 	return c.JSON(section)
 }
 
@@ -335,7 +338,7 @@ func CheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -349,15 +352,17 @@ func CheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	count, err := db.CheckAllItems(int64(id))
+	items, err := db.CheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "check_all_failed",
 			Message: "Failed to check all items",
 		})
 	}
+	count := len(items)
 
-	handlers.BroadcastUpdate("section_items_checked", map[string]interface{}{"section_id": int64(id), "count": count})
+	handlers.BroadcastListUpdate(section.ListID, "section_items_checked", map[string]interface{}{"section_id": int64(id), "count": count, "list_id": section.ListID})
+	handlers.NotifyItemWebhooks(webhook.EventItemCompleted, items)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 
@@ -371,7 +376,7 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -385,15 +390,17 @@ func UncheckAllItems(c *fiber.Ctx) error {
 		})
 	}
 
-	count, err := db.UncheckAllItems(int64(id))
+	items, err := db.UncheckAllItems(int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "uncheck_all_failed",
 			Message: "Failed to uncheck all items",
 		})
 	}
+	count := len(items)
 
-	handlers.BroadcastUpdate("section_items_unchecked", map[string]interface{}{"section_id": int64(id), "count": count})
+	handlers.BroadcastListUpdate(section.ListID, "section_items_unchecked", map[string]interface{}{"section_id": int64(id), "count": count, "list_id": section.ListID})
+	handlers.NotifyItemWebhooks(webhook.EventItemUpdated, items)
 	return c.JSON(fiber.Map{"count": count, "section_id": id})
 }
 
@@ -408,7 +415,7 @@ func MoveSectionDown(c *fiber.Ctx) error {
 	}
 
 	// Check if section exists
-	_, err = db.GetSectionByID(int64(id))
+	section, err := db.GetSectionByID(int64(id))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
@@ -429,8 +436,8 @@ func MoveSectionDown(c *fiber.Ctx) error {
 		})
 	}
 
-	handlers.BroadcastUpdate("sections_reordered", nil)
+	handlers.BroadcastListUpdate(section.ListID, "sections_reordered", map[string]int64{"list_id": section.ListID})
 
-	section, _ := db.GetSectionByID(int64(id))
+	section, _ = db.GetSectionByID(int64(id))
 	return c.JSON(section)
 }

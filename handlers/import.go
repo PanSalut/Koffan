@@ -6,6 +6,7 @@ import (
 	"io"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 
@@ -410,6 +411,20 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
 	}
+	existingNames := make(map[string]int64)
+	for _, list := range existingLists {
+		existingNames[strings.ToLower(list.Name)] = list.ID
+	}
+	replacementWebhooks := make(map[int64][]PreparedItemWebhook)
+	if conflictResolution == "replace" && webhook.Accepts(webhook.EventItemDeleted) {
+		for _, exportList := range exportData.Data.Lists {
+			if existingID, exists := existingNames[strings.ToLower(exportList.Name)]; exists {
+				if _, prepared := replacementWebhooks[existingID]; !prepared {
+					replacementWebhooks[existingID] = PrepareListItemWebhooks(webhook.EventItemDeleted, existingID)
+				}
+			}
+		}
+	}
 
 	// Start transaction
 	tx, err := db.DB.Begin()
@@ -418,17 +433,13 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	}
 	defer tx.Rollback()
 
-	// Build existing list names for conflict detection.
-	existingNames := make(map[string]int64)
-	for _, list := range existingLists {
-		existingNames[strings.ToLower(list.Name)] = list.ID
-	}
-
 	importedLists := 0
 	importedItems := 0
 	importedTemplates := 0
 	importedHistory := 0
 	skippedLists := 0
+	var createdItems []db.Item
+	var deletedWebhooks []PreparedItemWebhook
 
 	// Import lists
 	for _, exportList := range exportData.Data.Lists {
@@ -452,9 +463,12 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 				continue
 			case "replace":
 				// Delete existing list
-				_, err := tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
+				result, err := tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
 				if err != nil {
 					continue
+				}
+				if affected, affectedErr := result.RowsAffected(); affectedErr == nil && affected > 0 {
+					deletedWebhooks = append(deletedWebhooks, replacementWebhooks[existingID]...)
 				}
 			case "copy":
 				// Find unique name with suffix
@@ -516,11 +530,14 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 				// Set completed and uncertain flags directly
 				if exportItem.Completed {
 					tx.Exec("UPDATE items SET completed = TRUE WHERE id = ?", item.ID)
+					item.Completed = true
 				}
 				if exportItem.Uncertain {
 					tx.Exec("UPDATE items SET uncertain = TRUE WHERE id = ?", item.ID)
+					item.Uncertain = true
 				}
 
+				createdItems = append(createdItems, *item)
 				importedItems++
 			}
 		}
@@ -556,6 +573,8 @@ func importJSON(c *fiber.Ctx, data []byte, conflictResolution, copySuffix string
 	if err := tx.Commit(); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to commit import"})
 	}
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, deletedWebhooks)
+	NotifyItemWebhooks(webhook.EventItemCreated, createdItems)
 
 	return c.JSON(fiber.Map{
 		"success":            true,
@@ -598,6 +617,30 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch existing lists"})
 	}
+	existingNames := make(map[string]int64)
+	for _, list := range existingLists {
+		existingNames[strings.ToLower(list.Name)] = list.ID
+	}
+	replacementWebhooks := make(map[int64][]PreparedItemWebhook)
+	if conflictResolution == "replace" && webhook.Accepts(webhook.EventItemDeleted) {
+		for _, row := range records[1:] {
+			if len(row) < 1 {
+				continue
+			}
+			listName := strings.TrimSpace(row[0])
+			if listName == "" || listName == "[HISTORY]" {
+				continue
+			}
+			if len(listName) > MaxListNameLength {
+				listName = listName[:MaxListNameLength]
+			}
+			if existingID, exists := existingNames[strings.ToLower(listName)]; exists {
+				if _, prepared := replacementWebhooks[existingID]; !prepared {
+					replacementWebhooks[existingID] = PrepareListItemWebhooks(webhook.EventItemDeleted, existingID)
+				}
+			}
+		}
+	}
 
 	// Start transaction
 	tx, err := db.DB.Begin()
@@ -605,12 +648,6 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to start transaction"})
 	}
 	defer tx.Rollback()
-
-	// Build existing list names for conflict detection.
-	existingNames := make(map[string]int64)
-	for _, list := range existingLists {
-		existingNames[strings.ToLower(list.Name)] = list.ID
-	}
 
 	// Track created lists and sections
 	createdLists := make(map[string]*db.List)
@@ -623,6 +660,8 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	importedHistory := 0
 	skippedLists := 0
 	skippedListNames := make(map[string]bool)
+	var createdItems []db.Item
+	var deletedWebhooks []PreparedItemWebhook
 
 	// Get default section name from i18n
 	defaultSectionName := i18n.Get(i18n.GetDefaultLang(), "sections.default")
@@ -739,7 +778,13 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 					skippedListNames[listKey] = true
 					continue
 				case "replace":
-					tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
+					result, deleteErr := tx.Exec("DELETE FROM lists WHERE id = ?", existingID)
+					if deleteErr != nil {
+						continue
+					}
+					if affected, affectedErr := result.RowsAffected(); affectedErr == nil && affected > 0 {
+						deletedWebhooks = append(deletedWebhooks, replacementWebhooks[existingID]...)
+					}
 				case "copy":
 					listName = findUniqueName(listName, copySuffix, existingNames)
 					listKey = strings.ToLower(listName)
@@ -787,11 +832,14 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 
 			if itemCompleted {
 				tx.Exec("UPDATE items SET completed = TRUE WHERE id = ?", item.ID)
+				item.Completed = true
 			}
 			if itemUncertain {
 				tx.Exec("UPDATE items SET uncertain = TRUE WHERE id = ?", item.ID)
+				item.Uncertain = true
 			}
 
+			createdItems = append(createdItems, *item)
 			importedItems++
 		}
 	}
@@ -800,6 +848,8 @@ func importCSV(c *fiber.Ctx, data []byte, conflictResolution, copySuffix, delimi
 	if err := tx.Commit(); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to commit import"})
 	}
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, deletedWebhooks)
+	NotifyItemWebhooks(webhook.EventItemCreated, createdItems)
 
 	return c.JSON(fiber.Map{
 		"success":          true,

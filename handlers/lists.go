@@ -6,6 +6,7 @@ import (
 	"log"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 
@@ -247,11 +248,13 @@ func DeleteList(c *fiber.Ctx) error {
 	// Notify only users who can currently see the list. This must happen before
 	// deletion because its access-control rows are removed with the list.
 	BroadcastListUpdate(id, "list_deleted", map[string]int64{"id": id, "list_id": id})
+	preparedWebhooks := PrepareListItemWebhooks(webhook.EventItemDeleted, id)
 	err = db.DeleteList(id)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
 	}
 
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")
 }

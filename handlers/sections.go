@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"shopping-list/db"
 	"shopping-list/i18n"
+	"shopping-list/webhook"
 	"strconv"
 	"strings"
 
@@ -135,6 +136,7 @@ func DeleteSection(c *fiber.Ctx) error {
 		return sendError(c, 404, "error.invalid_section_id")
 	}
 
+	preparedWebhooks := PrepareSectionItemWebhooks(webhook.EventItemDeleted, id)
 	err = db.DeleteSection(id)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
@@ -142,6 +144,7 @@ func DeleteSection(c *fiber.Ctx) error {
 
 	// Broadcast to WebSocket clients
 	BroadcastListUpdate(listID, "section_deleted", map[string]int64{"id": id, "list_id": listID})
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 
 	// Return empty string (HTMX will remove the element)
 	return c.SendString("")
@@ -247,11 +250,13 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 	// Authorize the complete batch before deleting anything. A mixed batch must
 	// fail atomically rather than deleting the permitted subset.
 	checkedLists := make(map[int64]struct{})
+	sectionIDsByList := make(map[int64][]int64)
 	for _, id := range ids {
 		listID, lookupErr := db.ListIDForSection(id)
 		if lookupErr != nil {
 			return fiber.ErrNotFound
 		}
+		sectionIDsByList[listID] = append(sectionIDsByList[listID], id)
 		if _, checked := checkedLists[listID]; checked {
 			continue
 		}
@@ -261,12 +266,20 @@ func BatchDeleteSections(c *fiber.Ctx) error {
 		}
 		checkedLists[listID] = struct{}{}
 	}
-
+	var preparedWebhooks []PreparedItemWebhook
+	for _, id := range ids {
+		preparedWebhooks = append(preparedWebhooks, PrepareSectionItemWebhooks(webhook.EventItemDeleted, id)...)
+	}
 	err = db.DeleteSections(ids)
 	if err != nil {
 		return sendError(c, 500, "error.delete_failed")
 	}
 
+	// Broadcast to WebSocket clients
+	for listID, listSectionIDs := range sectionIDsByList {
+		BroadcastListUpdate(listID, "sections_deleted", map[string]interface{}{"ids": listSectionIDs, "list_id": listID})
+	}
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	// Return updated sections list for modal
 	return returnSectionsForModal(c)
 }

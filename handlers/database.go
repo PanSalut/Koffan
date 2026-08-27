@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/subtle"
 	"shopping-list/db"
+	"shopping-list/webhook"
 	"sync"
 	"time"
 
@@ -114,7 +115,9 @@ func ClearDatabase(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"success": false, "error": "Failed to load owned lists: " + err.Error()})
 	}
+	var preparedWebhooks []PreparedItemWebhook
 	for _, list := range ownedLists {
+		preparedWebhooks = append(preparedWebhooks, PrepareListItemWebhooks(webhook.EventItemDeleted, list.ID)...)
 		BroadcastListUpdate(list.ID, "list_deleted", map[string]int64{"id": list.ID, "list_id": list.ID})
 	}
 	deletedLists, deletedTemplates, err := db.ClearUserOwnedData(u.ID)
@@ -124,7 +127,7 @@ func ClearDatabase(c *fiber.Ctx) error {
 			"error":   "Failed to clear database: " + err.Error(),
 		})
 	}
-
+	NotifyPreparedItemWebhooks(webhook.EventItemDeleted, preparedWebhooks)
 	return c.JSON(fiber.Map{
 		"success":           true,
 		"deleted_lists":     deletedLists,
