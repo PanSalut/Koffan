@@ -44,6 +44,7 @@ CGO_ENABLED=1 go build -ldflags "-X shopping-list/handlers.AppVersion=$VERSION" 
 |----------|---------|---------|
 | `PORT` | `3000` | HTTP listen port |
 | `APP_PASSWORD` | `shopping123` | Login password |
+| `SESSION_DURATION` | `168h` (7 days) | Login session lifetime; duration syntax, e.g. `30m`, `12h`, `1d`, or `7d` |
 | `DB_PATH` | `./shopping.db` | SQLite file path |
 | `APP_ENV` | `dev` | `dev` reloads templates on each request |
 | `API_TOKEN` | *(unset)* | Set to enable REST API at `/api/v1/*` |

@@ -180,6 +180,7 @@ docker compose -f docker-compose.local.yaml up -d
 |----------|---------|-------------|
 | `APP_ENV` | `development` | Set to `production` for secure cookies |
 | `APP_PASSWORD` | `shopping123` | Shared login password; with `MULTI_USER`, the password of the first administrator |
+| `SESSION_DURATION` | `168h` (7 days) | How long login sessions remain valid; use duration syntax such as `30m`, `12h`, `1d` or `7d` |
 | `DISABLE_AUTH` | `false` | Set to `true` to disable authentication (for reverse proxy setups) |
 | `PORT` | `8080` (Docker) / `3000` (local) | Server port |
 | `HTTP_READ_BUFFER_SIZE` | `16384` | Max size in bytes for request headers (raise if you see HTTP 431 behind an SSO proxy) |
@@ -195,6 +196,8 @@ docker compose -f docker-compose.local.yaml up -d
 | `WEBHOOK_URL` | *(disabled)* | HTTP or HTTPS endpoint for outbound item events |
 | `WEBHOOK_SECRET` | *(none)* | Secret used to sign webhook payloads with HMAC-SHA256 |
 | `WEBHOOK_EVENTS` | *(all item events)* | Comma-separated filter: `item.created`, `item.updated`, `item.completed`, `item.deleted` |
+
+`SESSION_DURATION` accepts Go duration units such as `m` (minutes) and `h` (hours), plus a whole-number `d` suffix for full 24-hour days (for example, `1d` or `7d`). Day values are specified on their own; the other units can be combined (for example, `1h30m`).
 
 ### Accounts and Workspaces (optional)
 

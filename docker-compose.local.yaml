@@ -6,6 +6,7 @@ services:
     environment:
       - APP_ENV=production
       - APP_PASSWORD=${APP_PASSWORD:-shopping123}
+      - SESSION_DURATION=${SESSION_DURATION:-}
       - API_TOKEN=${API_TOKEN:-}
       - MULTI_USER=${MULTI_USER:-}
       - ADMIN_USER=${ADMIN_USER:-}
