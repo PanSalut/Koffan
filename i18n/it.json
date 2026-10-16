@@ -69,6 +69,8 @@
     "move_up": "Muovi su",
     "move_down": "Muovi giù",
     "move": "Muovi",
+    "move_to_list": "Sposta in un'altra lista",
+    "moved_to_list": "Spostato in {{list}}",
     "uncertain": "Incerto",
     "certain": "Certo",
     "remove_mark": "Rimuovi il segno",

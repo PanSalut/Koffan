@@ -69,6 +69,8 @@
     "move_up": "برو بالا",
     "move_down": "برو پایین",
     "move": "برو",
+    "move_to_list": "انتقال به فهرست دیگر",
+    "moved_to_list": "به {{list}} منتقل شد",
     "uncertain": "نا مشخص",
     "certain": "مشخص",
     "remove_mark": "حذف علامت",

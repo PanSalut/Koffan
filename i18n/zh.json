@@ -69,6 +69,8 @@
     "move_up": "上移",
     "move_down": "下移",
     "move": "移动",
+    "move_to_list": "移动到其他清单",
+    "moved_to_list": "已移动到 {{list}}",
     "uncertain": "不确定",
     "certain": "确定",
     "remove_mark": "取消标记",

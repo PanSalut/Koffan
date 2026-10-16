@@ -660,9 +660,27 @@ function shoppingList() {
                 return hadActions;
             };
             // Two open tabs share IndexedDB: only one may replay the queue at a time.
-            this._queuePromise = (navigator.locks
-                ? navigator.locks.request('koffan-offline-sync', sync)
-                : sync()).finally(() => { this._queuePromise = null; });
+            // A frozen background tab may never release its lock, so after a while
+            // take it over instead of waiting silently (replays are idempotent).
+            let lockAcquired = false;
+            let lockTimer = null;
+            let queued;
+            if (navigator.locks) {
+                const waiting = new AbortController();
+                lockTimer = setTimeout(() => waiting.abort(), 30000);
+                queued = navigator.locks.request('koffan-offline-sync', { signal: waiting.signal }, () => {
+                    lockAcquired = true;
+                    clearTimeout(lockTimer);
+                    return sync();
+                }).catch(cause => {
+                    clearTimeout(lockTimer);
+                    if (lockAcquired || cause?.name !== 'AbortError') throw cause;
+                    return navigator.locks.request('koffan-offline-sync', { steal: true }, sync);
+                });
+            } else {
+                queued = sync();
+            }
+            this._queuePromise = queued.finally(() => { this._queuePromise = null; });
             return this._queuePromise;
         },
 

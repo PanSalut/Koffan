@@ -25,6 +25,7 @@
         right: 'M9 5l7 7-7 7', menu: 'M4 6h16M4 10h16M4 14h16M4 18h16',
         edit: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
         move: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+        'move-list': 'M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6',
         uncertain: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
         dots: 'M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z'
     };
@@ -72,7 +73,19 @@
         return [...entities].sort((a, b) => numeric(a.sort_order) - numeric(b.sort_order) || compareIDs(a.id, b.id));
     }
 
-    function item(value, sections = []) {
+    // Sections of every other list, offered by "Move to another list".
+    // destinations: [{ id, name, icon, sections: [{ id, name }] }]
+    const destinationHeader = destination => `<div class="px-3 pt-1.5 pb-0.5 text-xs font-medium text-stone-400 dark:text-stone-500 truncate">${escape(destination.icon || '🛒')} ${escape(destination.name)}</div>`;
+
+    function listMoveMenu(itemId, destinations = []) {
+        return destinations.map(destination => destinationHeader(destination) + destination.sections.map(section => `<button type="button" @click="open=false; $data.moveItemToList(${id(itemId)},${id(section.id)})" class="block w-full text-left pl-6 pr-3 py-1.5 text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 truncate">${escape(section.name)}</button>`).join('')).join('');
+    }
+
+    function mobileListMoveMenu(destinations = []) {
+        return destinations.map(destination => `<div class="pt-1 text-xs font-medium text-stone-400 dark:text-stone-500 truncate">${escape(destination.icon || '🛒')} ${escape(destination.name)}</div>` + destination.sections.map(section => `<button type="button" @click="moveToListSection(${id(section.id)})" class="w-full text-left p-2 rounded-lg text-sm text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 truncate">${escape(section.name)}</button>`).join('')).join('');
+    }
+
+    function item(value, sections = [], destinations = []) {
         const itemId = id(value.id), sectionId = id(value.section_id);
         const done = completed(value.completed), uncertain = completed(value.uncertain), count = quantity(value.quantity);
         const attributes = `data-item-id="${itemId}" data-item-name="${escape(value.name)}" data-item-description="${escape(value.description)}" data-item-quantity="${count}" data-section-id="${sectionId}" data-uncertain="${uncertain}"`;
@@ -87,6 +100,7 @@
         ${button(`$data.toggleUncertainFetch(${itemId})`, uncertain ? 'actions.remove_mark' : 'actions.mark_uncertain', 'uncertain')}
         ${button(edit, 'common.edit', 'edit', attributes)}
         <div x-data="{open:false}" class="item-move relative">${button('open=!open', 'actions.move', 'move')}<div x-show="open" @click.outside="open=false" x-cloak class="absolute right-0 mt-1 w-40 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 z-50 py-1">${moves}</div></div>
+        <div x-data="{open:false}" data-item-id="${itemId}" class="item-move-list relative${destinations.length ? '' : ' hidden'}">${button('open=!open', 'actions.move_to_list', 'move-list')}<div x-show="open" @click.outside="open=false" x-cloak data-list-moves class="absolute right-0 mt-1 w-56 max-h-64 overflow-y-auto bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-stone-200 dark:border-stone-700 z-50 py-1">${listMoveMenu(itemId, destinations)}</div></div>
         ${button(remove, 'common.delete', 'close', `data-item-name="${escape(value.name)}"`)}
     </div>
     <button type="button" ${attributes} @click="$dispatch('open-mobile-action',{id:Number($el.dataset.itemId),name:$el.dataset.itemName,description:$el.dataset.itemDescription,quantity:Number($el.dataset.itemQuantity),section_id:Number($el.dataset.sectionId),uncertain:$el.dataset.uncertain==='true'})" :aria-label="t('items.more_options')" class="item-active-actions md:hidden p-2 rounded-lg text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700">${svg('dots', 'w-5 h-5')}</button>
@@ -147,5 +161,5 @@
         return sortEntities(values).map(value => `<a href="${listURL(value.id)}" @click.prevent="showListSwitcher=false; crudNavigateList(${id(value.id)})" class="flex items-center gap-3 px-4 py-3 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700"><span class="text-lg">${escape(value.icon || '🛒')}</span><span class="truncate">${escape(value.name)}</span></a>`).join('');
     }
 
-    return { item, section, manageSections, lists, listOptions, sortItems, sortEntities, escape };
+    return { item, section, manageSections, lists, listOptions, listMoveMenu, mobileListMoveMenu, sortItems, sortEntities, escape };
 });

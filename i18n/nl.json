@@ -69,6 +69,8 @@
     "move_up": "Omhoog verplaatsen",
     "move_down": "Omlaag verplaatsen",
     "move": "Verplaatsen",
+    "move_to_list": "Verplaats naar andere lijst",
+    "moved_to_list": "Verplaatst naar {{list}}",
     "uncertain": "Onzeker",
     "certain": "Zeker",
     "remove_mark": "Markering verwijderen",

@@ -355,13 +355,14 @@ test('independent tabs share client identity and serialize temporary IDs and mut
     const vm = require('node:vm');
     const fs = require('node:fs');
     const locks = new Map();
-    const lockManager = { request(name, callback) {
+    const lockManager = { request(name, options, callback) {
+        callback ||= options;
         const pending = (locks.get(name) || Promise.resolve()).then(callback);
         locks.set(name, pending.catch(() => {}));
         return pending;
     } };
     function loadTab() {
-        const context = vm.createContext({ module: { exports: {} }, navigator: { locks: lockManager }, crypto: require('node:crypto').webcrypto });
+        const context = vm.createContext({ module: { exports: {} }, navigator: { locks: lockManager }, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto });
         vm.runInContext(fs.readFileSync(require.resolve('../static/offline-crud.js'), 'utf8'), context);
         return context.module.exports;
     }
@@ -380,6 +381,103 @@ test('independent tabs share client identity and serialize temporary IDs and mut
     assert.equal(new Set(operations.map(operation => operation.entity_id)).size, 2);
     assert.deepEqual(storage.read().state.items.map(item => item.name), ['Milk', 'Bread', 'Apple']);
     assert.equal(storage.read().operations.length, 2);
+});
+
+test('a tab waiting for a lock that another tab never releases takes it over instead of hanging', async () => {
+    const vm = require('node:vm');
+    const fs = require('node:fs');
+    const held = new Set();
+    const lockManager = { request(name, options, callback) {
+        if (options.steal) { held.delete(name); return Promise.resolve().then(callback); }
+        if (!held.has(name)) { held.add(name); return Promise.resolve().then(callback).finally(() => held.delete(name)); }
+        return new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
+    } };
+    const context = vm.createContext({ module: { exports: {} }, navigator: { locks: lockManager }, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto });
+    vm.runInContext(fs.readFileSync(require.resolve('../static/offline-crud.js'), 'utf8'), context);
+    const Tab = context.module.exports;
+    held.add('koffan-offline-crud-store');
+    held.add('koffan-offline-crud-sync');
+    const client = new Tab({ storage: storageFixture(), request: async () => ok(base()), lockPatience: { store: 10, sync: 10 } });
+    await client.init();
+    await client.seed(base());
+    await client.mutate({ entity: 'item', action: 'update', entity_id: 3, values: { completed: true } });
+    assert.equal(client.pendingCount, 1);
+    await client.refresh();
+});
+
+test('a writer that was overtaken by another tab retries on fresh data instead of erasing it', async () => {
+    const inner = storageFixture();
+    const compareAndSet = async (key, expectedRevision, value) => {
+        const current = inner.read();
+        if (current?.revision !== expectedRevision) return false;
+        await inner.setMetadata(key, value);
+        return true;
+    };
+    let hold = null;
+    const slow = {
+        getMetadata: async key => {
+            const value = await inner.getMetadata(key);
+            if (hold) { const gate = hold; hold = null; await gate.promise; }
+            return value;
+        },
+        setMetadata: inner.setMetadata,
+        compareAndSetMetadata: compareAndSet
+    };
+    const fast = { ...slow, getMetadata: inner.getMetadata };
+    const stale = new OfflineCRUD({ storage: slow, request: async () => ok(base()), lockPatience: { store: 20 } });
+    const other = new OfflineCRUD({ storage: fast, request: async () => ok(base()), lockPatience: { store: 20 } });
+    await stale.init();
+    await stale.seed(base());
+    await other.init();
+    const gate = deferred();
+    hold = gate;
+    // The first tab has read the record and stalls (frozen tab, lock taken over).
+    const late = stale.mutate({ entity: 'item', action: 'update', entity_id: 3, values: { name: 'From the frozen tab' } });
+    await new Promise(resolve => setTimeout(resolve, 5));
+    await other.mutate({ entity: 'item', action: 'update', entity_id: 3, values: { quantity: 4 } });
+    gate.resolve();
+    await late;
+    const saved = inner.read();
+    assert.equal(saved.operations.length, 2, 'both tabs\' operations survive');
+    const item = saved.state.items.find(entry => entry.id === 3);
+    assert.equal(item.name, 'From the frozen tab');
+    assert.equal(item.quantity, 4);
+});
+
+test('a synchronization that lost its lock cannot apply its obsolete response', async () => {
+    const vm = require('node:vm');
+    const fs = require('node:fs');
+    const held = new Set();
+    const lockManager = { request(name, options, callback) {
+        if (options.steal) { held.delete(name); return Promise.resolve().then(callback); }
+        if (!held.has(name)) { held.add(name); return Promise.resolve().then(callback).finally(() => held.delete(name)); }
+        return new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
+    } };
+    function loadTab() {
+        const context = vm.createContext({ module: { exports: {} }, navigator: { locks: lockManager }, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto });
+        vm.runInContext(fs.readFileSync(require.resolve('../static/offline-crud.js'), 'utf8'), context);
+        return context.module.exports;
+    }
+    const storage = storageFixture();
+    const release = deferred();
+    const older = base();
+    older.items[0].name = 'Older snapshot';
+    const newer = base();
+    newer.items[0].name = 'Newer snapshot';
+    const FirstTab = loadTab();
+    const SecondTab = loadTab();
+    const first = new FirstTab({ storage, request: async () => { await release.promise; return ok(older); }, lockPatience: { store: 10, sync: 10 } });
+    const second = new SecondTab({ storage, request: async () => ok(newer), lockPatience: { store: 10, sync: 10 } });
+    await first.init();
+    await first.seed(base());
+    await second.init();
+    const stalled = first.refresh();
+    await new Promise(resolve => setTimeout(resolve, 5));
+    await second.refresh();
+    assert.equal(storage.read().state.items[0].name, 'Newer snapshot');
+    release.resolve();
+    await stalled;
+    assert.equal(storage.read().state.items[0].name, 'Newer snapshot', 'the obsolete response was dropped');
 });
 
 test('large queues drain in FIFO batches of at most one hundred operations', async () => {

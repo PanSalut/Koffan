@@ -69,6 +69,8 @@
 		"move_up": "Perkelti aukštyn",
 		"move_down": "Perkelti žemyn",
 		"move": "Perkelti",
+		"move_to_list": "Perkelti į kitą sąrašą",
+		"moved_to_list": "Perkelta į: {{list}}",
 		"uncertain": "Neaišku",
 		"certain": "Aišku",
 		"remove_mark": "Pašalinti žymą",

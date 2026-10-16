@@ -212,6 +212,31 @@ class OfflineStorage {
         });
     }
 
+    // Stores `value` only while the record under `key` still has the revision
+    // the caller read (`expectedRevision`, undefined when there was none).
+    // Resolves to whether it was written. One transaction, so it is atomic
+    // across tabs.
+    async compareAndSetMetadata(key, expectedRevision, value) {
+        if (!this.db) await this.init();
+
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('sync_metadata', 'readwrite');
+            const store = tx.objectStore('sync_metadata');
+            let written = false;
+
+            const request = store.get(key);
+            request.onsuccess = () => {
+                if (request.result?.value?.revision === expectedRevision) {
+                    store.put({ key, value });
+                    written = true;
+                }
+            };
+            request.onerror = () => reject(request.error);
+            tx.oncomplete = () => resolve(written);
+            tx.onabort = () => reject(tx.error || new Error('Offline metadata write aborted'));
+        });
+    }
+
     async getMetadata(key) {
         if (!this.db) await this.init();
 

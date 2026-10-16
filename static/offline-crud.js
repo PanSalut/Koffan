@@ -167,7 +167,7 @@
     }
 
     class OfflineCRUD {
-        constructor({ storage, request, onChange, onError }) {
+        constructor({ storage, request, onChange, onError, lockPatience }) {
             if (!storage?.getMetadata || !storage?.setMetadata || typeof request !== 'function') throw error('Offline storage and a request function are required');
             this.storage = storage;
             this.request = request;
@@ -180,6 +180,7 @@
             this._refreshPromise = null;
             this._initPromise = null;
             this._closed = false;
+            this._lockPatience = { store: 5000, sync: 30000, ...lockPatience };
             // Node tests and non-browser consumers do not need a live channel.
             if (typeof window !== 'undefined' && root.BroadcastChannel) {
                 this._channel = new root.BroadcastChannel('koffan-offline-crud');
@@ -210,9 +211,32 @@
             } catch (cause) { this._report(cause); }
         }
 
-        _lock(name, callback) {
+        // Web Locks are shared by every tab of the origin. A tab that was frozen
+        // or suspended in the background (typically the browser tab left open next
+        // to an installed PWA) can keep a lock forever, so a plain request would
+        // make this page wait silently. Wait for the holder for a while, then
+        // take the lock over (callback(true)). The previous holder may still wake
+        // up and finish its work, so every write is a compare-and-set on the
+        // record revision (see _transact) and network commits are fenced by an
+        // epoch (see _networkWork).
+        _lock(name, callback, patience = this._lockPatience.store) {
             const locks = root.navigator?.locks || globalThis.navigator?.locks;
-            return locks ? locks.request(name, callback) : callback();
+            if (!locks) return callback();
+            const waiting = new AbortController();
+            let running = null;
+            const timer = setTimeout(() => waiting.abort(), patience);
+            return locks.request(name, { signal: waiting.signal }, () => {
+                clearTimeout(timer);
+                running = Promise.resolve().then(() => callback(false));
+                return running;
+            }).catch(cause => {
+                clearTimeout(timer);
+                if (cause?.name !== 'AbortError') throw cause;
+                // Our own lock was taken over while the callback still runs: the
+                // request rejects, but the work goes on, so report its real outcome.
+                if (running) return running;
+                return locks.request(name, { steal: true }, () => callback(true));
+            });
         }
 
         _newRecord() {
@@ -225,20 +249,30 @@
 
         _transact(change) {
             const work = this._writes.then(() => this._lock('koffan-offline-crud-store', async () => {
-                const stored = await this.storage.getMetadata(KEY);
-                const record = stored ? clone(stored) : this._newRecord();
-                if (record.version !== 1) throw error('Unsupported offline database version', 'storage');
-                const result = await change(record) || {};
-                const changed = !stored || result.save !== false;
-                if (changed) {
-                    record.revision++;
-                    await this.storage.setMetadata(KEY, record);
+                // A lock holder that was taken over can still write once it wakes
+                // up. Writing only while the stored revision is unchanged keeps it
+                // from erasing newer data; a rejected write is redone on fresh data.
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    const stored = await this.storage.getMetadata(KEY);
+                    const record = stored ? clone(stored) : this._newRecord();
+                    if (record.version !== 1) throw error('Unsupported offline database version', 'storage');
+                    const result = await change(record) || {};
+                    const changed = !stored || result.save !== false;
+                    if (changed) {
+                        record.revision++;
+                        if (this.storage.compareAndSetMetadata) {
+                            if (!await this.storage.compareAndSetMetadata(KEY, stored?.revision, record)) continue;
+                        } else {
+                            await this.storage.setMetadata(KEY, record);
+                        }
+                    }
+                    const notify = !this._record || this._record.revision !== record.revision;
+                    this._record = clone(record);
+                    if (notify) this._emit();
+                    if (changed) this._channel?.postMessage({ revision: record.revision });
+                    return result.value;
                 }
-                const notify = !this._record || this._record.revision !== record.revision;
-                this._record = clone(record);
-                if (notify) this._emit();
-                if (changed) this._channel?.postMessage({ revision: record.revision });
-                return result.value;
+                throw error('The offline store keeps changing in another tab', 'storage');
             }));
             this._writes = work.catch(() => {});
             return work;
@@ -334,10 +368,26 @@
             } catch (cause) { this._report(cause); throw cause; }
         }
 
+        // The callback gets the synchronization epoch. A tab that takes the lock
+        // over bumps it, so a holder that wakes up later can tell that its
+        // responses are obsolete (see _fenced) instead of applying them.
         _networkWork(callback) {
-            const work = this._network.then(() => this._lock('koffan-offline-crud-sync', callback));
+            const work = this._network.then(() => this._lock('koffan-offline-crud-sync', async stolen => {
+                const epoch = await this._transact(record => {
+                    if (stolen) record.sync_epoch = (record.sync_epoch || 0) + 1;
+                    return { save: stolen, value: record.sync_epoch || 0 };
+                });
+                return callback(epoch);
+            }, this._lockPatience.sync));
             this._network = work.catch(() => {});
             return work;
+        }
+
+        _fenced(epoch, change) {
+            return this._transact(record => {
+                if ((record.sync_epoch || 0) !== epoch) throw error('Synchronization was taken over by another tab', 'superseded');
+                return change(record);
+            });
         }
 
         async _json(url, options) {
@@ -353,9 +403,9 @@
             return response.json();
         }
 
-        async _refresh() {
+        async _refresh(epoch) {
             const snapshot = normalizeSnapshot(await this._json('/api/offline/snapshot', { method: 'GET', cache: 'no-store' }));
-            await this._transact(record => {
+            await this._fenced(epoch, record => {
                 rebase(record, snapshot);
                 record.initialized = true;
             });
@@ -366,8 +416,8 @@
             await this.init();
             if (!this._refreshPromise) {
                 // Serialize snapshot requests with synchronization, but not mutations.
-                this._refreshPromise = this._networkWork(() => this._refresh())
-                    .catch(cause => { this._report(cause); throw cause; })
+                this._refreshPromise = this._networkWork(epoch => this._refresh(epoch))
+                    .catch(cause => { if (cause?.code === 'superseded') return this.getState(); this._report(cause); throw cause; })
                     .finally(() => { this._refreshPromise = null; });
             }
             return this._refreshPromise;
@@ -376,7 +426,7 @@
         async sync() {
             await this.init();
             if (!this._syncPromise) {
-                this._syncPromise = this._networkWork(async () => {
+                this._syncPromise = this._networkWork(async epoch => {
                     let synced = false;
                     while (!this._closed) {
                         const batch = await this._transact(record => {
@@ -388,7 +438,7 @@
                             return { value: { client_id: record.client_id, operations: clone(operations) } };
                         });
                         if (!batch) {
-                            if (!synced) await this._refresh();
+                            if (!synced) await this._refresh(epoch);
                             break;
                         }
                         const reply = await this._json('/api/offline/sync', {
@@ -405,7 +455,7 @@
                             }
                             acknowledgements.add(result.id);
                         }
-                        await this._transact(record => {
+                        await this._fenced(epoch, record => {
                             for (const result of reply.results) {
                                 if (result.entity_id < 0) record.aliases[result.entity][result.entity_id] = result.server_id;
                             }
@@ -421,7 +471,7 @@
                         synced = true;
                     }
                     return this.getState();
-                }).catch(cause => { this._report(cause); throw cause; })
+                }).catch(cause => { if (cause?.code === 'superseded') return this.getState(); this._report(cause); throw cause; })
                     .finally(() => { this._syncPromise = null; });
             }
             return this._syncPromise;

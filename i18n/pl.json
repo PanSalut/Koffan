@@ -69,6 +69,8 @@
     "move_up": "W górę",
     "move_down": "W dół",
     "move": "Przenieś",
+    "move_to_list": "Przenieś na inną listę",
+    "moved_to_list": "Przeniesiono do: {{list}}",
     "uncertain": "Niepewne",
     "certain": "Pewne",
     "remove_mark": "Usuń oznaczenie",

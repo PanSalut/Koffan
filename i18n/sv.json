@@ -69,6 +69,8 @@
     "move_up": "Flytta upp",
     "move_down": "Flytta ner",
     "move": "Flytta",
+    "move_to_list": "Flytta till en annan lista",
+    "moved_to_list": "Flyttad till {{list}}",
     "uncertain": "Osäker",
     "certain": "Säker",
     "remove_mark": "Radera markering",

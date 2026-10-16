@@ -159,6 +159,65 @@ test('offline list shell resolves the requested URL rather than stale document l
     assert.equal(app.currentListId(), 17, 'temporary list URLs follow persisted server ID aliases');
 });
 
+test('the move confirmation toast escapes list names because Toast renders HTML', async () => {
+    const { app, context } = harness();
+    const shown = [];
+    context.window.OfflineView = require('../static/offline-view.js');
+    context.window.Toast = { show: (message, type) => shown.push({ message, type }) };
+    context.t = (key, params) => `${key}:${params.list}`;
+    app.initCRUD = async () => {};
+    app.crudState = () => ({ lists: [{ id: 2, name: '<img src=x onerror=alert(1)>' }], sections: [{ id: 5, list_id: 2 }], items: [] });
+    let moved;
+    app.crudMoveItem = async (id, sectionId) => { moved = [id, sectionId]; };
+    await app.moveItemToList(9, 5);
+    assert.deepEqual(moved, [9, 5]);
+    assert.equal(shown.length, 1);
+    assert.equal(shown[0].type, 'success');
+    assert.ok(!shown[0].message.includes('<img'), shown[0].message);
+    assert.ok(shown[0].message.includes('&lt;img src=x onerror=alert(1)&gt;'));
+});
+
+test('the mobile sheet closes and moves the open item to the chosen section of another list', async () => {
+    const { app, context } = harness();
+    context.window.OfflineView = require('../static/offline-view.js');
+    context.window.Toast = { show() {} };
+    app.initCRUD = async () => {};
+    app.crudState = () => ({ lists: [{ id: 2, name: 'Lidl' }], sections: [{ id: 5, list_id: 2 }], items: [] });
+    const moves = [];
+    app.crudMoveItem = async (id, sectionId) => { moves.push([id, sectionId]); };
+    app.mobileActionItem = null;
+    await app.moveToListSection(5);
+    assert.deepEqual(moves, [], 'nothing happens without an open item');
+    app.mobileActionItem = { id: 9, section_id: 1 };
+    await app.moveToListSection(5);
+    assert.deepEqual(moves, [[9, 5]]);
+    assert.equal(app.mobileActionItem, null);
+});
+
+test('list move menus follow the destinations: rows and the mobile sheet are refilled and hidden when empty', () => {
+    const { app, context } = harness();
+    context.window.OfflineView = require('../static/offline-view.js');
+    const element = (dataset = {}) => {
+        const hidden = new Set();
+        const menu = { innerHTML: '' };
+        return { dataset, menu, hidden, classList: { toggle: (name, on) => on ? hidden.add(name) : hidden.delete(name) }, querySelector: () => menu };
+    };
+    const row = element({ itemId: '7' });
+    const sheet = element();
+    const options = { innerHTML: '' };
+    context.document.querySelectorAll = selector => selector === '.item-move-list' ? [row] : [];
+    context.document.getElementById = id => id === 'mobile-move-list' ? sheet : id === 'mobile-move-list-options' ? options : null;
+    const destinations = [{ id: 2, name: 'Lidl', icon: '🥬', sections: [{ id: 5, name: 'Dairy' }] }];
+    app.refreshListMoveMenus(destinations);
+    assert.ok(!row.hidden.has('hidden') && !sheet.hidden.has('hidden'));
+    assert.ok(row.menu.innerHTML.includes('moveItemToList(7,5)'));
+    assert.ok(options.innerHTML.includes('moveToListSection(5)'));
+    app.refreshListMoveMenus([]);
+    assert.ok(row.hidden.has('hidden') && sheet.hidden.has('hidden'));
+    assert.equal(row.menu.innerHTML, '');
+    assert.equal(options.innerHTML, '');
+});
+
 test('a completion-only render preserves its row and applies authoritative stats exactly once', () => {
     const { app, context } = harness();
     const item = { id: 7, section_id: 2, name: 'Milk', sort_order: 0, completed: true };
@@ -186,6 +245,7 @@ test('a completion-only render preserves its row and applies authoritative stats
     const elements = { 'sections-list': container, 'section-2': sectionElement, 'item-7': row };
     context.document.querySelector = () => ({ dataset: { listId: '1' }, querySelector: () => null });
     context.document.getElementById = id => elements[id] || null;
+    context.document.querySelectorAll = () => [];
     context.window.OfflineView = require('../static/offline-view.js');
     context.window.checkEmptyStates = () => {};
     let toggles = 0;

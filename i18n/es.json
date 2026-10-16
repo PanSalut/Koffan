@@ -69,6 +69,8 @@
     "move_up": "Subir",
     "move_down": "Bajar",
     "move": "Mover",
+    "move_to_list": "Mover a otra lista",
+    "moved_to_list": "Movido a {{list}}",
     "uncertain": "Incierto",
     "certain": "Seguro",
     "remove_mark": "Quitar marca",

@@ -69,6 +69,8 @@
     "move_up": "Posunout nahoru",
     "move_down": "Posunout dolů",
     "move": "Přesunout",
+    "move_to_list": "Přesunout na jiný seznam",
+    "moved_to_list": "Přesunuto do: {{list}}",
     "uncertain": "Nejisté",
     "certain": "Jisté",
     "remove_mark": "Odebrat označení",

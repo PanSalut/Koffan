@@ -514,3 +514,68 @@ func TestOfflineDefaultSortOrderCannotExceedJavaScriptSafeInteger(t *testing.T) 
 		t.Fatalf("unsafe default order was saved: %#v, %v", snapshot, err)
 	}
 }
+
+func TestOfflineMoveToAnotherListStaysInsideTheWorkspace(t *testing.T) {
+	initOfflineDatabase(t)
+	first, err := ApplyOfflineSync(DefaultWorkspaceID, OfflineSyncRequest{ClientID: uuid.NewString(), Operations: []OfflineOperation{
+		offlineOperation("list", "create", -1, map[string]interface{}{"name": "Rewe"}),
+		offlineOperation("section", "create", -1, map[string]interface{}{"name": "Dairy", "list_id": -1}),
+		offlineOperation("list", "create", -2, map[string]interface{}{"name": "Lidl"}),
+		offlineOperation("section", "create", -2, map[string]interface{}{"name": "Fridge", "list_id": -2}),
+		offlineOperation("item", "create", -1, map[string]interface{}{"name": "Milk", "section_id": -1}),
+	}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lidlSection, milk int64
+	for _, section := range first.Snapshot.Sections {
+		if section.Name == "Fridge" {
+			lidlSection = section.ID
+		}
+	}
+	milk = first.Snapshot.Items[0].ID
+
+	moved, err := ApplyOfflineSync(DefaultWorkspaceID, OfflineSyncRequest{ClientID: uuid.NewString(), Operations: []OfflineOperation{
+		offlineOperation("item", "update", milk, map[string]interface{}{"section_id": lidlSection, "sort_order": 0}),
+	}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := moved.Snapshot.Items[0]; got.ID != milk || got.SectionID != lidlSection {
+		t.Fatalf("item was not moved to the other list: %#v", got)
+	}
+	for _, list := range moved.Snapshot.Lists {
+		want := 0
+		if list.Name == "Lidl" {
+			want = 1
+		}
+		if list.Stats.TotalItems != want {
+			t.Fatalf("list %q has %d items, want %d", list.Name, list.Stats.TotalItems, want)
+		}
+	}
+
+	// A section of another workspace is not a valid destination.
+	user, err := CreateUser("mover", "Mover", "correct horse battery", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := CreateWorkspace("other", "", user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreignList, err := CreateList(other.ID, "Foreign", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	foreignSection, err := CreateSectionForList(foreignList.ID, "Foreign section")
+	if err != nil {
+		t.Fatal(err)
+	}
+	escape := offlineOperation("item", "update", milk, map[string]interface{}{"section_id": foreignSection.ID})
+	_, err = ApplyOfflineSync(DefaultWorkspaceID, OfflineSyncRequest{ClientID: uuid.NewString(), Operations: []OfflineOperation{escape}}, nil)
+	requireOfflineError(t, err, true, escape.ID)
+	var sectionID int64
+	if err := DB.QueryRow("SELECT section_id FROM items WHERE id = ?", milk).Scan(&sectionID); err != nil || sectionID != lidlSection {
+		t.Fatalf("item left its workspace: section %d, err %v", sectionID, err)
+	}
+}

@@ -73,7 +73,7 @@ Open Koffan online and sign in once so the app and shopping data can be saved on
 |-----------------------------|-------------------|
 | Lists | Create, rename, change icons, reorder and delete |
 | Sections | Create, rename, reorder, change sorting and delete |
-| Products | Add, edit names and notes, change quantities, check/uncheck, mark as uncertain, move, reorder and delete |
+| Products | Add, edit names and notes, change quantities, check/uncheck, mark as uncertain, move (to another section or another list), reorder and delete |
 | Bulk actions | Check/uncheck an entire section, delete purchased products and delete selected sections |
 
 You can create a new list with new sections and products entirely offline. Changes are saved on the device before the view updates and remain available after a page reload or reopening the app. When the connection returns, Koffan automatically sends pending changes and refreshes the list. Retrying a request after a lost response does not duplicate the same operation.

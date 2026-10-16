@@ -571,6 +571,20 @@
                     </div>
                 </div>
 
+                <div x-data="{ showLists: false }" id="mobile-move-list" class="item-move-list-mobile hidden">
+                    <button @click="showLists = !showLists"
+                        class="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                        <span x-text="t('actions.move_to_list')"></span>
+                        <svg class="w-4 h-4 ml-auto transition-transform" :class="showLists && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="showLists" x-cloak id="mobile-move-list-options" class="mt-2 space-y-1 ml-8 max-h-48 overflow-y-auto"></div>
+                </div>
+
                 <button @click="deleteItem()"
                     class="w-full flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

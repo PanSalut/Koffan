@@ -279,6 +279,9 @@
                 const sections = state.sections.filter(section => section.list_id === listId).sort(byOrder);
                 const sectionIds = new Set(sections.map(section => section.id));
                 const items = state.items.filter(item => sectionIds.has(item.section_id));
+                const destinations = state.lists.filter(row => row.id !== listId).sort(byOrder)
+                    .map(row => ({ id: row.id, name: row.name, icon: row.icon, sections: state.sections.filter(section => section.list_id === row.id).sort(byOrder).map(section => ({ id: section.id, name: section.name })) }))
+                    .filter(destination => destination.sections.length);
                 const stats = { total: items.length, completed: items.filter(item => item.completed).length, percentage: items.length ? Math.round(items.filter(item => item.completed).length / items.length * 100) : 0 };
                 const container = document.getElementById('sections-list');
                 for (const el of container.querySelectorAll(':scope > [data-section-id]')) {
@@ -312,7 +315,7 @@
                         if (row && before && withoutCompletion(before) === withoutCompletion(item)) {
                             if (before.completed !== item.completed) this._applyOfflineToggle(item.id,section.id,item.completed,false);
                         } else {
-                            const html = window.OfflineView.item(item,sections);
+                            const html = window.OfflineView.item(item,sections,destinations);
                             if (row) { row.insertAdjacentHTML('afterend',html); Alpine.destroyTree(row); row.remove(); }
                             else target.insertAdjacentHTML('beforeend',html);
                             row = document.getElementById(`item-${item.id}`);
@@ -348,6 +351,11 @@
                     const manage = document.getElementById('manage-sections-list');
                     if (manage) manage.innerHTML = window.OfflineView.manageSections(sections);
                 }
+                const destinationSignature = JSON.stringify(destinations);
+                if (this._crudDestinationsSignature !== destinationSignature) {
+                    this.refreshListMoveMenus(destinations);
+                    this._crudDestinationsSignature = destinationSignature;
+                }
                 const switcher = document.getElementById('crud-list-options');
                 if (switcher) {
                     const signature = JSON.stringify(state.lists);
@@ -364,6 +372,36 @@
                     for (const el of trees) if (el.isConnected) { Alpine.destroyTree(el); Alpine.initTree(el); }
                     this.initMobileSortable();
                 });
+            },
+            // Keeps the "move to another list" menus of rows and of the mobile
+            // action sheet in step with the lists and sections of the model.
+            refreshListMoveMenus(destinations) {
+                for (const el of document.querySelectorAll('.item-move-list')) {
+                    el.classList.toggle('hidden', !destinations.length);
+                    const menu = el.querySelector('[data-list-moves]');
+                    if (menu) menu.innerHTML = window.OfflineView.listMoveMenu(el.dataset.itemId, destinations);
+                }
+                const mobile = document.getElementById('mobile-move-list');
+                if (mobile) {
+                    mobile.classList.toggle('hidden', !destinations.length);
+                    const options = document.getElementById('mobile-move-list-options');
+                    if (options) options.innerHTML = window.OfflineView.mobileListMoveMenu(destinations);
+                }
+            },
+            async moveItemToList(id, sectionId) {
+                await this.initCRUD();
+                const state = this.crudState();
+                const section = state.sections.find(row => row.id === Number(sectionId));
+                const list = section && state.lists.find(row => row.id === section.list_id);
+                await this.crudMoveItem(id, sectionId);
+                // Toast.show renders its message as HTML, so names go in escaped.
+                if (list) window.Toast?.show(t('actions.moved_to_list', { list: window.OfflineView.escape(list.name) }), 'success');
+            },
+            async moveToListSection(sectionId) {
+                if (!this.mobileActionItem) return;
+                const id = this.mobileActionItem.id;
+                this.mobileActionItem = null;
+                await this.moveItemToList(id, sectionId);
             },
             async toggleItem(id) {
                 await this.initCRUD();

@@ -158,10 +158,37 @@ test('all list links work when opened in another tab without the Alpine click ha
     }
 });
 
+const destinations = [
+    { id: 9, name: 'Lidl <b>', icon: '🛒', sections: [{ id: 21, name: 'Dairy' }, { id: -4, name: 'Fridge "cold"' }] },
+    { id: 10, name: 'Rewe', icon: '', sections: [{ id: 30, name: 'Bakery' }] }
+];
+
+test('items offer other lists grouped by list and hide the control when there is none', () => {
+    const html = view.item(base, sections, destinations);
+    assert.ok(html.includes('class="item-move-list relative"'));
+    assert.ok(html.includes('data-list-moves'));
+    for (const call of ['moveItemToList(-7,21)', 'moveItemToList(-7,-4)', 'moveItemToList(-7,30)']) assert.ok(decode(html).includes(call), call);
+    assert.ok(html.indexOf('Lidl &lt;b&gt;') < html.indexOf('moveItemToList(-7,21)'));
+    assert.ok(html.indexOf('moveItemToList(-7,-4)') < html.indexOf('Rewe'));
+    assert.ok(html.includes('🛒 Rewe'), 'a list without an icon falls back to the cart');
+    assert.doesNotMatch(html, /Lidl <b>|Fridge "cold"/);
+    assert.match(view.item(base, sections), /item-move-list relative hidden/);
+    assert.equal(view.listMoveMenu(-7, []), '');
+});
+
+test('mobile list menu lists every destination section and escapes names', () => {
+    const html = view.mobileListMoveMenu(destinations);
+    assert.ok(decode(html).includes('moveToListSection(21)') && decode(html).includes('moveToListSection(-4)'));
+    assert.ok(html.includes('Lidl &lt;b&gt;'));
+    assert.doesNotMatch(html, /Lidl <b>/);
+    assert.equal(view.mobileListMoveMenu([]), '');
+});
+
 test('all rendered action labels use existing translation keys', () => {
     const translations = JSON.parse(fs.readFileSync(require.resolve('../i18n/en.json'), 'utf8'));
     const html = decode([
         view.section(sections[0], [base, { ...base, id: 8, completed: true, uncertain: true }], sections),
+        view.item(base, sections, destinations),
         view.manageSections(sections), view.lists([{ id: -1, name: 'List' }], [base], sections)
     ].join(''));
     const keys = new Set([...html.matchAll(/\bt\('([^']+)'/g)].map(match => match[1]));
