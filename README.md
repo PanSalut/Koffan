@@ -17,6 +17,8 @@
   <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/PanSalut/Koffan/tree/main"><img src="https://www.deploytodo.com/do-btn-blue.svg" alt="Deploy to DigitalOcean" height="32"></a>
   &nbsp;
   <a href="https://heroku.com/deploy?template=https://github.com/PanSalut/Koffan"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" height="32"></a>
+  &nbsp;
+  <a href="https://console.light-cloud.com/new?repo=https://github.com/PanSalut/Koffan"><img src="https://light-cloud.com/button.svg" alt="Deploy to Light Cloud" height="32"></a>
 </p>
 
 ---
