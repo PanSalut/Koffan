@@ -17,6 +17,8 @@
   <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/PanSalut/Koffan/tree/main"><img src="https://www.deploytodo.com/do-btn-blue.svg" alt="Deploy to DigitalOcean" height="32"></a>
   &nbsp;
   <a href="https://heroku.com/deploy?template=https://github.com/PanSalut/Koffan"><img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" height="32"></a>
+  &nbsp;
+  <a href="https://zop.dev/zopday/app/deploy?image=ghcr.io/pansalut/koffan:latest&port=8080&name=koffan&utm_source=github&utm_medium=one_click&utm_content=koffan"><img src="https://zop.dev/deploytozopday-inkhard.svg" alt="Deploy to ZopDay" height="32"></a>
 </p>
 
 ---
