@@ -230,3 +230,53 @@ func TestGuardFailuresKeepTheAPIErrorShape(t *testing.T) {
 	check("foreign section", "/api/v1/sections/"+id(other.section.ID), "Section not found")
 	check("foreign item", "/api/v1/items/"+id(other.item.ID), "Item not found")
 }
+
+func TestCreateItemReactivationReplacesExplicitQuantity(t *testing.T) {
+	t.Setenv("DB_PATH", filepath.Join(t.TempDir(), "api.db"))
+	db.Init()
+	t.Cleanup(db.Close)
+	workspace := newAPIWorkspace(t, "own")
+	t.Setenv("API_TOKEN", "secret-token")
+	t.Setenv("MULTI_USER", "true")
+	t.Setenv("API_WORKSPACE_ID", id(workspace.id))
+	app := fiber.New()
+	Register(app)
+
+	if _, _, err := db.SetItemCompleted(workspace.item.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	status, body := apiCall(t, app, "POST", "/api/v1/items", map[string]interface{}{
+		"section_id": workspace.section.ID,
+		"name":       workspace.item.Name,
+		"quantity":   0,
+	})
+	if status != http.StatusOK {
+		t.Fatalf("POST /items with zero quantity: %d %s", status, body)
+	}
+	var response struct {
+		Item db.Item `json:"item"`
+	}
+	if err := json.Unmarshal([]byte(body), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.Item.Completed || response.Item.Quantity != 0 {
+		t.Fatalf("reactivated item = %#v, want active with quantity 0", response.Item)
+	}
+
+	if _, _, err := db.SetItemCompleted(workspace.item.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	status, body = apiCall(t, app, "POST", "/api/v1/items", map[string]interface{}{
+		"section_id": workspace.section.ID,
+		"name":       workspace.item.Name,
+	})
+	if status != http.StatusOK {
+		t.Fatalf("POST /items without quantity: %d %s", status, body)
+	}
+	if err := json.Unmarshal([]byte(body), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response.Item.Completed || response.Item.Quantity != 0 {
+		t.Fatalf("reactivated item without quantity = %#v, want active and unchanged", response.Item)
+	}
+}

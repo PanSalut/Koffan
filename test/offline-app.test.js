@@ -92,6 +92,23 @@ test('new temporary list, section and item remain editable before synchronizatio
     assert.equal(app.crudFind('list', list.entity_id).icon, '🍎');
 });
 
+test('adding a completed item replaces its quantity and omission preserves it', async () => {
+    const { app } = await modelHarness();
+    await app.crudMutate('item', 'update', 7, { completed: true });
+    await app.crudAddItem(2, 'Milk', '', '4');
+    assert.equal(app.crudFind('item', 7).completed, false);
+    assert.equal(app.crudFind('item', 7).quantity, 4);
+
+    await app.crudMutate('item', 'update', 7, { completed: true });
+    await app.crudAddItem(2, 'Milk', '', '0');
+    assert.equal(app.crudFind('item', 7).quantity, 0);
+
+    await app.crudMutate('item', 'update', 7, { completed: true });
+    await app.crudAddItem(2, 'Milk');
+    assert.equal(app.crudFind('item', 7).completed, false);
+    assert.equal(app.crudFind('item', 7).quantity, 0);
+});
+
 test('a realtime event during a snapshot refresh triggers another refresh instead of being lost', async () => {
     const { app, context } = harness();
     context.navigator.onLine = true;
