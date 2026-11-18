@@ -416,12 +416,19 @@
             async crudAddItem(sectionId,name,description='',quantity=0) {
                 await this.initCRUD();
                 const state = this.crudState();
-                const existing = state.items.find(item => item.section_id === Number(sectionId) && item.name.replace(/[A-Z]/g,c=>c.toLowerCase()) === name.replace(/[A-Z]/g,c=>c.toLowerCase()));
+                const existing = state.items.find(item => item.section_id === Number(sectionId) && item.name.replace(/[A-Z]/g, c => c.toLowerCase()) === name.replace(/[A-Z]/g, c => c.toLowerCase()));
+                const quantityProvided = quantity !== undefined && quantity !== null && quantity !== '';
+                const parsedQuantity = quantityProvided ? Number(quantity) : 0;
+                const normalizedQuantity = Number.isFinite(parsedQuantity) && parsedQuantity >= 0 ? parsedQuantity : 0;
                 if (existing) {
-                    if (existing.completed) await this.crudMutate('item','update',existing.id,{completed:false});
+                    if (existing.completed) {
+                        const changes = { completed: false };
+                        if (quantityProvided) changes.quantity = normalizedQuantity;
+                        await this.crudMutate('item', 'update', existing.id, changes);
+                    }
                     return;
                 }
-                return this.crudMutate('item','create',undefined,{section_id:Number(sectionId),name,description,quantity:Number(quantity)||0});
+                return this.crudMutate('item', 'create', undefined, { section_id: Number(sectionId), name, description, quantity: normalizedQuantity });
             },
             async submitAddItemForm(form) {
                 const values = Object.fromEntries(new FormData(form));

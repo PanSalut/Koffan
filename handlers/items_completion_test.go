@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"shopping-list/db"
 	"strconv"
 	"strings"
@@ -70,6 +71,62 @@ func TestItemCompletionRetriesPreserveDesiredState(t *testing.T) {
 			current, err := db.GetItemByID(item.ID)
 			if err != nil || current.Completed != test.want {
 				t.Fatalf("item = %#v, err = %v; want completed %v", current, err, test.want)
+			}
+		})
+	}
+}
+
+func TestCreateItemReactivationReplacesSubmittedQuantity(t *testing.T) {
+	initTestDatabase(t)
+	list, err := db.CreateList(db.DefaultWorkspaceID, "Shopping", "cart")
+	if err != nil {
+		t.Fatal(err)
+	}
+	section, err := db.CreateSectionForList(list.ID, "Food")
+	if err != nil {
+		t.Fatal(err)
+	}
+	item, err := db.CreateItem(section.ID, "Milk", "", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := fiber.New(fiber.Config{Views: completionTestViews{}})
+	app.Post("/items", CreateItem)
+
+	for _, test := range []struct {
+		name     string
+		quantity string
+		want     int
+	}{
+		{"replace with zero", "0", 0},
+		{"replace with positive value", "3", 3},
+		{"preserve when omitted", "", 3},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, _, err := db.SetItemCompleted(item.ID, true); err != nil {
+				t.Fatal(err)
+			}
+			form := url.Values{
+				"section_id": {strconv.FormatInt(section.ID, 10)},
+				"name":       {"Milk"},
+			}
+			if test.quantity != "" {
+				form.Set("quantity", test.quantity)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/items", strings.NewReader(form.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK || resp.Header.Get("X-Item-Reactivated") != "true" {
+				body, _ := io.ReadAll(resp.Body)
+				t.Fatalf("response = %d, reactivated=%q, body=%s", resp.StatusCode, resp.Header.Get("X-Item-Reactivated"), body)
+			}
+			current, err := db.GetItemByID(item.ID)
+			if err != nil || current.Completed || current.Quantity != test.want {
+				t.Fatalf("item = %#v, err = %v; want active quantity %d", current, err, test.want)
 			}
 		})
 	}
