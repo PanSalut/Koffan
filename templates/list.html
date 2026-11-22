@@ -14,7 +14,7 @@
             <div class="flex items-center justify-between h-14 mb-4 gap-3">
                 <!-- Logo and List Name -->
                 <div class="flex items-center gap-2 md:gap-3 overflow-hidden">
-                    <a href="/" class="hover:opacity-80 transition-opacity flex-shrink-0" :title="t('nav.back_to_lists')">
+                    <a href="/" @click="sessionStorage.setItem('skipAutoOpenList', '1')" class="hover:opacity-80 transition-opacity flex-shrink-0" :title="t('nav.back_to_lists')">
                         <img src="/static/koffan-logo.webp" alt="Koffan Logo" class="app-logo-header">
                     </a>
                     <span class="text-stone-300 dark:text-stone-600 text-sm md:text-base">/</span>
@@ -859,6 +859,44 @@
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0"
                  x-transition:enter-end="opacity-100">
+
+                 <!-- Move sections to bottom when completed -->
+                <div class="mb-6">
+                    <label class="flex items-center justify-between gap-3 p-3 bg-stone-50 dark:bg-stone-700 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-stone-700 dark:text-stone-200" x-text="t('settings.move_sections_bottom')"></p>
+                            <p class="text-xs text-stone-400 dark:text-stone-500" x-text="t('settings.move_sections_bottom_desc')"></p>
+                        </div>
+                        <div class="relative flex-shrink-0">
+                            <input type="checkbox"
+                                   id="moveSectionsBottom"
+                                   x-model="moveSectionsBottom"
+                                   @change="localStorage.setItem('moveSectionsBottom', moveSectionsBottom)"
+                                   class="sr-only peer">
+                            <div class="w-10 h-6 bg-stone-200 dark:bg-stone-600 rounded-full peer peer-checked:bg-pink-400 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Open last list on startup -->
+                <div class="mb-6">
+                    <label class="flex items-center justify-between gap-3 p-3 bg-stone-50 dark:bg-stone-700 rounded-xl cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-stone-700 dark:text-stone-200">Ouvrir la dernière liste au démarrage</p>
+                            <p class="text-xs text-stone-400 dark:text-stone-500">Accéder directement à la dernière liste consultée</p>
+                        </div>
+                        <div class="relative flex-shrink-0">
+                            <input type="checkbox"
+                                id="openLastList"
+                                x-model="openLastList"
+                                @change="localStorage.setItem('openLastList', openLastList)"
+                                class="sr-only peer">
+                            <div class="w-10 h-6 bg-stone-200 dark:bg-stone-600 rounded-full peer peer-checked:bg-pink-400 transition-colors"></div>
+                            <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
+                        </div>
+                    </label>
+                </div>
                 <!-- History section mapping mode -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-3" x-text="t('settings.history_section_mode')"></label>

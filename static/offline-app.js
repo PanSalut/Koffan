@@ -236,7 +236,15 @@
             async init() {
                 if (this._crudStarted) return;
                 this._crudStarted = true;
-                return init.call(this);
+                const res = await init.call(this);
+                this.$watch('moveSectionsBottom', (value) => {
+                    localStorage.setItem('moveSectionsBottom', String(value));
+                    this.renderCRUD();
+                });
+                this.$watch('openLastList', (value) => {
+                    localStorage.setItem('openLastList', String(value));
+                });
+                return res;
             },
             initOffline() { return this.initCRUD(); },
             processOfflineQueue() { return this.fullRefresh(); },
@@ -265,9 +273,13 @@
                 const listId = this.currentListId();
                 const list = state.lists.find(row => row.id === listId);
                 if (!list) {
-                    if (this._crudSyncedOnce || this._crudHasRendered) location.href = '/';
+                    if (this._crudSyncedOnce || this._crudHasRendered) {
+                        localStorage.removeItem('lastOpenedListId');
+                        location.href = '/';
+                    }
                     return;
                 }
+                localStorage.setItem('lastOpenedListId', String(listId));
                 if (location.pathname === '/offline/list' && listId > 0) history.replaceState(null, '', `/lists/${listId}`);
                 const root = document.querySelector('[data-list-id]');
                 root.dataset.listId = listId;
@@ -275,10 +287,20 @@
                 if (heading) heading.textContent = list.name;
                 const icon = root.querySelector('[data-list-icon]');
                 if (icon) icon.textContent = list.icon;
+
                 this.showCompleted = list.show_completed;
-                const sections = state.sections.filter(section => section.list_id === listId).sort(byOrder);
-                const sectionIds = new Set(sections.map(section => section.id));
+                const rawSections = state.sections.filter(section => section.list_id === listId).sort(byOrder);
+                const sectionIds = new Set(rawSections.map(section => section.id));
                 const items = state.items.filter(item => sectionIds.has(item.section_id));
+
+                const isSectionComplete = (section) => {
+                    const secItems = items.filter(i => i.section_id === section.id);
+                    return secItems.length > 0 && secItems.every(i => i.completed);
+                };
+                const sections = localStorage.getItem('moveSectionsBottom') === 'true'
+                    ? [...rawSections].sort((a, b) => Number(isSectionComplete(a)) - Number(isSectionComplete(b)) || byOrder(a, b))
+                    : rawSections;
+
                 const destinations = state.lists.filter(row => row.id !== listId).sort(byOrder)
                     .map(row => ({ id: row.id, name: row.name, icon: row.icon, sections: state.sections.filter(section => section.list_id === row.id).sort(byOrder).map(section => ({ id: section.id, name: section.name })) }))
                     .filter(destination => destination.sections.length);
@@ -403,6 +425,7 @@
                 this.mobileActionItem = null;
                 await this.moveItemToList(id, sectionId);
             },
+            
             async toggleItem(id) {
                 await this.initCRUD();
                 const item = this.crudFind('item',id);
@@ -523,6 +546,16 @@
                 async init() {
                     if (this._crudStarted) return;
                     this._crudStarted = true;
+                    const skipAutoOpen = sessionStorage.getItem('skipAutoOpenList') === '1';
+                    sessionStorage.removeItem('skipAutoOpenList');
+
+                    if (!skipAutoOpen && localStorage.getItem('openLastList') === 'true') {
+                        const lastId = Number(localStorage.getItem('lastOpenedListId'));
+                        if (lastId) {
+                            location.replace(lastId < 0 ? `/offline/list?list_id=${lastId}` : `/lists/${lastId}`);
+                            return;
+                        }
+                    }
                     await this.initCRUD();
                     this._realtime = new window.KoffanRealtime({url:()=>`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws`,onConnected:()=>this.fullRefresh(),onMessage:()=>{ if (this._crudRefresh) this._crudRefreshAgain = true; this.fullRefresh(); }});
                     this._realtime.start();
