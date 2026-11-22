@@ -102,7 +102,11 @@
     "auto_create_section": "Automaticky vytvořit sekci",
     "auto_create_section_desc": "Pokud sekce neexistuje, vytvoří novou se stejným názvem",
     "update_available": "Dostupná nová verze",
-    "delete_completed_count": "Smazáno koupených: {{count}}"
+    "delete_completed_count": "Smazáno koupených: {{count}}",
+    "move_sections_bottom": "Přesunout sekce dolů, když jsou všechny položky koupené",
+    "move_sections_bottom_desc": "Dokončené sekce se automaticky přesunou na konec seznamu",
+    "open_last_list": "Otevřít naposledy zobrazený seznam při spuštění",
+    "open_last_list_desc": "Při otevření aplikace automaticky přesměrovat na naposledy otevřený nákupní seznam"
   },
   "login": {
     "title": "Přihlášení - Koffan",

@@ -102,7 +102,11 @@
     "auto_create_section": "Sectie automatisch aanmaken",
     "auto_create_section_desc": "Als de sectie niet bestaat, maak dan een nieuwe met dezelfde naam",
     "update_available": "Nieuwe update beschikbaar",
-    "delete_completed_count": "Gekochte verwijderd: {{count}}"
+    "delete_completed_count": "Gekochte verwijderd: {{count}}",
+    "move_sections_bottom": "Secties naar onderen verplaatsen wanneer alle artikelen zijn gekocht",
+    "move_sections_bottom_desc": "Voltooide secties worden automatisch naar de onderkant van de lijst verplaatst",
+    "open_last_list": "Laatst bekeken lijst openen bij opstarten",
+    "open_last_list_desc": "Automatisch doorverwijzen naar de laatst geopende boodschappenlijst bij het openen van de app"
   },
   "login": {
     "title": "Aanmelden - Koffan",

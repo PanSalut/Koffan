@@ -35,8 +35,8 @@
     "what_to_buy": "Hva skal kjøpes?",
     "note": "Notat...",
     "note_optional": "Notat (valgfritt)...",
-    "quantity": "Antall (f.eks. 2)",
     "name": "Navn...",
+    "quantity": "Antall (f.eks. 2)",
     "new_product": "Nytt produkt",
     "select_section": "Velg seksjon...",
     "section": "Seksjon...",
@@ -102,7 +102,11 @@
     "auto_create_section": "Opprett seksjon automatisk",
     "auto_create_section_desc": "Hvis seksjonen ikke finnes, opprett en ny med samme navn",
     "update_available": "Ny versjon tilgjengelig",
-    "delete_completed_count": "Slettet kjøpte: {{count}}"
+    "delete_completed_count": "Slettet kjøpte: {{count}}",
+    "move_sections_bottom": "Flytt seksjoner nederst når alle varer er kjøpt",
+    "move_sections_bottom_desc": "Fullførte seksjoner flyttes automatisk til bunnen av listen",
+    "open_last_list": "Åpne sist viste liste ved oppstart",
+    "open_last_list_desc": "Gå automatisk til den sist åpnede handlelisten når appen åpnes"
   },
   "login": {
     "title": "Innlogging - Koffan",

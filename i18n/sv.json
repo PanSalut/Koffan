@@ -35,8 +35,8 @@
     "what_to_buy": "Vad skall köpas?",
     "note": "Notis...",
     "note_optional": "Notis (valfri)...",
-    "quantity": "Antal (t.ex. 2)",
     "name": "Namn...",
+    "quantity": "Antal (t.ex. 2)",
     "new_product": "Ny vara",
     "select_section": "Välj avdelning...",
     "section": "Avdelning...",
@@ -102,7 +102,11 @@
     "auto_create_section": "Autoskapa avdelning",
     "auto_create_section_desc": "Om avdelning inte finns, skapa en ny med samma namn",
     "update_available": "Ny version tillgänglig",
-    "delete_completed_count": "Borttagna köpta: {{count}}"
+    "delete_completed_count": "Borttagna köpta: {{count}}",
+    "move_sections_bottom": "Flytta avdelningar längst ned när alla varor är köpta",
+    "move_sections_bottom_desc": "Slutförda avdelningar flyttas automatiskt längst ned i listan",
+    "open_last_list": "Öppna senast visade lista vid start",
+    "open_last_list_desc": "Gå automatiskt till den senast öppnade inköpslistan när appen startas"
   },
   "login": {
     "title": "Logga in - Koffan",

@@ -102,7 +102,11 @@
     "auto_create_section": "Abschnitt automatisch erstellen",
     "auto_create_section_desc": "Wenn der Abschnitt nicht existiert, einen neuen mit gleichem Namen erstellen",
     "update_available": "Neue Version verfügbar",
-    "delete_completed_count": "Gekaufte gelöscht: {{count}}"
+    "delete_completed_count": "Gekaufte gelöscht: {{count}}",
+    "move_sections_bottom": "Kategorien nach unten verschieben, wenn alle Artikel gekauft wurden",
+    "move_sections_bottom_desc": "Erledigte Kategorien werden automatisch ans Ende der Liste verschoben",
+    "open_last_list": "Zuletzt angesehene Liste beim Start öffnen",
+    "open_last_list_desc": "Beim Öffnen der App automatisch zur zuletzt geöffneten Einkaufsliste weiterleiten"
   },
   "login": {
     "title": "Anmeldung - Koffan",
