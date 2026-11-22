@@ -102,7 +102,11 @@
     "auto_create_section": "ایجاد خودکار بخش",
     "auto_create_section_desc": "اگر بخش وجود ندارد آن را با همان نام ایجاد کن",
     "update_available": "نسخه جدید موجود است",
-    "delete_completed_count": "خریداری‌شده‌های حذف‌شده: {{count}}"
+    "delete_completed_count": "خریداری‌شده‌های حذف‌شده: {{count}}",
+    "move_sections_bottom": "انتقال بخش‌ها به پایین فهرست پس از خرید همه موارد",
+    "move_sections_bottom_desc": "بخش‌های تکمیل‌شده به‌طور خودکار به پایین فهرست منتقل می‌شوند",
+    "open_last_list": "باز کردن آخرین فهرست مشاهده‌شده هنگام شروع",
+    "open_last_list_desc": "انتقال خودکار به آخرین فهرست خرید بازشده هنگام اجرای برنامه"
   },
   "login": {
     "title": "ورود - کوفان",

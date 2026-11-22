@@ -245,7 +245,9 @@ function shoppingList() {
         historySearch: '',
         selectedHistoryIds: [],
         historySectionMode: localStorage.getItem('history_section_mode') || 'use_first_section',
-
+        moveSectionsBottom: localStorage.getItem('moveSectionsBottom') === 'true',
+        openLastList: localStorage.getItem('openLastList') === 'true',
+        
         // Import/Export
         showImportPreview: false,
         importPreview: {},
@@ -1141,6 +1143,40 @@ function shoppingList() {
                     document.getElementById('sections-list')?.insertAdjacentHTML('beforeend', html.trim());
                 }
                 this.$nextTick(() => this.initMobileSortable());
+
+
+                // Déplacer automatiquement la section tout en bas si tous ses articles sont achetés
+               // Déplacer automatiquement la section tout en bas si tous ses articles sont achetés
+                if (localStorage.getItem('moveSectionsBottom') === 'true') {
+                    const secEl = document.getElementById(`section-${sectionId}`);
+                    const sectionsContainer = document.getElementById('sections-list');
+                    if (secEl && sectionsContainer) {
+                        const activeCount = secEl.querySelectorAll('.active-items [data-item-id]').length;
+                        const completedCount = secEl.querySelectorAll('.completed-items [data-item-id]').length;
+                        const allSections = Array.from(sectionsContainer.querySelectorAll(':scope > [id^="section-"]'));
+                        const isAlreadyLast = allSections[allSections.length - 1]?.id === `section-${sectionId}`;
+
+                        if (activeCount === 0 && completedCount > 0 && !isAlreadyLast) {
+                            sectionsContainer.appendChild(secEl);
+
+                            const orderedIds = Array.from(sectionsContainer.querySelectorAll(':scope > [id^="section-"]'))
+                                .map(el => el.dataset.sectionId)
+                                .filter(Boolean);
+
+                            this.markLocalAction('sections_reordered');
+                            const res = await fetch('/sections/reorder', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: `ids=${orderedIds.join(',')}`
+                            });
+                            if (!res.ok) {
+                                console.error('[MoveSectionsBottom] Erreur serveur sur /sections/reorder :', res.status);
+                            }
+                            this.refreshManageSectionsModal();
+                        }
+                    }
+                }
+                
             } catch (error) {
                 console.warn('[App] Section refresh failed:', error);
             }

@@ -35,8 +35,8 @@
     "what_to_buy": "Čo treba kúpiť?",
     "note": "Poznámky...",
     "note_optional": "Poznámky (voliteľné)...",
-    "quantity": "Množstvo (napr. 2)",
     "name": "Názov...",
+    "quantity": "Množstvo (napr. 2)",
     "new_product": "Nový produkt",
     "select_section": "Výber sekcie...",
     "section": "Sekcia...",
@@ -102,7 +102,11 @@
     "auto_create_section": "Automaticky vytvor sekciu",
     "auto_create_section_desc": "Ak sekcia neexistuje, vytvor novú s rovnakým názvom",
     "update_available": "Dostupná nová verzia",
-    "delete_completed_count": "Zmazané kúpené: {{count}}"
+    "delete_completed_count": "Zmazané kúpené: {{count}}",
+    "move_sections_bottom": "Presunúť sekcie na spodok, keď sú všetky položky kúpené",
+    "move_sections_bottom_desc": "Dokončené sekcie sa automaticky presunú na spodok zoznamu",
+    "open_last_list": "Otvoriť posledný zobrazený zoznam pri spustení",
+    "open_last_list_desc": "Pri spustení aplikácie automaticky presmerovať na naposledy otvorený nákupný zoznam"
   },
   "login": {
     "title": "Prihlásenie - Koffan",

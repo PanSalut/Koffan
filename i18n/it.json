@@ -102,7 +102,11 @@
     "auto_create_section": "Crea sezione automaticamente",
     "auto_create_section_desc": "Se la sezione non esiste, creane una nuova con lo stesso nome",
     "update_available": "Nuova versione disponibile",
-    "delete_completed_count": "Acquistati eliminati: {{count}}"
+    "delete_completed_count": "Acquistati eliminati: {{count}}",
+    "move_sections_bottom": "Sposta le sezioni in fondo quando tutti gli articoli sono acquistati",
+    "move_sections_bottom_desc": "Le sezioni completate vengono spostate automaticamente in fondo alla lista",
+    "open_last_list": "Apri l'ultima lista visualizzata all'avvio",
+    "open_last_list_desc": "Reindirizza automaticamente all'ultima lista della spesa aperta all'avvio dell'app"
   },
   "login": {
     "title": "Accedi - Koffan",

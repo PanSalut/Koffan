@@ -102,7 +102,11 @@
     "auto_create_section": "自动创建分类",
     "auto_create_section_desc": "如果分类不存在，使用相同名称创建新分类",
     "update_available": "有新版本可用",
-    "delete_completed_count": "已删除已购商品：{{count}}"
+    "delete_completed_count": "已删除已购商品：{{count}}",
+    "move_sections_bottom": "所有商品购买完成后将分类移至底部",
+    "move_sections_bottom_desc": "已完成的分类会自动移动到列表底部",
+    "open_last_list": "启动时打开上次查看的列表",
+    "open_last_list_desc": "打开应用时自动跳转到上次打开的购物清单"
   },
   "login": {
     "title": "登录 - Koffan",

@@ -35,8 +35,8 @@
     "what_to_buy": "O que comprar?",
     "note": "Nota...",
     "note_optional": "Nota (opcional)...",
-    "quantity": "Quantidade (ex. 2)",
     "name": "Nome...",
+    "quantity": "Quantidade (ex. 2)",
     "new_product": "Novo produto",
     "select_section": "Selecionar secção...",
     "section": "Secção...",
@@ -102,7 +102,11 @@
     "auto_create_section": "Criar secção automaticamente",
     "auto_create_section_desc": "Se a secção não existe, criar uma nova com o mesmo nome",
     "update_available": "Nova versão disponível",
-    "delete_completed_count": "Comprados eliminados: {{count}}"
+    "delete_completed_count": "Comprados eliminados: {{count}}",
+    "move_sections_bottom": "Mover secções para o fundo quando todos os itens forem comprados",
+    "move_sections_bottom_desc": "As secções concluídas são movidas automaticamente para o fundo da lista",
+    "open_last_list": "Abrir a última lista visualizada ao iniciar",
+    "open_last_list_desc": "Redirecionar automaticamente para a última lista de compras aberta ao iniciar a aplicação"
   },
   "login": {
     "title": "Iniciar sessão - Koffan",
