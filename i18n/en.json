@@ -104,7 +104,9 @@
     "update_available": "New version available",
     "delete_completed_count": "Deleted bought: {{count}}",
     "move_sections_bottom": "Move sections to bottom when all items are purchased",
-    "move_sections_bottom_desc": "Completed sections are automatically moved to the bottom of the list"
+    "move_sections_bottom_desc": "Completed sections are automatically moved to the bottom of the list",
+    "open_last_list": "Open last viewed list on startup",
+    "open_last_list_desc": "Automatically redirect to the last opened shopping list when opening the app"
   },
   "login": {
     "title": "Login - Koffan",

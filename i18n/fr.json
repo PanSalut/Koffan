@@ -104,7 +104,9 @@
     "update_available": "Nouvelle version disponible",
     "delete_completed_count": "Achetés supprimés : {{count}}",
     "move_sections_bottom": "Déplacer les sections en bas quand tous les articles sont achetés",
-    "move_sections_bottom_desc": "Les sections complétées sont automatiquement déplacées en bas de la liste"
+    "move_sections_bottom_desc": "Les sections complétées sont automatiquement déplacées en bas de la liste",
+    "open_last_list": "Ouvrir la dernière liste au démarrage",
+    "open_last_list_desc": "Accéder directement à la dernière liste consultée à l'ouverture"
   },
   "login": {
     "title": "Connexion - Koffan",
