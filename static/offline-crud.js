@@ -127,6 +127,11 @@
             if (strict) throw error('The destination section no longer exists', 'conflict', 409);
             return;
         }
+        if (operation.prepend && !existing) {
+            const siblings = state.items.filter(item => item.section_id === next.section_id);
+            next.sort_order = Math.min(0, ...siblings.map(item => item.sort_order));
+            siblings.forEach(item => { item.sort_order++; });
+        }
         if (entity === 'list' && next.is_active) state.lists.forEach(list => { list.is_active = false; });
         if (existing) Object.assign(existing, next);
         else state[collection].push(next);
@@ -332,6 +337,7 @@
                         if (!validID(id)) throw error('Entity ID must be a nonzero integer');
                         const operation = remapOperation({ id: uuid(), entity, action, entity_id: id, values }, record.aliases);
                         if (action === 'create') operation.values = defaults(record.state, entity, operation.values);
+                        if (entity === 'item' && action === 'create' && input.prepend) operation.prepend = true;
                         apply(record.state, operation);
                         record.operations.push(operation);
                         if (legacyID !== null) record.importedLegacyIds[legacyID] = clone(operation);

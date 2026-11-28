@@ -20,6 +20,7 @@ const maxOfflineInteger = int64(9007199254740991)
 // OfflineOperation carries explicit field changes, never relative toggles.
 // Its ID and payload must stay unchanged until the server acknowledges it.
 type OfflineOperation struct {
+	Prepend  bool                       `json:"prepend,omitempty"`
 	ID       string                     `json:"id"`
 	Entity   string                     `json:"entity"`
 	Action   string                     `json:"action"`
@@ -239,7 +240,19 @@ func applyOfflineOperation(tx *sql.Tx, workspaceID int64, clientID string, opera
 		if err != sql.ErrNoRows {
 			return result, false, err
 		}
-		if _, supplied := values["sort_order"]; !supplied {
+		if operation.Entity == "item" && operation.Prepend {
+			var first, last int64
+			if err := tx.QueryRow("SELECT MIN(0, COALESCE(MIN(sort_order), 0)), COALESCE(MAX(sort_order), 0) FROM items WHERE section_id = ?", values["section_id"]).Scan(&first, &last); err != nil {
+				return result, false, err
+			}
+			if last >= maxOfflineInteger {
+				return result, false, offlineConflict("Cannot shift the maximum sort_order")
+			}
+			if _, err := tx.Exec("UPDATE items SET sort_order = sort_order + 1 WHERE section_id = ?", values["section_id"]); err != nil {
+				return result, false, err
+			}
+			values["sort_order"] = first
+		} else if _, supplied := values["sort_order"]; !supplied {
 			query := "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM " + table
 			var args []interface{}
 			if operation.Entity == "list" {

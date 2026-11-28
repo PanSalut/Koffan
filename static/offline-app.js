@@ -421,7 +421,7 @@
                     if (existing.completed) await this.crudMutate('item','update',existing.id,{completed:false});
                     return;
                 }
-                return this.crudMutate('item','create',undefined,{section_id:Number(sectionId),name,description,quantity:Number(quantity)||0});
+                return this.crudMutate('item','create',undefined,{section_id:Number(sectionId),name,description,quantity:Number(quantity)||0}, {prepend:window.getNewItemPlacement() === 'top'});
             },
             async submitAddItemForm(form) {
                 const values = Object.fromEntries(new FormData(form));

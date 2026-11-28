@@ -788,6 +788,21 @@
                     </div>
                 </div>
 
+                <fieldset class="mb-6" x-data="{ placement: getNewItemPlacement() }">
+                    <legend class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.new_item_position')"></legend>
+                    <div class="grid grid-cols-2 gap-2">
+                        <template x-for="position in ['top', 'bottom']" :key="position">
+                            <button
+                                @click="localStorage.setItem(placementKey(), position); placement = position"
+                                :aria-pressed="placement === position"
+                                :class="placement === position ? 'bg-pink-100 dark:bg-pink-900/50 border-pink-400 text-pink-600 dark:text-pink-400' : 'bg-stone-50 dark:bg-stone-700 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-pink-300'"
+                                class="px-2 py-3 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center"
+                                x-text="t('settings.position_' + position)"
+                            ></button>
+                        </template>
+                    </div>
+                </fieldset>
+
                 <!-- UI Size Selection -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2" x-text="t('settings.ui_size')"></label>

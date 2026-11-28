@@ -153,6 +153,15 @@
             document.documentElement.lang = window.currentLang;
         })();
 
+        function placementKey() {
+            const user = document.querySelector('meta[name="koffan-user"]')?.content || 'local';
+            return 'newItemPlacement:' + user;
+        }
+
+        function getNewItemPlacement() {
+            return localStorage.getItem(placementKey()) === 'top' ? 'top' : 'bottom';
+        }
+
         // Translation helper function
         function t(key, params) {
             const lang = window.currentLang;
