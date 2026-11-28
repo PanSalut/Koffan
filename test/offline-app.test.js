@@ -15,6 +15,7 @@ function harness() {
     let timerID = 0;
     const location = { pathname: '/lists/1', search: '', href: '', protocol: 'http:', host: 'localhost' };
     const window = {
+        getNewItemPlacement: () => 'bottom',
         shoppingList: () => ({ init() {}, destroy() {}, request() {} }),
         homePage: () => ({}),
         addEventListener() {}, removeEventListener() {}
@@ -336,4 +337,14 @@ test('the page snapshot waits for the offline store when it may be outdated', ()
     assert.equal(earlyRenderHarness({ model: { pending: 2, snapshot_at: 1000 } }).length, 0, 'unsynced local changes');
     assert.equal(earlyRenderHarness({ generatedAt: 500 }).length, 0, 'an older copy, such as a cached offline page');
     assert.equal(earlyRenderHarness({ generatedAt: null }).length, 0, 'a page cached before snapshots carried their time');
+});
+
+test('new items follow the current placement, including consecutive offline adds', async () => {
+    const { app, context } = await modelHarness();
+    await app.crudAddItem(2, 'Bread');
+    context.window.getNewItemPlacement = () => 'top';
+    await app.crudAddItem(2, 'Tea');
+    await app.crudAddItem(2, 'Coffee');
+    const names = app.crudState().items.sort((a, b) => a.sort_order - b.sort_order).map(item => item.name);
+    assert.deepEqual(names, ['Coffee', 'Tea', 'Milk', 'Bread']);
 });

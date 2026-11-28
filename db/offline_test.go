@@ -579,3 +579,22 @@ func TestOfflineMoveToAnotherListStaysInsideTheWorkspace(t *testing.T) {
 		t.Fatalf("item left its workspace: section %d, err %v", sectionID, err)
 	}
 }
+
+func TestOfflinePrependRetry(t *testing.T) {
+	initOfflineDatabase(t)
+	op := offlineOperation("item", "create", -2, map[string]interface{}{"name": "Bread", "section_id": -1})
+	op.Prepend = true
+	req := OfflineSyncRequest{ClientID: uuid.NewString(), Operations: append(offlineCreateTree(), op)}
+	for range 2 {
+		response, err := ApplyOfflineSync(DefaultWorkspaceID, req, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for index, order := range []int{1, 0} {
+			item, err := GetItemByID(response.Results[2+index].ServerID)
+			if err != nil || item.SortOrder != order {
+				t.Fatalf("item = %+v, error = %v, want order %d", item, err, order)
+			}
+		}
+	}
+}
